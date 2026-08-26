@@ -1,0 +1,439 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage[portuguese]{babel}
+\usepackage[margin=2.2cm,top=2.4cm,bottom=2.4cm]{geometry}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+
+\setmainfont{Helvetica Neue}
+
+\definecolor{azul}{HTML}{1B4F8C}
+\definecolor{cinza}{HTML}{555555}
+\definecolor{verde}{HTML}{2E7D4F}
+\definecolor{laranja}{HTML}{B25E12}
+\definecolor{vermelho}{HTML}{9C2B2B}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\titleformat{\section}{\Large\bfseries\color{azul}}{\thesection.}{0.4em}{}
+\titlespacing*{\section}{0pt}{18pt}{6pt}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\subsection}{0pt}{12pt}{2pt}
+
+% \ideia{titulo}{complexidade}{stack sugerida}{resumo}
+\newcommand{\complex}[1]{{\small\color{cinza}\textbf{Complexidade:} #1}}
+\newcommand{\ods}[1]{{\small\color{verde}\textbf{ODS:} #1}}
+
+\hypersetup{
+  pdftitle={Ideias de Projeto - Laboratorio de Desenvolvimento de Software},
+  pdfauthor={Squad UFOPA},
+}
+
+\begin{document}
+
+\begin{center}
+{\Huge\bfseries\color{azul} Ideias de Projeto}\\[4pt]
+{\large Laboratório de Desenvolvimento de Software --- UFOPA}\\[2pt]
+{\color{cinza} Banco de ideias para os 5 desafios do Product Design Studio Canvas --- Santarém-PA}\\[6pt]
+{\small\color{cinza} Documento de apoio à decisão do squad --- 26 de agosto de 2026}
+\end{center}
+
+\vspace{6pt}
+\hrule
+\vspace{10pt}
+
+\section*{Como usar este documento}
+\addcontentsline{toc}{section}{Como usar este documento}
+
+São \textbf{20 ideias}, quatro para cada um dos cinco desafios apresentados na aula de kickoff.
+Cada ideia traz título, resumo do que o sistema faz, o núcleo funcional mínimo (o que precisa
+existir no MVP) e uma classificação de complexidade. O critério de calibragem foi deliberado:
+nada que se resolva com um CRUD de duas tabelas e nada que exija hardware embarcado,
+treinamento de modelo de aprendizado de máquina ou convênio institucional prévio para funcionar.
+
+\textbf{Restrições consideradas em todas as ideias:}
+
+\begin{itemize}
+  \item Squad de até 3 pessoas, com entrega da primeira versão em 09/10/2026 e versão final em 21/11/2026.
+  \item Entregáveis obrigatórios: código-fonte versionado, documentação (UML: casos de uso, classes, estado, sequência), banco de dados modelado e artigo no formato SBC.
+  \item Até 28/08/2026 é preciso ter tema escolhido, funcionalidades do MVP definidas e pelo menos 5 telas de protótipo de média fidelidade.
+  \item Contexto local: conectividade instável fora do perímetro urbano, celulares de entrada, população acostumada a resolver as coisas por grupo de WhatsApp.
+\end{itemize}
+
+\textbf{Leitura da classificação de complexidade:}
+\textit{Baixa-média} é entregável com folga e sobra tempo para polir a documentação e o artigo;
+\textit{média} é o ponto ideal para três pessoas em três meses; \textit{média-alta} exige que o
+squad corte escopo já na primeira semana e mantenha disciplina de entrega.
+
+Ao final há uma tabela comparativa e uma seção de critérios de decisão.
+
+\newpage
+
+\section{Mobilidade Inteligente}
+\ods{11 --- Cidades e Comunidades Sustentáveis \quad 13 --- Ação Contra a Mudança Global do Clima}
+
+\emph{Como melhorar a mobilidade em Santarém com tecnologia, reduzindo os impactos do trânsito?}
+
+\subsection{Cadê o Busão --- rastreamento colaborativo das linhas urbanas}
+\complex{média}
+
+Aplicativo em que o próprio passageiro informa em qual linha embarcou; enquanto a viagem dura, o
+celular dele funciona como sensor de posição da linha, e todo mundo que espera no ponto vê onde o
+ônibus está e a previsão de chegada. Resolve o problema sem depender de equipamento embarcado na
+frota nem de convênio com a empresa concessionária --- que é justamente o que trava esse tipo de
+projeto em cidades médias. \textbf{Núcleo do MVP:} cadastro de linhas e pontos, sessão de
+``estou nesta linha'', mapa em tempo real, estimativa de chegada por média histórica e avaliação
+da viagem. A literatura confirma que previsão de chegada e consulta de horários são as
+funcionalidades mais valorizadas em aplicativos de transporte público, mas também alerta que esse
+tipo de ferramenta tende a beneficiar quem já tem mais letramento digital --- o que rende um
+requisito não funcional interessante para o artigo: modo econômico de dados e interface para
+celular de entrada.
+
+\subsection{Mototáxi Legal --- corrida com tarifa transparente e rastreio de segurança}
+\complex{média}
+
+Plataforma feita para as cooperativas de mototáxi que já operam na cidade, e não para competir com
+elas. O condutor entra com cadastro validado (foto, placa, permissão), o passageiro chama por
+proximidade e vê a tarifa calculada por faixa de distância segundo a tabela da própria cooperativa,
+sem preço dinâmico. \textbf{Núcleo do MVP:} cadastro e validação de condutor, chamada por
+geolocalização, cálculo de tarifa por faixa, botão de compartilhar corrida em andamento com um
+contato de confiança e histórico de corridas por condutor. O ganho de escopo aqui é institucional:
+formaliza um modal que carrega boa parte do deslocamento urbano em Santarém e hoje não tem registro
+nenhum.
+
+\subsection{Rota Segura --- mapa colaborativo de riscos no trajeto}
+\complex{baixa-média}
+
+Qualquer pessoa registra um ponto crítico no trajeto --- buraco, faixa apagada, semáforo quebrado,
+ponto de ônibus sem abrigo, esquina sem iluminação --- com foto, categoria e localização. O sistema
+agrupa as ocorrências por bairro e gera um painel público de prioridades, além de um relatório
+exportável para o órgão de trânsito. \textbf{Núcleo do MVP:} denúncia georreferenciada com foto,
+confirmação por outros usuários (``também vi isso aqui''), fila de moderação, mapa de calor e
+painel por bairro. É a ideia de menor risco técnico da área --- e a que mais depende de o squad
+fazer um bom trabalho de UX e de modelagem para não virar mais um formulário de reclamação.
+
+\subsection{Embarque Ribeirinho --- horários e lotação de lanchas e balsas}
+\complex{média}
+
+Santarém se conecta a Alter do Chão, às comunidades do Tapajós e à margem oposta por embarcações
+cujos horários circulam em cartaz de madeira e grupo de WhatsApp. O aplicativo centraliza rotas,
+horários, preços e status real das embarcações, com confirmação colaborativa de saída e de lotação
+por quem está no porto. \textbf{Núcleo do MVP:} catálogo de embarcações e rotas, agenda de partidas,
+check-in colaborativo de ``saiu'' / ``lotado'' / ``atrasou'', alerta de alteração por seca ou cheia
+do rio e funcionamento offline com sincronização posterior. É a ideia mais autenticamente local do
+desafio 1, e a que tem menos concorrente pronto no mercado.
+
+\newpage
+
+\section{Causa Animal e Cultura}
+\ods{15 --- Vida Terrestre}
+
+\emph{Como reduzir o abandono de cães e gatos em Santarém, registrando cada um de forma escalável
+e mudando a cultura da população no trato com esses animais?}
+
+\subsection{RG Animal --- identidade digital com QR code na coleira}
+\complex{média}
+
+Cadastro único de cães e gatos da cidade: foto, tutor, endereço, vacinas, castração e histórico.
+Cada animal recebe um código único impresso em plaqueta de coleira; quem encontrar o animal
+escaneia com a câmera do celular e fala direto com o tutor, sem depender de leitor de microchip.
+\textbf{Núcleo do MVP:} cadastro de tutor e animal, geração e impressão do código, página pública
+de leitura do código, canal de contato preservando o telefone do tutor e lembrete anual de
+atualização de dados. O embasamento é forte: identificação permanente triplica a chance de o animal
+voltar para o tutor, e cães identificados apresentaram taxa de devolução de 71\% contra 39\% dos não
+identificados. O gargalo conhecido dessas políticas não é a tecnologia de identificação e sim o
+cadastro desatualizado --- por isso o lembrete anual não é enfeite, é requisito.
+
+\subsection{Achei um Bicho --- mural georreferenciado de perdidos e encontrados}
+\complex{baixa-média}
+
+Publicação de ``perdi'' e ``achei'' com foto, ponto no mapa e características; o sistema notifica
+automaticamente quem segue aquele bairro e sugere pareamentos prováveis entre um cadastro de perdido
+e um de encontrado (mesmo porte, mesma cor, mesma região, datas próximas). \textbf{Núcleo do MVP:}
+publicação com foto e geolocalização, busca por raio, notificação por área de interesse, pareamento
+por atributos e marcação de caso resolvido. A escolha de notificar por bairro e não por cidade
+inteira tem base: 70\% dos cães recuperados estavam a menos de 1,6 km de casa, e 42\% a menos de um
+quarteirão --- alerta de vizinhança funciona melhor que divulgação ampla.
+
+\subsection{Castra+ --- agendamento e triagem das campanhas de castração}
+\complex{média}
+
+Sistema para organizar a fila das campanhas de castração e do castramóvel. O tutor se inscreve, o
+sistema classifica por critério social e por cobertura do bairro, emite senha com data e hora,
+envia lembrete e registra o procedimento no histórico do animal. \textbf{Núcleo do MVP:} inscrição,
+fila com regras de priorização, agenda por unidade e data, emissão de senha, registro de
+comparecimento e painel de cobertura por bairro. É a ideia com a lógica de negócio mais rica do
+desafio 2 --- priorização, capacidade por dia, remarcação, no-show --- o que torna a modelagem UML
+naturalmente interessante em vez de burocrática.
+
+\subsection{Adota Santarém --- adoção com acompanhamento pós-adoção obrigatório}
+\complex{média}
+
+Vitrine dos animais de ONGs e protetores independentes, com formulário de perfil do adotante, termo
+digital de responsabilidade e --- o diferencial --- check-ins obrigatórios com foto em 30, 90 e 180
+dias após a adoção, com alerta para o protetor quando o check-in não acontece. \textbf{Núcleo do
+MVP:} catálogo com filtros, candidatura à adoção, fluxo de aprovação pelo protetor, termo digital
+e agenda de acompanhamento. Plataformas de adoção existem em abundância; o que a literatura aponta
+como lacuna é exatamente o acompanhamento posterior, que é onde o abandono acontece de novo.
+
+\newpage
+
+\section{Revitalização do Centro Histórico}
+\ods{8 --- Trabalho Decente \quad 9 --- Indústria e Infraestrutura \quad 11 --- Cidades Sustentáveis}
+
+\emph{Como tornar o centro de Santarém um lugar atrativo para moradia, comércio, turismo, cultura e
+lazer, com uso de tecnologias inovadoras?}
+
+\subsection{Santarém 1661 --- trilha histórica com realidade aumentada por geolocalização}
+\complex{média-alta}
+
+Roteiro a pé pelo centro: ao chegar em um ponto --- Catedral, Praça Barão de Santarém, orla, Casa da
+Cultura, prédios do porto --- o aplicativo libera narração em áudio, foto histórica sobreposta à
+imagem da câmera e um selo colecionável. A realidade aumentada aqui é a versão leve, ancorada em
+GPS e bússola, sem reconstrução tridimensional nem rastreamento de superfície. \textbf{Núcleo do
+MVP:} roteiro com pontos, detecção de chegada por geolocalização, conteúdo multimídia por ponto,
+sobreposição simples na câmera e progresso do visitante. Estudos com esse desenho exato ---
+aplicativo com AR e GPS aplicado à reativação de centros históricos --- registraram ganho mensurável
+de aprendizado e de engajamento, inclusive em versões pensadas para crianças e adolescentes. É a
+ideia mais vistosa para o pitch final e a que mais exige controle de escopo: comece por três pontos,
+não por doze.
+
+\subsection{Centro Vivo --- vitrine digital do pequeno comércio do centro}
+\complex{baixa-média}
+
+Catálogo dos comerciantes da região central: o que vendem, horário, formas de pagamento,
+localização e fotos. Busca por categoria, filtro de ``aberto agora'' e selo para
+estabelecimentos históricos da cidade. \textbf{Núcleo do MVP:} cadastro autogerido pelo lojista,
+catálogo de produtos ou serviços, busca por categoria e proximidade, horário de funcionamento com
+lógica de aberto/fechado e canal de contato direto. Combate a percepção de esvaziamento do centro
+com a arma mais barata que existe: informação organizada.
+
+\subsection{Agenda Aberta --- o que está acontecendo no centro hoje}
+\complex{baixa-média}
+
+Plataforma colaborativa de eventos da cidade --- shows na orla, feiras, exposições, Sairé, missas,
+festivais, sessões de cinema, roda de capoeira --- com submissão pelo produtor, curadoria pela
+equipe e notificação por interesse. \textbf{Núcleo do MVP:} submissão de evento, fila de aprovação,
+calendário com filtros por categoria e data, eventos recorrentes e favoritos com lembrete. Parece
+simples à primeira vista, mas as regras de negócio (recorrência, conflito de horário e local,
+cancelamento, moderação) dão bom material de modelagem sem risco técnico.
+
+\subsection{Fachada Viva --- inventário colaborativo do patrimônio construído}
+\complex{média}
+
+Moradores, estudantes e o poder público fotografam e classificam os imóveis do centro: estado de
+conservação, uso atual, ocupado ou vazio, elementos arquitetônicos preservados. O sistema monta um
+mapa de calor de degradação e mantém o histórico de cada imóvel ao longo do tempo. \textbf{Núcleo
+do MVP:} ficha do imóvel com foto e localização, formulário de avaliação padronizada, versionamento
+das avaliações, mapa de calor e exportação dos dados. Entre todas as ideias deste documento, é a que
+mais facilmente vira artigo SBC de verdade --- porque produz um conjunto de dados original sobre a
+cidade, e não só um sistema.
+
+\newpage
+
+\section{Indústria Criativa e Resíduos}
+\ods{11 --- Cidades Sustentáveis \quad 12 --- Consumo e Produção Responsáveis}
+
+\emph{Como criar, por meio da tecnologia, um ecossistema que use o resíduo sólido como insumo de
+uma nova indústria baseada em reutilização criativa?}
+
+\subsection{Cata Fácil --- ponte entre quem gera, quem cata e quem compra}
+\complex{média}
+
+Plataforma de três perfis: o gerador (casa, comércio, repartição) publica que tem material
+disponível e a janela de horário; o catador ou a cooperativa vê os chamados próximos no mapa e
+reserva; o ferro-velho ou a indústria recicladora recebe o material consolidado. \textbf{Núcleo do
+MVP:} três perfis com permissões distintas, chamado de coleta georreferenciado, reserva exclusiva
+para evitar disputa, confirmação de coleta com peso e histórico por perfil. Existe protótipo
+publicado com exatamente esse desenho para Marabá-PA, além de casos documentados no Recife e na
+Cidade do Cabo --- o que dá base sólida de comparação para o artigo. Vale registrar a ressalva
+honesta que a literatura faz: o aplicativo sozinho não transforma a vida do catador; o que ele
+melhora, de forma mensurável, é a logística. Prometer isso no pitch, e não redenção social.
+
+\subsection{Ecoponto Mais --- onde descartar o que não vai na lixeira}
+\complex{baixa-média}
+
+Mapa dos pontos de entrega voluntária da cidade com o que cada um aceita --- óleo de cozinha,
+pilha, eletrônico, entulho, vidro, pneu, medicamento vencido --- horário de funcionamento e rota
+até lá. \textbf{Núcleo do MVP:} cadastro de pontos com tipos de material aceitos, busca por tipo de
+resíduo, filtro por proximidade e horário, rota até o ponto e sugestão de novo ponto pelo usuário.
+Escopo enxuto e banco de dados bem definido; boa escolha para um squad que quer folga para caprichar
+na documentação e no artigo.
+
+\subsection{Feira do Reuso --- mercado de material descartado para quem cria}
+\complex{média}
+
+Empresas, marcenarias, gráficas e pessoas anunciam resíduo aproveitável --- madeira de embalagem,
+retalho de tecido, PET, pneu, tambor, sobra de MDF, lona de banner --- e artesãos, marceneiros e
+projetos de extensão procuram por tipo, quantidade e localização. O sistema contabiliza quanto
+material foi desviado do aterro. \textbf{Núcleo do MVP:} anúncio com tipo, quantidade e foto, busca
+com filtros, manifestação de interesse, combinação de retirada e painel de material desviado. É a
+leitura mais fiel do enunciado do desafio: resíduo entrando como insumo de uma cadeia criativa, e
+não apenas coleta seletiva com outro nome.
+
+\subsection{Recicla Pontos --- gamificação da entrega com recompensa no comércio local}
+\complex{média}
+
+O usuário entrega recicláveis num ponto parceiro, o atendente registra o peso pelo aplicativo, o
+sistema converte em pontos e o usuário troca por desconto em estabelecimentos parceiros.
+\textbf{Núcleo do MVP:} carteira de pontos com extrato, registro de entrega com peso pelo ponto
+parceiro, catálogo de recompensas, resgate com código de validação e ranking por bairro ou escola.
+Avaliações de campo de plataformas assim registram a recompensa como o principal motivador declarado
+de adesão, acima da consciência ambiental --- e o sistema de pontos, saldo, expiração e resgate
+oferece regras de negócio ricas para exercitar orientação a objetos de verdade.
+
+\newpage
+
+\section{Rota Livre --- Hack Your City}
+\ods{14 --- Vida na Água \quad e outras demandas críticas locais}
+
+\emph{Liberdade total para o squad indicar o desafio local que vai resolver e propor um sistema
+inovador para resolvê-lo.}
+
+\subsection{Olho no Tapajós --- monitoramento cidadão da qualidade da água}
+\complex{média}
+
+Ribeirinhos, banhistas, pescadores e escolas registram observações padronizadas sobre o corpo
+d'água --- cor, odor, presença de lixo, espuma, peixe morto, turbidez aparente --- com foto e ponto
+no mapa, formando uma série histórica por local. \textbf{Núcleo do MVP:} formulário padronizado de
+observação, captura com foto e coordenada, funcionamento offline com sincronização posterior,
+histórico por ponto de monitoramento e painel público com filtro por período. Há base científica
+direta: descritores qualitativos coletados por cidadãos têm valor científico reconhecido, e a
+principal barreira relatada em iniciativas amazônicas desse tipo é conectividade e distância
+tecnológica dos monitores rurais --- daí o modo offline ser requisito de primeira classe, não
+funcionalidade futura.
+
+\subsection{Régua do Rio --- alerta comunitário de seca e cheia}
+\complex{média}
+
+Voluntários de cada comunidade lançam periodicamente a cota do rio no seu trecho; o sistema cruza
+com o histórico e emite alerta quando o nível se aproxima de faixas críticas para navegação,
+abastecimento de água, acesso à escola e ao posto de saúde. \textbf{Núcleo do MVP:} cadastro de
+pontos de leitura, registro de cota com foto da régua, série histórica com gráfico, faixas de alerta
+configuráveis por ponto e notificação para quem segue aquele trecho. O tema é urgente depois das
+secas extremas recentes do Tapajós e do Amazonas, e é o tipo de sistema que uma banca reconhece de
+imediato como socialmente relevante.
+
+\subsection{Diário de Pesca --- caderno digital da pesca artesanal}
+\complex{média}
+
+O pescador registra a captura do dia --- espécie, quantidade, arte de pesca, local, tempo de viagem
+--- e recebe de volta o próprio histórico organizado e o preço médio praticado na região; a colônia
+enxerga o dado agregado e anônimo. \textbf{Núcleo do MVP:} registro rápido de captura pensado para
+uso na beira do rio, catálogo de espécies com foto, histórico pessoal, preço médio por espécie e
+painel agregado para a colônia. Modelo já validado na Amazônia brasileira: monitoramento comunitário
+por smartphone produziu dados com precisão comparável à de órgão oficial e custo menor, e existe
+uma iniciativa de referência de escala amazônica --- o ICTIO --- para citar como trabalho
+relacionado no artigo.
+
+\subsection{Praia Segura --- condição diária das praias do Tapajós}
+\complex{baixa-média}
+
+Painel diário das praias de Alter do Chão, Maracanã e Ponta de Pedras: nível do rio, faixa de areia
+exposta, lotação estimada, presença de salva-vidas, aviso de queda de barranco ou corrente forte,
+alimentado por operadores de turismo, barraqueiros e visitantes. \textbf{Núcleo do MVP:} ficha por
+praia, atualização diária por colaborador verificado, relato de condição pelo visitante com foto,
+histórico dos últimos dias e alerta de risco. Escopo delimitado, valor imediato para o turismo e
+ligação natural com a ODS 14 --- uma boa escolha para um squad que quer entregar algo redondo e bem
+acabado em vez de ambicioso e incompleto.
+
+\newpage
+
+\section*{Tabela comparativa}
+\addcontentsline{toc}{section}{Tabela comparativa}
+
+\renewcommand{\arraystretch}{1.25}
+{\small
+\begin{tabular}{@{}p{0.5cm}p{5.4cm}p{2.4cm}p{6.6cm}@{}}
+\hline
+\textbf{\#} & \textbf{Ideia} & \textbf{Complexidade} & \textbf{Principal risco do projeto} \\
+\hline
+1.1 & Cadê o Busão & média & Precisa de massa crítica de usuários para o rastreio funcionar \\
+1.2 & Mototáxi Legal & média & Depende de adesão de uma cooperativa real para validar \\
+1.3 & Rota Segura & baixa-média & Virar formulário de reclamação sem uso prático \\
+1.4 & Embarque Ribeirinho & média & Coleta inicial dos horários reais é trabalho de campo \\
+2.1 & RG Animal & média & Cadastro desatualizado esvazia o sistema \\
+2.2 & Achei um Bicho & baixa-média & Baixo volume de casos durante a validação \\
+2.3 & Castra+ & média & Regras de priorização precisam de interlocutor real \\
+2.4 & Adota Santarém & média & Concorrência com grupos de rede social já consolidados \\
+3.1 & Santarém 1661 & média-alta & AR consome tempo desproporcional; escopo precisa de corte \\
+3.2 & Centro Vivo & baixa-média & Cadastro inicial dos lojistas é trabalho manual \\
+3.3 & Agenda Aberta & baixa-média & Pouca inovação percebida no pitch \\
+3.4 & Fachada Viva & média & Padronizar a avaliação exige critério técnico bem definido \\
+4.1 & Cata Fácil & média & Três perfis distintos multiplicam telas e casos de uso \\
+4.2 & Ecoponto Mais & baixa-média & Escopo pode ficar pequeno demais para a nota \\
+4.3 & Feira do Reuso & média & Mercado de dois lados: precisa dos dois para demonstrar \\
+4.4 & Recicla Pontos & média & Recompensa exige parceiro comercial para ser crível \\
+5.1 & Olho no Tapajós & média & Modo offline é obrigatório e custa tempo de implementação \\
+5.2 & Régua do Rio & média & Sem leitura voluntária constante, a série histórica não existe \\
+5.3 & Diário de Pesca & média & Usabilidade em campo é o requisito mais difícil \\
+5.4 & Praia Segura & baixa-média & Depende de colaborador local atualizando todo dia \\
+\hline
+\end{tabular}
+}
+
+\section*{Critérios para a escolha}
+\addcontentsline{toc}{section}{Critérios para a escolha}
+
+Antes de votar em uma ideia, vale passar cada finalista por cinco perguntas:
+
+\begin{enumerate}
+  \item \textbf{Existe um usuário real acessível em uma semana?} Cooperativa, ONG, colônia de pesca,
+        associação de moradores, secretaria. Sem interlocutor, a fase de requisitos vira ficção e o
+        artigo perde a parte de validação.
+  \item \textbf{O MVP cabe em cinco telas?} Se não couber, o escopo já está grande demais para a
+        entrega de 28/08.
+  \item \textbf{O sistema tem valor com dez usuários?} Ideias que só funcionam com mil pessoas
+        (rastreamento colaborativo, mercado de dois lados) são demonstráveis, mas precisam de um
+        plano de demonstração desde já.
+  \item \textbf{Dá para demonstrar rodando no pitch de 21/11?} O pilar 3 da avaliação é o sistema
+        funcionando, não o slide.
+  \item \textbf{Existe literatura para citar no artigo SBC?} Todas as ideias deste documento têm ---
+        as referências ao final são o ponto de partida.
+\end{enumerate}
+
+\textbf{Se o squad quiser uma recomendação:} para equilíbrio entre viabilidade e impacto,
+\textit{Embarque Ribeirinho} (1.4), \textit{RG Animal} (2.1) e \textit{Fachada Viva} (3.4) são as
+três que combinam escopo controlável, originalidade local difícil de encontrar pronta no mercado e
+material sobrando para o artigo. Se a prioridade for o pitch mais impressionante, \textit{Santarém
+1661} (3.1) --- com a ressalva de cortar o escopo para três pontos históricos logo na primeira
+semana.
+
+\newpage
+
+\section*{Referências consultadas}
+\addcontentsline{toc}{section}{Referências consultadas}
+
+{\small
+Levantamento feito na base Consensus (busca em literatura científica revisada por pares), agosto de 2026.
+
+\begin{enumerate}
+\item \href{https://consensus.app/papers/details/fc75220c52a95957a4dec4a2aa6f8901/}{Smarter but more unequal transport? How socioeconomic and digital inequalities hinder adoption of mobility apps in the Global South} --- Dodel et al., 2024, \textit{Travel Behaviour and Society}, 22 citações.
+\item \href{https://consensus.app/papers/details/eb464c9e48945f00a7f8196af006dcc3/}{Analysis of Mobile Applications Supporting Public Transport in Smart Cities on the Example of Poland} --- Kolodziej et al., 2025, \textit{European Research Studies Journal}.
+\item \href{https://consensus.app/papers/details/c3732851551955b693e3ee79154b597c/}{Travelers' Attitudes Toward Mobile Application-Based Public Transport Services in Lahore} --- Javid et al., 2021, \textit{SAGE Open}, 28 citações.
+\item \href{https://consensus.app/papers/details/9df5e3297a9b57feb281f7123b5ab1d4/}{Epidemiology of Dog and Cat Abandonment in Spain (2008--2013)} --- Fatjó et al., 2015, \textit{Animals}, 58 citações.
+\item \href{https://consensus.app/papers/details/c21ff3ff3de454c197b78a6de373f05e/}{A New Web-Based Tool for RTO-Focused Animal Shelter Data Analysis} --- Kremer, 2021, \textit{Frontiers in Veterinary Science}, 6 citações.
+\item \href{https://consensus.app/papers/details/3196b2e85ce05a5fa3f71092ed09de2e/}{Characterization of animals with microchips entering animal shelters} --- Lord et al., 2009, \textit{JAVMA}, 58 citações.
+\item \href{https://consensus.app/papers/details/222a5dfd4803519ba57e63637534c6a9/}{Awareness of and engagement with microchipping services among UK dog owners} --- Siettou, 2026, \textit{Discover Animals}.
+\item \href{https://consensus.app/papers/details/4445082e39ec52a58cd14679b1191134/}{Development and Evaluation of a Digital Pet Recovery and Adoption Management System for Alaminos City} --- Morales et al., 2026, \textit{IJRISS}.
+\item \href{https://consensus.app/papers/details/f8af04c8a17b5dfca393a7dfe326fb20/}{Augmented reality mobile apps for cultural heritage reactivation} --- Hincapié et al., 2021, \textit{Computers and Electrical Engineering}, 48 citações.
+\item \href{https://consensus.app/papers/details/832428ca4b86569aa0c4d5fd56ce51e1/}{An Architecture for Mobile Outdoors Augmented Reality for Cultural Heritage} --- Panou et al., 2018, \textit{ISPRS International Journal of Geo-Information}, 96 citações.
+\item \href{https://consensus.app/papers/details/598df49fb88c5b0b99f888422b88f243/}{Augmented reality and serious game to engage the alpha generation in urban cultural heritage} --- Capecchi et al., 2024, \textit{Journal of Cultural Heritage}, 35 citações.
+\item \href{https://consensus.app/papers/details/66a13f72561658b9b24c7aead237b69d/}{Selective Collection: App Prototype for Circular Solid Waste Management in the Amazon} --- Flores et al., 2025, \textit{Latinoware 2025}.
+\item \href{https://consensus.app/papers/details/dbe5bc5261c75b9fa150ce5aa75f7ccb/}{The use of ICT in the informal recycling sector: The Brazilian case of Relix} --- Coelho et al., 2019, \textit{EJISDC}, 15 citações.
+\item \href{https://consensus.app/papers/details/4f8a9289f7715672b6b16b70b4695575/}{Effect of the ICT-enabled reclaimer system on the informal waste recycling system in Cape Town: The Regenize model} --- Siwawa, 2024, \textit{EJISDC}, 10 citações.
+\item \href{https://consensus.app/papers/details/483ea6b908945b98b7a59f489108400b/}{A Mobile Platform for Smart Recycling and Eco-Friendly Sustainable Environment} --- Banik et al., 2025, \textit{Journal of Social Innovation and Knowledge}.
+\item \href{https://consensus.app/papers/details/672f44792cda59b78db8d50d381c8134/}{``The water is murky, the water is not moving'': qualitative water quality assessment by citizen scientists} --- Blanco-Ramírez et al., 2025, \textit{Frontiers in Water}.
+\item \href{https://consensus.app/papers/details/ed026e7aa0f251648d9112fcc58da08d/}{Implementation of a Global Citizen Science App in Community-Based Water Monitoring: Lessons Learned from CrowdWater in Latin America} --- Blanco-Ramírez et al., 2025, \textit{Citizen Science: Theory and Practice}, 8 citações.
+\item \href{https://consensus.app/papers/details/4f22fe32a8c858848defb1a13455337f/}{Success factors for citizen science projects in water quality monitoring} --- San Llorente Capdevila et al., 2020, \textit{Science of the Total Environment}, 119 citações.
+\item \href{https://consensus.app/papers/details/87069eba9f5157519d8e21171f0a9468/}{Community-based monitoring of small-scale fisheries with digital devices in Brazilian Amazon} --- Oviedo et al., 2017, \textit{Fisheries Management and Ecology}, 22 citações.
+\item \href{https://consensus.app/papers/details/fca3b921d3d0590a84ce80c78678333c/}{Monitoreo pesquero participativo en la Amazonía peruana: motivaciones e intereses de usuarios de ICTIO} --- Rodriguez Flores et al., 2022, \textit{Neotropical Hydrobiology and Aquatic Conservation}.
+\item \href{https://consensus.app/papers/details/583a95605c14578598bc101119a60fb0/}{Engagement in a Citizen Science Project in the Amazon Basin} --- Eyng et al., 2022, \textit{Citizen Science: Theory and Practice}, 7 citações.
+\end{enumerate}
+}
+
+\end{document}

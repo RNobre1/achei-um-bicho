@@ -1,0 +1,21 @@
+# dependências e builds
+node_modules/
+dist/
+build/
+web-build/
+.expo/
+coverage/
+
+# ambiente
+.env
+.env.*
+!.env.example
+
+# ferramentas locais
+__pycache__/
+.venv*/
+*.log
+.DS_Store
+
+# material da disciplina (não é do projeto)
+Aulas/
