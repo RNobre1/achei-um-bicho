@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Achei um Bicho — protótipo de média fidelidade</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Paleta — nomeada pelo que existe na frente da cidade */
+  --tapajos-fundo:#123E4A;   /* azul profundo do Tapajós na orla: texto, navegação, superfície escura */
+  --perdi:#2F8587;           /* azul-verde da água na frente da cidade: estado "meu bicho sumiu" */
+  --achei:#B6AA95;           /* silte cinza do Amazonas: estado "achei um bicho" */
+  --chuva:#EEF2EE;           /* branco esverdeado de céu fechado depois da chuva: fundo */
+  --alter:#E2A83B;           /* areia de Alter do Chão: único acento de alta atenção */
+  --traco:#C7D0CB;
+  --apagado:#5F7076;
+  --texto:#16323A;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  background:#DFE4DF;
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  color:var(--texto);
+  padding:56px 40px 90px;
+  -webkit-font-smoothing:antialiased;
+}
+
+.prancheta{max-width:1620px;margin:0 auto}
+
+/* ---------- cabeçalho da prancheta ---------- */
+.cabecalho{display:flex;flex-direction:column;gap:12px;margin-bottom:34px;max-width:780px}
+.cabecalho h1{
+  font-family:'Commissioner',sans-serif;font-weight:800;
+  font-size:50px;line-height:1;letter-spacing:-.03em;color:var(--tapajos-fundo);
+}
+.cabecalho h1 span{display:block;font-weight:600;font-size:23px;color:var(--apagado);letter-spacing:-.01em;margin-top:8px}
+.selo{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--apagado)}
+.cabecalho p{font-size:14.5px;line-height:1.6;color:#33474D;max-width:64ch}
+
+/* ---------- grade ---------- */
+.telas{display:flex;flex-wrap:wrap;gap:60px 40px;align-items:flex-start}
+.quadro{display:flex;flex-direction:column;gap:13px;width:390px}
+.quadro__legenda{display:flex;flex-direction:column;gap:5px}
+.quadro__num{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--perdi)}
+.quadro__num--estado{color:var(--apagado)}
+.quadro__nome{font-family:'Commissioner',sans-serif;font-weight:700;font-size:17px;letter-spacing:-.015em;color:var(--tapajos-fundo)}
+.quadro__nota{font-size:12.5px;line-height:1.55;color:var(--apagado)}
+
+.tela{
+  width:390px;height:844px;background:var(--chuva);
+  display:flex;flex-direction:column;overflow:hidden;
+  border:1px solid var(--traco);
+}
+
+/* ---------- chrome ---------- */
+.sistema{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--apagado)}
+.sistema__dir{display:flex;gap:6px;align-items:center}
+.sinal{display:flex;gap:3px;align-items:flex-end}
+.sinal i{display:block;width:3px;background:var(--apagado)}
+.sinal i:nth-child(1){height:4px}.sinal i:nth-child(2){height:7px}.sinal i:nth-child(3){height:10px}
+.sinal--fraco i:nth-child(2),.sinal--fraco i:nth-child(3){background:var(--traco)}
+.bateria{width:21px;height:11px;border:1.4px solid var(--apagado);position:relative}
+.bateria::after{content:"";position:absolute;inset:2px;right:7px;background:var(--apagado)}
+
+/* ---------- topo ---------- */
+.topo{padding:10px 22px 0;display:flex;flex-direction:column;gap:9px}
+.topo__linha{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.marca{font-family:'Commissioner',sans-serif;font-weight:800;font-size:25px;line-height:.95;letter-spacing:-.03em;color:var(--tapajos-fundo)}
+.marca em{display:block;font-style:normal;font-weight:500;font-size:12.5px;letter-spacing:0;color:var(--apagado);margin-top:3px;font-family:'IBM Plex Sans',sans-serif}
+.titulo{font-family:'Commissioner',sans-serif;font-weight:700;font-size:23px;line-height:1.14;letter-spacing:-.025em;color:var(--tapajos-fundo)}
+.subtitulo{font-size:13.5px;line-height:1.5;color:var(--apagado)}
+.voltar{display:flex;align-items:center;gap:7px;font-size:13.5px;color:var(--apagado);font-weight:500}
+
+.rotulo{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--apagado)}
+
+/* alcance: o raio é dado, não decoração */
+.alcance{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  margin:12px 22px 0;padding:10px 13px;border:1px solid var(--traco);background:#fff;
+}
+.alcance__texto{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;color:var(--texto)}
+.alcance__texto b{color:var(--perdi);font-weight:500}
+.alcance__acao{font-size:12.5px;font-weight:600;color:var(--perdi);border-bottom:1.5px solid var(--perdi);padding-bottom:1px}
+
+/* ---------- filtros ---------- */
+.filtros{display:flex;border:1px solid var(--traco);background:#fff;margin:11px 22px 0}
+.filtros button{flex:1;padding:11px 4px;border:0;border-right:1px solid var(--traco);background:transparent;cursor:pointer;
+  font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;color:var(--apagado)}
+.filtros button:last-child{border-right:0}
+.filtros .ativo{background:var(--tapajos-fundo);color:#fff}
+
+.linha-info{display:flex;justify-content:space-between;align-items:center;padding:13px 22px 7px;
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--apagado)}
+
+.corpo{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.lista{display:flex;flex-direction:column;gap:1px;background:var(--traco)}
+
+/* ---------- placeholders: slot de dado, não ilustração ---------- */
+.placa{
+  position:relative;background-color:#E4E8E3;
+  background-image:repeating-linear-gradient(45deg,rgba(18,62,74,.1) 0 1px,transparent 1px 6px);
+  display:flex;align-items:flex-end;
+}
+.placa--silte{background-color:#D8D2C4;background-image:repeating-linear-gradient(45deg,rgba(18,62,74,.11) 0 1px,transparent 1px 6px)}
+.placa::before,.placa::after{content:"";position:absolute;width:13px;height:13px;border:0 solid rgba(18,62,74,.4)}
+.placa::before{left:7px;top:7px;border-left-width:1px;border-top-width:1px}
+.placa::after{right:7px;bottom:7px;border-right-width:1px;border-bottom-width:1px}
+.placa__rotulo{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  color:#4A5D63;background:rgba(238,242,238,.9);padding:3px 6px;margin:0 0 7px 7px;position:relative;z-index:1;
+}
+.placa__carimbo{
+  position:absolute;right:8px;top:8px;z-index:1;
+  font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:#5A6C71;border:1px solid rgba(18,62,74,.28);padding:2px 5px;
+}
+
+/* mapa: campo aguardando tiles, com o rio ao norte como em Santarém */
+.mapa{position:relative;overflow:hidden;background-color:#E7ECE7;
+  background-image:repeating-linear-gradient(0deg,rgba(18,62,74,.08) 0 1px,transparent 1px 27px),
+                   repeating-linear-gradient(90deg,rgba(18,62,74,.08) 0 1px,transparent 1px 34px)}
+.mapa__rio{position:absolute;top:0;left:0;right:0;height:30%;background:var(--perdi);opacity:.24}
+.mapa__etiqueta{position:absolute;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;color:#42585F}
+.mapa__raio{position:absolute;border:1.4px dashed var(--perdi);border-radius:50%;background:rgba(47,133,135,.08)}
+.mapa__pino{position:absolute;width:13px;height:13px;border-radius:50%;border:3px solid var(--perdi);background:var(--chuva)}
+.mapa__pino--achei{border-color:#8C7F66}
+.mapa__pino--alvo{border-color:var(--alter);width:15px;height:15px}
+
+/* ---------- caso no mural ---------- */
+.caso{display:flex;gap:13px;padding:14px 22px;background:var(--chuva);align-items:flex-start}
+.caso__foto{width:80px;height:80px;flex:none}
+.caso__texto{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.caso__topo{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.caso__nome{font-family:'Commissioner',sans-serif;font-weight:700;font-size:17px;letter-spacing:-.02em;color:var(--tapajos-fundo)}
+.caso__desc{font-size:13px;line-height:1.45;color:#3A4C52}
+.caso__onde{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--apagado);letter-spacing:.03em}
+.caso__quando{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--apagado);white-space:nowrap}
+
+.etiqueta{display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:500;
+  letter-spacing:.13em;text-transform:uppercase;padding:4px 8px;white-space:nowrap;color:#fff}
+.etiqueta--perdi{background:var(--perdi)}
+.etiqueta--achei{background:#8C7F66}
+.etiqueta--voltou{background:var(--alter);color:var(--tapajos-fundo)}
+.etiqueta--encerrado{background:transparent;color:var(--apagado);border:1px solid var(--traco)}
+
+/* ---------- blocos ---------- */
+.bloco{padding:17px 22px;display:flex;flex-direction:column;gap:11px}
+.bloco--linha{border-top:1px solid var(--traco)}
+.paragrafo{font-size:14px;line-height:1.56;color:#31454B}
+
+.atributos{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--traco);border:1px solid var(--traco)}
+.atributo{background:var(--chuva);padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.atributo dt{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--apagado)}
+.atributo dd{font-size:14px;font-weight:600;color:var(--texto)}
+
+/* ---------- botões ---------- */
+.acoes{display:flex;flex-direction:column;gap:9px;padding:15px 22px;border-top:1px solid var(--traco);background:var(--chuva);margin-top:auto}
+.botao{display:flex;align-items:center;justify-content:center;gap:8px;padding:15px 14px;border:1.6px solid var(--tapajos-fundo);
+  background:transparent;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;color:var(--tapajos-fundo);text-align:center}
+.botao--acento{background:var(--alter);border-color:var(--alter);color:var(--tapajos-fundo)}
+.botao--escuro{background:var(--tapajos-fundo);border-color:var(--tapajos-fundo);color:var(--chuva)}
+.botao--fraco{border-color:var(--traco);color:var(--apagado);font-weight:500}
+.botao--curto{padding:11px 12px;font-size:13.5px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:9px 14px;border:1.4px solid var(--traco);background:#fff;font-size:13.5px;font-weight:500;color:#3A4C52}
+.chip--marcado{border-color:var(--tapajos-fundo);background:var(--tapajos-fundo);color:#fff;font-weight:600}
+
+.passos{display:flex;gap:5px;padding:0 22px}
+.passos i{flex:1;height:4px;background:var(--traco)}
+.passos i.feito{background:var(--perdi)}
+.passos i.agora{background:var(--alter)}
+
+/* ---------- ASSINATURA: a costura ---------- */
+/* só existe quando dois registros se relacionam. Em nenhum outro lugar. */
+.costura{display:grid;grid-template-columns:1fr 14px 1fr;align-items:center;gap:4px;padding:9px 0}
+.costura__traco{height:2px;display:block}
+.costura__traco--a{background:var(--perdi)}
+.costura__traco--b{background:#8C7F66}
+.costura__no{width:12px;height:12px;justify-self:center;transform:rotate(45deg);
+  background:conic-gradient(var(--perdi) 0 50%,#8C7F66 50% 100%);border:1px solid var(--tapajos-fundo)}
+.costura--unida{gap:0}
+.costura--unida .costura__no{background:var(--alter);border-color:var(--tapajos-fundo)}
+
+.par{padding:16px 22px;background:var(--chuva);display:flex;flex-direction:column;gap:10px}
+.par__faces{display:grid;grid-template-columns:1fr 14px 1fr;gap:4px;align-items:start}
+.par__face{display:flex;flex-direction:column;gap:6px}
+.par__face .placa{height:94px}
+.par__face span{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--apagado)}
+.par__no{align-self:center;justify-self:center;width:12px;height:12px;transform:rotate(45deg);margin-top:34px;
+  background:conic-gradient(var(--perdi) 0 50%,#8C7F66 50% 100%);border:1px solid var(--tapajos-fundo)}
+
+.pistas{display:flex;flex-direction:column;gap:6px}
+.pista{display:flex;align-items:flex-start;gap:9px;font-size:13px;line-height:1.4;color:#31454B}
+.pista b{font-weight:600}
+.sinal-bate{width:14px;height:14px;flex:none;margin-top:2px;border:1.5px solid var(--perdi);position:relative}
+.sinal-bate::after{content:"";position:absolute;inset:3px;background:var(--perdi)}
+.sinal-bate--nao{border-color:var(--traco)}
+.sinal-bate--nao::after{display:none}
+
+.dupla{display:flex;gap:8px}
+.dupla .botao{flex:1}
+
+/* ---------- topo partido (tela 04) ---------- */
+.partido{position:relative;display:flex;height:118px;margin-top:6px}
+.partido__a{width:42%;background:var(--tapajos-fundo)}
+.partido__b{width:58%;background:var(--achei)}
+.partido__rotulo{position:absolute;left:22px;top:16px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;
+  letter-spacing:.15em;text-transform:uppercase;color:rgba(238,242,238,.72)}
+.partido__titulo{position:absolute;left:22px;bottom:18px;max-width:300px;
+  font-family:'Commissioner',sans-serif;font-weight:700;font-size:24px;line-height:1.1;letter-spacing:-.03em;
+  color:var(--chuva);background:var(--tapajos-fundo);padding:5px 10px 6px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+
+/* ---------- verificação ---------- */
+.pergunta{display:flex;flex-direction:column;gap:9px;padding:15px 22px;background:var(--chuva)}
+.pergunta__texto{font-size:14.5px;font-weight:600;line-height:1.4;color:var(--texto)}
+.pergunta__nota{font-size:12.5px;line-height:1.45;color:var(--apagado)}
+.campo{border:1.4px solid var(--traco);background:#fff;padding:13px 13px;font-size:14px;color:var(--apagado)}
+.campo--escrito{color:var(--texto);border-color:var(--tapajos-fundo)}
+
+.aviso{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-left:3px solid var(--alter);background:#E6EAE5;
+  font-size:12.5px;line-height:1.55;color:#33474D}
+.aviso b{font-weight:600;color:var(--texto)}
+.aviso--sereno{border-left-color:var(--perdi)}
+
+/* ---------- meus casos ---------- */
+.abas{display:flex;gap:22px;padding:0 22px;border-bottom:1px solid var(--traco)}
+.abas span{padding:12px 0;font-size:14px;font-weight:600;color:var(--apagado);border-bottom:2.5px solid transparent}
+.abas .ativa{color:var(--tapajos-fundo);border-bottom-color:var(--alter)}
+.meu{display:flex;flex-direction:column;gap:11px;padding:16px 22px;background:var(--chuva)}
+.meu__topo{display:flex;gap:12px;align-items:center}
+.meu__foto{width:54px;height:54px;flex:none}
+.meu__id{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.meu__nome{font-family:'Commissioner',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.02em;color:var(--tapajos-fundo)}
+.meu__estado{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--apagado);letter-spacing:.03em}
+
+/* ---------- vazio e offline ---------- */
+.vazio{flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;padding:0 26px;text-align:left}
+.vazio__marca{width:52px;height:52px;border:1.6px solid var(--traco);position:relative}
+.vazio__marca::after{content:"";position:absolute;inset:14px;border:1.6px dashed var(--perdi);border-radius:50%}
+.vazio h3{font-family:'Commissioner',sans-serif;font-weight:700;font-size:21px;line-height:1.2;letter-spacing:-.025em;color:var(--tapajos-fundo)}
+.vazio p{font-size:14px;line-height:1.55;color:var(--apagado)}
+
+.faixa-offline{display:flex;align-items:center;gap:9px;padding:11px 22px;background:var(--tapajos-fundo);color:var(--chuva);
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+.faixa-offline i{width:7px;height:7px;background:var(--alter);flex:none;display:block}
+
+.fila{display:flex;flex-direction:column;gap:1px;background:var(--traco)}
+.fila__item{background:var(--chuva);padding:14px 22px;display:flex;gap:13px;align-items:center}
+.fila__item .placa{width:54px;height:54px;flex:none}
+.fila__id{flex:1;display:flex;flex-direction:column;gap:4px}
+.fila__nome{font-size:14.5px;font-weight:600;color:var(--texto)}
+.fila__estado{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+.fila__estado--espera{color:var(--alter)}
+.fila__estado--enviado{color:var(--perdi)}
+
+/* ---------- barra ---------- */
+.barra{display:flex;border-top:1px solid var(--traco);background:var(--chuva);padding:9px 8px 18px;margin-top:auto}
+.barra a{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;text-decoration:none;
+  font-size:10.5px;font-weight:500;color:var(--apagado)}
+.barra .aqui{color:var(--tapajos-fundo);font-weight:600}
+
+/* ---------- painel lateral ---------- */
+.painel-lado{width:390px;display:flex;flex-direction:column;gap:26px}
+.painel{display:flex;flex-direction:column;gap:11px}
+.painel h2{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--apagado);font-weight:500}
+.amostras{display:flex;flex-direction:column;gap:1px;background:var(--traco);border:1px solid var(--traco)}
+.amostra{display:flex;align-items:center;gap:12px;background:var(--chuva);padding:9px 11px}
+.amostra i{width:34px;height:34px;flex:none;display:block}
+.amostra div{display:flex;flex-direction:column;gap:2px}
+.amostra b{font-size:13px;font-weight:600;color:var(--texto)}
+.amostra span{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--apagado)}
+
+.tipos{display:flex;flex-direction:column;gap:15px;border:1px solid var(--traco);padding:16px;background:var(--chuva)}
+.tipo-linha{display:flex;flex-direction:column;gap:5px}
+.tipo-linha span{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--apagado)}
+
+.legenda-estados{display:flex;flex-wrap:wrap;gap:8px}
+.nota{border:1px solid var(--traco);border-left:3px solid var(--tapajos-fundo);padding:14px 16px;background:var(--chuva);
+  font-size:12.5px;line-height:1.62;color:#33474D}
+.nota b{font-weight:600;color:var(--texto)}
+.nota+.nota{margin-top:-2px}
+
+/* isolar uma tela: file://…#tela-01 mostra só aquele frame (usado para exportar PNG) */
+body:has(.quadro:target){padding:0;background:var(--chuva)}
+body:has(.quadro:target) .cabecalho,
+body:has(.quadro:target) .painel-lado,
+body:has(.quadro:target) .quadro__legenda{display:none}
+body:has(.quadro:target) .quadro{display:none}
+body:has(.quadro:target) .quadro:target{display:flex;gap:0}
+body:has(.quadro:target) .telas{gap:0}
+body:has(.quadro:target) .tela{border:0}
+
+@media (max-width:900px){body{padding:26px 16px 50px}.cabecalho h1{font-size:36px}}
+</style>
+</head>
+<body>
+<div class="prancheta">
+
+  <div class="cabecalho">
+    <span class="selo">Laboratório de Desenvolvimento de Software · UFOPA · Desafio 2 · ODS 15</span>
+    <h1>Achei um Bicho<span>Protótipo de média fidelidade · 7 telas e 2 estados · Santarém-PA</span></h1>
+    <p>Mural georreferenciado de cães e gatos perdidos e encontrados. A regra que organiza o produto inteiro: 7 de cada 10 animais recuperados aparecem a menos de 1,6 km de casa, e 4 em cada 10 no mesmo quarteirão — então o alcance padrão é o pedaço, não a cidade.</p>
+  </div>
+
+  <div class="telas">
+
+    <!-- ═══════════ 01 · CASOS PERTO ═══════════ -->
+    <figure class="quadro" id="tela-01">
+      <div class="tela">
+        <div class="sistema"><span>14:32</span><span class="sistema__dir"><span class="sinal"><i></i><i></i><i></i></span><span class="bateria"></span></span></div>
+
+        <div class="topo">
+          <div class="topo__linha">
+            <div class="marca">Achei um bicho<em>Santarém · Aparecida</em></div>
+          </div>
+        </div>
+
+        <div class="alcance">
+          <span class="alcance__texto">Mostrando <b>1,6 km</b> em volta de você</span>
+          <span class="alcance__acao">Aumentar</span>
+        </div>
+
+        <div class="filtros">
+          <button class="ativo">Tudo</button>
+          <button>Sumiram</button>
+          <button>Foram achados</button>
+        </div>
+
+        <div class="linha-info"><span>11 casos por perto</span><span>Ver no mapa</span></div>
+
+        <div class="corpo">
+          <div class="lista">
+
+            <div class="caso">
+              <div class="caso__foto placa"><span class="placa__rotulo">foto</span></div>
+              <div class="caso__texto">
+                <div class="caso__topo"><span class="etiqueta etiqueta--perdi">Sumiu</span><span class="caso__quando">há 2 dias</span></div>
+                <div class="caso__nome">Nego</div>
+                <div class="caso__desc">Vira-lata caramelo, porte médio, coleira vermelha de nylon.</div>
+                <div class="caso__onde">Trav. Barjonas de Miranda · 850 m</div>
+              </div>
+            </div>
+
+            <div class="caso">
+              <div class="caso__foto placa placa--silte"><span class="placa__rotulo">foto</span></div>
+              <div class="caso__texto">
+                <div class="caso__topo"><span class="etiqueta etiqueta--achei">Foi achado</span><span class="caso__quando">ontem</span></div>
+                <div class="caso__nome">Cachorro sem nome</div>
+                <div class="caso__desc">Caramelo, médio, manso, sem coleira. Está preso na minha garagem.</div>
+                <div class="caso__onde">Rua Turiano Meira · 1,1 km</div>
+              </div>
+            </div>
+
+            <div class="caso">
+              <div class="caso__foto placa"><span class="placa__rotulo">foto</span></div>
+              <div class="caso__texto">
+                <div class="caso__topo"><span class="etiqueta etiqueta--perdi">Sumiu</span><span class="caso__quando">há 5 dias</span></div>
+                <div class="caso__nome">Frajola</div>
+                <div class="caso__desc">Gato preto e branco, castrado, corre quando estranho chama.</div>
+                <div class="caso__onde">Salé, perto do campo · 2,3 km</div>
+              </div>
+            </div>
+
+            <div class="caso">
+              <div class="caso__foto placa placa--silte"><span class="placa__rotulo">foto</span></div>
+              <div class="caso__texto">
+                <div class="caso__topo"><span class="etiqueta etiqueta--achei">Foi achado</span><span class="caso__quando">há 3 dias</span></div>
+                <div class="caso__nome">Cadela sem nome</div>
+                <div class="caso__desc">Branca com manchas, pequena, mancando da pata traseira.</div>
+                <div class="caso__onde">Av. Mendonça Furtado · 1,4 km</div>
+              </div>
+            </div>
+
+            <div class="caso">
+              <div class="caso__foto placa"><span class="placa__rotulo">foto</span></div>
+              <div class="caso__texto">
+                <div class="caso__topo"><span class="etiqueta etiqueta--perdi">Sumiu</span><span class="caso__quando">há 6 dias</span></div>
+                <div class="caso__nome">Mel</div>
+                <div class="caso__desc">Poodle bege, tosada, laço azul na orelha.</div>
+                <div class="caso__onde">Prainha, beira do rio · 2,8 km</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <nav class="barra">
+          <a class="aqui"><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="16" height="5"/><rect x="2.5" y="12.5" width="16" height="5"/></svg>Perto</a>
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10.5 3.5v14M3.5 10.5h14"/></svg>Publicar</a>
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="5.5" width="6" height="10"/><rect x="12.5" y="5.5" width="6" height="10"/><path d="M9.5 10.5h2"/></svg>Pistas</a>
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10.5" cy="7.5" r="3.2"/><path d="M4.5 17.5c0-3.3 2.7-5 6-5s6 1.7 6 5"/></svg>Meus casos</a>
+        </nav>
+      </div>
+      <figcaption class="quadro__legenda">
+        <span class="quadro__num">01 / 07</span>
+        <span class="quadro__nome">Casos perto de você</span>
+        <span class="quadro__nota">O raio de 1,6 km aparece como informação editável logo abaixo da marca, e não escondido em ajustes. Azul da água marca quem sumiu, silte do rio marca quem foi achado — a cor faz o trabalho que um ícone faria.</span>
+      </figcaption>
+    </figure>
+
+    <!-- ═══════════ 02 · CASO ABERTO ═══════════ -->
+    <figure class="quadro" id="tela-02">
+      <div class="tela">
+        <div class="sistema"><span>14:33</span><span class="sistema__dir"><span class="sinal"><i></i><i></i><i></i></span><span class="bateria"></span></span></div>
+
+        <div class="topo">
+          <div class="voltar"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Casos perto</div>
+        </div>
+
+        <div class="placa" style="height:198px;margin-top:11px">
+          <span class="placa__carimbo">Aparecida · PA</span>
+          <span class="placa__rotulo">foto enviada por quem publicou</span>
+        </div>
+
+        <div class="bloco">
+          <div class="caso__topo"><span class="etiqueta etiqueta--perdi">Sumiu</span><span class="caso__quando">há 2 dias</span></div>
+          <div class="titulo">Nego</div>
+          <p class="paragrafo">Vira-lata caramelo, orelha esquerda caída. Sumiu no fim da tarde de sábado, quando o portão ficou aberto. Atende pelo nome e se assusta com barulho de moto.</p>
+        </div>
+
+        <div class="bloco bloco--linha" style="padding-top:0;padding-bottom:0">
+          <dl class="atributos" style="margin-top:16px">
+            <div class="atributo"><dt>Porte</dt><dd>Médio</dd></div>
+            <div class="atributo"><dt>Cor</dt><dd>Caramelo</dd></div>
+            <div class="atributo"><dt>Coleira</dt><dd>Vermelha</dd></div>
+            <div class="atributo"><dt>Castrado</dt><dd>Sim</dd></div>
+          </dl>
+        </div>
+
+        <div class="bloco">
+          <span class="rotulo">Onde foi visto por último</span>
+          <div class="mapa" style="height:118px">
+            <div class="mapa__rio"></div>
+            <span class="mapa__etiqueta" style="left:12px;top:9px">rio tapajós</span>
+            <div class="mapa__raio" style="width:104px;height:104px;left:128px;top:30px"></div>
+            <div class="mapa__pino" style="left:174px;top:76px"></div>
+            <span class="mapa__etiqueta" style="right:12px;bottom:9px">área aproximada · 1,6 km</span>
+          </div>
+          <p class="paragrafo" style="font-size:13px">Sábado, 22/08, por volta das 17h, perto da praça do Aparecida. O endereço exato não é publicado.</p>
+        </div>
+
+        <div class="acoes">
+          <button class="botao botao--acento">Vi esse bicho na rua</button>
+          <button class="botao botao--fraco botao--curto">Acho que esse bicho é meu</button>
+        </div>
+      </div>
+      <figcaption class="quadro__legenda">
+        <span class="quadro__num">02 / 07</span>
+        <span class="quadro__nome">Caso aberto</span>
+        <span class="quadro__nota">Duas ações separadas de propósito: quem passou na rua tem uma informação, quem perdeu tem uma reivindicação — e os dois caminhos são diferentes. Telefone e endereço exato nunca aparecem aqui.</span>
+      </figcaption>
+    </figure>
+
+    <!-- ═══════════ 03 · PUBLICAR ═══════════ -->
+    <figure class="quadro" id="tela-03">
+      <div class="tela">
+        <div class="sistema"><span>14:20</span><span class="sistema__dir"><span class="sinal"><i></i><i></i><i></i></span><span class="bateria"></span></span></div>
+
+        <div class="topo">
+          <div class="voltar"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Voltar</div>
+        </div>
+
+        <div class="passos" style="margin-top:14px"><i class="feito"></i><i class="feito"></i><i class="agora"></i><i></i></div>
+
+        <div class="bloco">
+          <span class="rotulo">Passo 3 de 4 · Meu bicho sumiu</span>
+          <div class="titulo">Onde e quando ele sumiu?</div>
+          <p class="subtitulo">É daqui que sai o aviso para quem mora perto.</p>
+        </div>
+
+        <div class="bloco" style="padding-top:0;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span class="rotulo">Nome que ele atende</span>
+            <div class="campo campo--escrito" style="padding:11px 13px">Nego</div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span class="rotulo">Quando</span>
+            <div class="chips"><span class="chip">Hoje</span><span class="chip chip--marcado">Sábado, 22/08</span><span class="chip">Outro dia</span></div>
+            <div class="chips"><span class="chip">De manhã</span><span class="chip chip--marcado">Fim da tarde</span><span class="chip">De noite</span></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span class="rotulo">Onde ele costuma andar</span>
+            <div class="mapa" style="height:92px">
+              <div class="mapa__rio"></div>
+              <span class="mapa__etiqueta" style="left:12px;top:8px">rio tapajós</span>
+              <div class="mapa__raio" style="width:82px;height:82px;left:138px;top:18px"></div>
+              <div class="mapa__pino mapa__pino--alvo" style="left:172px;top:52px"></div>
+              <span class="mapa__etiqueta" style="left:12px;bottom:8px">arraste para ajustar</span>
+            </div>
+            <span class="caso__onde">Trav. Barjonas de Miranda · Aparecida</span>
+          </div>
+        </div>
+
+        <div class="bloco bloco--linha" style="gap:8px;padding-top:14px;padding-bottom:12px">
+          <span class="rotulo">O sinal que só você sabe · 1 de 3</span>
+          <span class="pergunta__texto">Qual sinal ele tem que não aparece na foto?</span>
+          <div class="campo campo--escrito" style="padding:11px 13px">Falta um pedaço da orelha esquerda</div>
+          <div class="aviso"><b>Ninguém mais vê essa resposta.</b> Ela confere quem disser ter achado o Nego.</div>
+        </div>
+
+        <div class="acoes">
+          <button class="botao botao--escuro">Continuar</button>
+        </div>
+      </div>
+      <figcaption class="quadro__legenda">
+        <span class="quadro__num">03 / 07</span>
+        <span class="quadro__nome">Publicar — quem perdeu</span>
+        <span class="quadro__nota">O lado do tutor pede o que só ele tem: nome, quando sumiu, onde o bicho costuma andar e o primeiro dos três sinais particulares. É aqui que nasce a prova usada na tela 06 — sem esta etapa, não existe verificação nenhuma.</span>
+      </figcaption>
+    </figure>
+
+    <!-- ═══════════ 04 · PUBLICAR (QUEM ACHOU) ═══════════ -->
+    <figure class="quadro" id="tela-04">
+      <div class="tela">
+        <div class="sistema"><span>14:35</span><span class="sistema__dir"><span class="sinal"><i></i><i></i><i></i></span><span class="bateria"></span></span></div>
+
+        <div class="topo">
+          <div class="voltar"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Voltar</div>
+        </div>
+
+        <div class="passos" style="margin-top:14px"><i class="feito"></i><i class="agora"></i><i></i><i></i></div>
+
+        <div class="bloco">
+          <span class="rotulo">Passo 2 de 4 · Achei um bicho na rua</span>
+          <div class="titulo">Como ele é?</div>
+          <p class="subtitulo">Só o que dá para ver de longe já ajuda. O resto dá para completar depois.</p>
+        </div>
+
+        <div class="bloco" style="padding-top:0;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="rotulo">Foto</span>
+            <div style="display:flex;gap:9px">
+              <div class="placa" style="width:86px;height:86px"><span class="placa__rotulo">foto 1</span></div>
+              <div style="width:86px;height:86px;border:1.4px dashed var(--traco);display:flex;align-items:center;justify-content:center;color:var(--apagado);font-size:23px">+</div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <span class="rotulo">Bicho</span>
+            <div class="chips"><span class="chip chip--marcado">Cachorro</span><span class="chip">Gato</span></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <span class="rotulo">Porte</span>
+            <div class="chips"><span class="chip">Pequeno</span><span class="chip chip--marcado">Médio</span><span class="chip">Grande</span></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <span class="rotulo">Cor que mais aparece</span>
+            <div class="chips"><span class="chip chip--marcado">Caramelo</span><span class="chip">Preto</span><span class="chip">Branco</span><span class="chip">Malhado</span></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <span class="rotulo">Coleira</span>
+            <div class="chips"><span class="chip chip--marcado">Sem coleira</span><span class="chip">Com coleira</span></div>
+          </div>
+        </div>
+
+        <div class="acoes">
+          <div class="aviso aviso--sereno" style="margin-bottom:2px">Dá para publicar sem criar conta — você recebe um código para editar ou encerrar depois.</div>
+          <button class="botao botao--escuro">Continuar</button>
+        </div>
+      </div>
+      <figcaption class="quadro__legenda">
+        <span class="quadro__num">04 / 07</span>
+        <span class="quadro__nome">Publicar — quem achou</span>
+        <span class="quadro__nota">Só campo fechado: porte, cor dominante e coleira são exatamente os três atributos que o pareamento compara. Publicar sem conta é regra, não cortesia — quem acha um bicho na rua está com pressa e com uma mão só.</span>
+      </figcaption>
+    </figure>
+
+    <!-- ═══════════ 04 · PISTAS ═══════════ -->
+    <figure class="quadro" id="tela-05">
+      <div class="tela">
+        <div class="sistema"><span>14:38</span><span class="sistema__dir"><span class="sinal"><i></i><i></i><i></i></span><span class="bateria"></span></span></div>
+
+        <div class="partido">
+          <div class="partido__a"></div>
+          <div class="partido__b"></div>
+          <span class="partido__rotulo">Nego · seu caso</span>
+          <h2 class="partido__titulo">Pode ser o mesmo bicho</h2>
+        </div>
+
+        <div class="bloco" style="padding-bottom:4px">
+          <p class="subtitulo">Dois casos batem com o que você publicou. Quem decide é você — o aplicativo só aproxima.</p>
+        </div>
+
+        <div class="corpo">
+          <div class="lista">
+
+            <div class="par">
+              <div class="par__faces">
+                <div class="par__face">
+                  <div class="placa"><span class="placa__rotulo">sumiu</span></div>
+                  <span>Nego · seu caso</span>
+                </div>
+                <div class="par__no"></div>
+                <div class="par__face">
+                  <div class="placa placa--silte"><span class="placa__rotulo">achado</span></div>
+                  <span>Rua Turiano Meira</span>
+                </div>
+              </div>
+              <div class="pistas">
+                <div class="pista"><span class="sinal-bate"></span><span><b>Mesmo porte</b> — médio</span></div>
+                <div class="pista"><span class="sinal-bate"></span><span><b>Mesma cor</b> — caramelo</span></div>
+                <div class="pista"><span class="sinal-bate"></span><span><b>850 m</b> do lugar onde sumiu, 1 dia depois</span></div>
+                <div class="pista"><span class="sinal-bate sinal-bate--nao"></span><span>Coleira não confere — o seu tinha, esse estava sem</span></div>
+              </div>
+              <div class="dupla">
+                <button class="botao botao--acento botao--curto">Pode ser ele</button>
+                <button class="botao botao--fraco botao--curto">Não é</button>
+              </div>
+            </div>
+
+            <div class="par">
+              <div class="par__faces">
+                <div class="par__face">
+                  <div class="placa"><span class="placa__rotulo">sumiu</span></div>
+                  <span>Nego · seu caso</span>
+                </div>
+                <div class="par__no"></div>
+                <div class="par__face">
+                  <div class="placa placa--silte"><span class="placa__rotulo">achado</span></div>
+                  <span>Av. Cuiabá</span>
+                </div>
+              </div>
+              <div class="pistas">
+                <div class="pista"><span class="sinal-bate"></span><span><b>Mesmo porte</b> — médio</span></div>
+                <div class="pista"><span class="sinal-bate sinal-bate--nao"></span><span>Cor diferente — esse é malhado</span></div>
+                <div class="pista"><span class="sinal-bate sinal-bate--nao"></span><span>3,4 km de distância</span></div>
+              </div>
+              <div class="dupla">
+                <button class="botao botao--fraco botao--curto">Pode ser ele</button>
+                <button class="botao botao--fraco botao--curto">Não é</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <nav class="barra">
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="16" height="5"/><rect x="2.5" y="12.5" width="16" height="5"/></svg>Perto</a>
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10.5 3.5v14M3.5 10.5h14"/></svg>Publicar</a>
+          <a class="aqui"><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="5.5" width="6" height="10"/><rect x="12.5" y="5.5" width="6" height="10"/><path d="M9.5 10.5h2"/></svg>Pistas</a>
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10.5" cy="7.5" r="3.2"/><path d="M4.5 17.5c0-3.3 2.7-5 6-5s6 1.7 6 5"/></svg>Meus casos</a>
+        </nav>
+      </div>
+      <figcaption class="quadro__legenda">
+        <span class="quadro__num">05 / 07</span>
+        <span class="quadro__nome">Pistas — pode ser o mesmo bicho</span>
+        <span class="quadro__nota">Sem porcentagem de compatibilidade. O sistema mostra o que bateu e também o que não bateu, e o segundo par vem com o botão fraco de propósito. É aqui que a costura aparece: dois registros que precisam se encontrar.</span>
+      </figcaption>
+    </figure>
+
+    <!-- ═══════════ 05 · VERIFICAÇÃO ═══════════ -->
+    <figure class="quadro" id="tela-06">
+      <div class="tela">
+        <div class="sistema"><span>14:41</span><span class="sistema__dir"><span class="sinal"><i></i><i></i><i></i></span><span class="bateria"></span></span></div>
+
+        <div class="topo">
+          <div class="voltar"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Caso do Aparecida</div>
+          <div class="titulo" style="margin-top:6px">Três perguntas antes do contato</div>
+          <p class="subtitulo">Quem achou o bicho respondeu essas coisas na hora de publicar. Ninguém mais viu as respostas.</p>
+        </div>
+
+        <div class="costura" style="margin:14px 22px 0">
+          <span class="costura__traco costura__traco--a"></span>
+          <span class="costura__no"></span>
+          <span class="costura__traco costura__traco--b"></span>
+        </div>
+
+        <div class="corpo">
+          <div class="lista" style="margin-top:8px">
+
+            <div class="pergunta">
+              <span class="rotulo">Pergunta 1</span>
+              <span class="pergunta__texto">Qual sinal ele tem que não aparece na foto?</span>
+              <div class="campo campo--escrito">Falta um pedaço da orelha esquerda</div>
+            </div>
+
+            <div class="pergunta">
+              <span class="rotulo">Pergunta 2</span>
+              <span class="pergunta__texto">Que nome ele atende?</span>
+              <div class="campo campo--escrito">Nego</div>
+            </div>
+
+            <div class="pergunta">
+              <span class="rotulo">Pergunta 3</span>
+              <span class="pergunta__texto">O que ele estava usando quando sumiu?</span>
+              <div class="campo">Escreva aqui</div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="bloco">
+          <div class="aviso">
+            <b>O aplicativo não decide de quem é o bicho.</b>
+            Suas respostas vão para quem achou. Se bater, ela escolhe abrir a conversa — e só nesse momento os contatos aparecem para os dois lados.
+          </div>
+        </div>
+
+        <div class="acoes">
+          <button class="botao botao--acento">Enviar respostas</button>
+        </div>
+      </div>
+      <figcaption class="quadro__legenda">
+        <span class="quadro__num">06 / 07</span>
+        <span class="quadro__nome">Confirmar que é seu</span>
+        <span class="quadro__nota">Como impedir que alguém leve o animal de outra pessoa. Não existe botão “é meu” — existe prova por sinal particular, guardada por quem achou, e a decisão continua sendo de gente.</span>
+      </figcaption>
+    </figure>
+
+    <!-- ═══════════ 06 · MEUS CASOS ═══════════ -->
+    <figure class="quadro" id="tela-07">
+      <div class="tela">
+        <div class="sistema"><span>14:44</span><span class="sistema__dir"><span class="sinal"><i></i><i></i><i></i></span><span class="bateria"></span></span></div>
+
+        <div class="topo">
+          <div class="topo__linha">
+            <div class="titulo">Meus casos</div>
+            <div class="alcance__acao">Avisos</div>
+          </div>
+        </div>
+
+        <div class="abas" style="margin-top:14px"><span class="ativa">Abertos</span><span>Encerrados</span></div>
+
+        <div class="corpo">
+          <div class="lista">
+
+            <div class="meu">
+              <div class="meu__topo">
+                <div class="meu__foto placa"></div>
+                <div class="meu__id">
+                  <span class="meu__nome">Nego</span>
+                  <span class="meu__estado">Procurando · publicado há 2 dias</span>
+                </div>
+                <span class="etiqueta etiqueta--perdi">Sumiu</span>
+              </div>
+              <div class="pistas">
+                <div class="pista"><span class="sinal-bate"></span><span><b>3 pessoas</b> disseram ter visto</span></div>
+                <div class="pista"><span class="sinal-bate"></span><span><b>2 casos</b> podem ser ele</span></div>
+              </div>
+              <div class="dupla">
+                <button class="botao botao--acento botao--curto">Ver quem viu</button>
+                <button class="botao botao--fraco botao--curto">Informar desfecho</button>
+              </div>
+            </div>
+
+            <div class="meu">
+              <div class="meu__topo">
+                <div class="meu__foto placa placa--silte"></div>
+                <div class="meu__id">
+                  <span class="meu__nome">Cadela sem nome</span>
+                  <span class="meu__estado">Falando com uma pessoa · desde ontem</span>
+                </div>
+                <span class="etiqueta etiqueta--achei">Foi achada</span>
+              </div>
+              <div class="dupla">
+                <button class="botao botao--fraco botao--curto">Abrir conversa</button>
+                <button class="botao botao--fraco botao--curto">Informar desfecho</button>
+              </div>
+            </div>
+
+            <div class="meu">
+              <div class="meu__topo">
+                <div class="meu__foto placa"></div>
+                <div class="meu__id">
+                  <span class="meu__nome">Frajola</span>
+                  <span class="meu__estado">Voltou para casa em 19/08</span>
+                </div>
+                <span class="etiqueta etiqueta--voltou">Voltou</span>
+              </div>
+              <div class="costura costura--unida">
+                <span class="costura__traco costura__traco--a"></span>
+                <span class="costura__no"></span>
+                <span class="costura__traco costura__traco--b"></span>
+              </div>
+            </div>
+
+            <div class="meu">
+              <div class="meu__topo">
+                <div class="meu__foto placa"></div>
+                <div class="meu__id">
+                  <span class="meu__nome">Bidu</span>
+                  <span class="meu__estado">Sem novidade há 9 dias</span>
+                </div>
+                <span class="etiqueta etiqueta--encerrado">Parado</span>
+              </div>
+              <p class="paragrafo" style="font-size:13px">Ainda está procurando o Bidu? Caso sem resposta some do mural depois de 15 dias.</p>
+              <div class="dupla">
+                <button class="botao botao--fraco botao--curto">Ainda procuro</button>
+                <button class="botao botao--fraco botao--curto">Informar desfecho</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <nav class="barra">
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="16" height="5"/><rect x="2.5" y="12.5" width="16" height="5"/></svg>Perto</a>
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10.5 3.5v14M3.5 10.5h14"/></svg>Publicar</a>
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="5.5" width="6" height="10"/><rect x="12.5" y="5.5" width="6" height="10"/><path d="M9.5 10.5h2"/></svg>Pistas</a>
+          <a class="aqui"><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10.5" cy="7.5" r="3.2"/><path d="M4.5 17.5c0-3.3 2.7-5 6-5s6 1.7 6 5"/></svg>Meus casos</a>
+        </nav>
+      </div>
+      <figcaption class="quadro__legenda">
+        <span class="quadro__num">07 / 07</span>
+        <span class="quadro__nome">Meus casos</span>
+        <span class="quadro__nota">O caso parado há 9 dias é o detalhe que separa este mural de um grupo de WhatsApp: anúncio sem resposta é cobrado e expira. “Voltou” é o único lugar onde a costura aparece fechada, no amarelo de Alter.</span>
+      </figcaption>
+    </figure>
+
+    <!-- ═══════════ ESTADO A · PRIMEIRO DIA ═══════════ -->
+    <figure class="quadro" id="estado-a">
+      <div class="tela">
+        <div class="sistema"><span>08:12</span><span class="sistema__dir"><span class="sinal"><i></i><i></i><i></i></span><span class="bateria"></span></span></div>
+
+        <div class="topo">
+          <div class="topo__linha">
+            <div class="marca">Achei um bicho<em>Santarém · Diamantino</em></div>
+          </div>
+        </div>
+
+        <div class="alcance">
+          <span class="alcance__texto">Mostrando <b>1,6 km</b> em volta de você</span>
+          <span class="alcance__acao">Aumentar</span>
+        </div>
+
+        <div class="filtros">
+          <button class="ativo">Tudo</button>
+          <button>Sumiram</button>
+          <button>Foram achados</button>
+        </div>
+
+        <div class="vazio">
+          <div class="vazio__marca"></div>
+          <h3>Nenhum caso aberto no Diamantino agora</h3>
+          <p>É uma boa notícia. Se aumentar para 5 km aparecem 6 casos de bairros vizinhos.</p>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:6px">
+            <button class="botao botao--escuro botao--curto">Ver 6 casos até 5 km</button>
+            <button class="botao botao--fraco botao--curto">Chamar meus vizinhos para o mural</button>
+          </div>
+        </div>
+
+        <nav class="barra">
+          <a class="aqui"><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="16" height="5"/><rect x="2.5" y="12.5" width="16" height="5"/></svg>Perto</a>
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10.5 3.5v14M3.5 10.5h14"/></svg>Publicar</a>
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="5.5" width="6" height="10"/><rect x="12.5" y="5.5" width="6" height="10"/><path d="M9.5 10.5h2"/></svg>Pistas</a>
+          <a><svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10.5" cy="7.5" r="3.2"/><path d="M4.5 17.5c0-3.3 2.7-5 6-5s6 1.7 6 5"/></svg>Meus casos</a>
+        </nav>
+      </div>
+      <figcaption class="quadro__legenda">
+        <span class="quadro__num quadro__num--estado">Estado A</span>
+        <span class="quadro__nome">Primeiro dia, bairro sem casos</span>
+        <span class="quadro__nota">Mural vazio é o estado mais provável na primeira semana e o que costuma matar o aplicativo. Aqui ele vira convite: ampliar o raio com número real e chamar o vizinho. Nada de caso inventado para encher tela.</span>
+      </figcaption>
+    </figure>
+
+    <!-- ═══════════ ESTADO B · SEM SINAL ═══════════ -->
+    <figure class="quadro" id="estado-b">
+      <div class="tela">
+        <div class="sistema"><span>17:58</span><span class="sistema__dir"><span class="sinal sinal--fraco"><i></i><i></i><i></i></span><span class="bateria"></span></span></div>
+
+        <div class="faixa-offline"><i></i>Sem internet agora</div>
+
+        <div class="topo" style="margin-top:12px">
+          <div class="titulo">Salvo no seu celular</div>
+          <p class="subtitulo">Ainda não está no mural. Assim que a internet voltar, publica sozinho.</p>
+        </div>
+
+        <div class="bloco">
+          <div class="fila">
+            <div class="fila__item">
+              <div class="placa placa--silte"><span class="placa__rotulo"></span></div>
+              <div class="fila__id">
+                <span class="fila__nome">Cachorro achado na Av. Cuiabá</span>
+                <span class="fila__estado fila__estado--espera">Esperando internet · 17:58</span>
+              </div>
+            </div>
+            <div class="fila__item">
+              <div class="placa"><span class="placa__rotulo"></span></div>
+              <div class="fila__id">
+                <span class="fila__nome">Gata do Mararu</span>
+                <span class="fila__estado fila__estado--enviado">Publicada · 16:40</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bloco bloco--linha">
+          <div class="aviso">
+            <b>Enquanto isso, o que dá para fazer.</b>
+            A foto já está guardada em tamanho reduzido. Você pode anotar o local pelo nome do bairro, sem precisar do mapa.
+          </div>
+        </div>
+
+        <div class="bloco">
+          <span class="rotulo">Últimos casos que você já tinha aberto</span>
+          <div class="caso" style="padding:12px 0">
+            <div class="caso__foto placa" style="width:64px;height:64px"><span class="placa__rotulo"></span></div>
+            <div class="caso__texto">
+              <div class="caso__topo"><span class="etiqueta etiqueta--perdi">Sumiu</span><span class="caso__quando">salvo às 14:32</span></div>
+              <div class="caso__nome">Nego</div>
+              <div class="caso__onde">Trav. Barjonas de Miranda · 850 m</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="acoes">
+          <button class="botao botao--fraco">Tentar publicar agora</button>
+        </div>
+      </div>
+      <figcaption class="quadro__legenda">
+        <span class="quadro__num quadro__num--estado">Estado B</span>
+        <span class="quadro__nome">Publicado sem sinal</span>
+        <span class="quadro__nota">Requisito de primeira classe, não melhoria futura: em Santarém a conexão cai fora do centro. A tela nunca diz “publicado” enquanto o envio não confirma — dizer que publicou sem ter publicado é o pior defeito possível aqui.</span>
+      </figcaption>
+    </figure>
+
+    <!-- ═══════════ PAINEL ═══════════ -->
+    <div class="painel-lado">
+
+      <div class="painel">
+        <h2>Paleta</h2>
+        <div class="amostras">
+          <div class="amostra"><i style="background:#123E4A"></i><div><b>Fundo do Tapajós</b><span>#123E4A · texto e superfície escura</span></div></div>
+          <div class="amostra"><i style="background:#2F8587"></i><div><b>Água da orla</b><span>#2F8587 · estado “sumiu”</span></div></div>
+          <div class="amostra"><i style="background:#B6AA95"></i><div><b>Silte do Amazonas</b><span>#B6AA95 · estado “foi achado”</span></div></div>
+          <div class="amostra"><i style="background:#E2A83B"></i><div><b>Areia de Alter</b><span>#E2A83B · único acento</span></div></div>
+          <div class="amostra"><i style="background:#EEF2EE;border:1px solid #C7D0CB"></i><div><b>Chuva na orla</b><span>#EEF2EE · fundo</span></div></div>
+        </div>
+        <div class="nota">O acento aparece em <b>ação principal, pareamento confirmado e caso resolvido</b> — em nenhum outro lugar. Texto sobre ele é sempre #123E4A, nunca branco.</div>
+      </div>
+
+      <div class="painel">
+        <h2>Tipografia</h2>
+        <div class="tipos">
+          <div class="tipo-linha">
+            <span>Título · Commissioner 700/800</span>
+            <div style="font-family:'Commissioner';font-weight:800;font-size:27px;letter-spacing:-.03em;color:#123E4A">Pode ser o mesmo bicho</div>
+          </div>
+          <div class="tipo-linha">
+            <span>Texto · IBM Plex Sans 400/600</span>
+            <div style="font-size:14.5px;line-height:1.5">Vira-lata caramelo, orelha esquerda caída, coleira vermelha.</div>
+          </div>
+          <div class="tipo-linha">
+            <span>Dado · IBM Plex Mono 500</span>
+            <div style="font-family:'IBM Plex Mono';font-size:12px;letter-spacing:.06em">850 M · HÁ 2 DIAS · APARECIDA</div>
+          </div>
+        </div>
+        <div class="nota">Commissioner tem presença de placa de sinalização pública sem virar letreiro turístico. O mono não é enfeite: ele separa <b>dado verificável</b> — distância, hora, raio — de texto escrito por gente.</div>
+      </div>
+
+      <div class="painel">
+        <h2>Estados do caso</h2>
+        <div class="legenda-estados">
+          <span class="etiqueta etiqueta--perdi">Sumiu</span>
+          <span class="etiqueta etiqueta--achei">Foi achado</span>
+          <span class="etiqueta etiqueta--voltou">Voltou</span>
+          <span class="etiqueta etiqueta--encerrado">Parado</span>
+        </div>
+      </div>
+
+      <div class="painel">
+        <h2>A assinatura · a costura</h2>
+        <div style="border:1px solid var(--traco);background:var(--chuva);padding:18px 16px">
+          <div class="costura">
+            <span class="costura__traco costura__traco--a"></span>
+            <span class="costura__no"></span>
+            <span class="costura__traco costura__traco--b"></span>
+          </div>
+          <div class="costura costura--unida" style="margin-top:6px">
+            <span class="costura__traco costura__traco--a"></span>
+            <span class="costura__no"></span>
+            <span class="costura__traco costura__traco--b"></span>
+          </div>
+        </div>
+        <div class="nota">
+          Em frente a Santarém o Tapajós e o Amazonas correm lado a lado sem se misturar. A costura pega emprestado esse par de cores, mas <b>só aparece onde dois registros se relacionam</b>: entre as duas fotos de um pareamento, na verificação e no caso que se resolveu — aí o losango fecha em amarelo. Nunca como faixa decorativa no cabeçalho, senão vira paisagem turística e deixa de significar alguma coisa.
+        </div>
+      </div>
+
+      <div class="painel">
+        <h2>Por que média fidelidade assim</h2>
+        <div class="nota">
+          <b>Conteúdo e hierarquia são reais; acabamento não é.</b> Foto, mapa e avatar aparecem como campo de dado aguardando conteúdo, com marca de corte no canto e etiqueta do que vai ali. Nenhuma foto simulada, nenhuma silhueta de cachorro, nenhum grafismo indígena usado como papel de parede — o traço local vem do que o sistema mede: bairro, distância, raio de 1,6 km.
+        </div>
+        <div class="nota">
+          <b>O que foi cortado de propósito.</b> Painel de alertas com bairros seguidos e gráfico semanal: era ajuste antes de existir conteúdo, e trazia junto notificação em segundo plano — dívida grande demais para três pessoas até novembro. Sobrou o raio editável no topo do mural, que é o que a pesquisa sustenta.
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
