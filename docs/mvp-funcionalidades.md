@@ -1,7 +1,7 @@
 # Funcionalidades do MVP: Achei um Bicho
 
 **Laboratório de Desenvolvimento de Software · UFOPA · Desafio 2 (Causa Animal e Cultura, ODS 15)**
-Versão 1, de 27 de agosto de 2026
+Versão 1.1, de 9 de setembro de 2026
 Entrega do item 3 do checklist de 28/08/2026: *definir as principais funcionalidades do MVP*.
 
 ---
@@ -212,7 +212,8 @@ nome do bairro, e o envio acontece sozinho quando a conexão volta.
 
 ## 9. Entidades principais (rascunho para a UML)
 
-Rascunho apenas. A modelagem formal é a próxima etapa.
+Índice das entidades. O modelo completo, com esquema físico e índices, está em
+`modelo-er.md`.
 
 - **Pessoa**: pode existir sem conta, identificada por código de edição
 - **Caso**: tipo (perdido/encontrado), estado, datas, autor
