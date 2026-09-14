@@ -1,0 +1,23 @@
+services:
+  banco:
+    # a imagem oficial do PostGIS só é publicada para amd64; em Mac com chip
+    # Apple ela roda emulada, o que é suficiente para desenvolvimento
+    image: postgis/postgis:16-3.5
+    platform: linux/amd64
+    container_name: achei-um-bicho-banco
+    environment:
+      POSTGRES_USER: bicho
+      POSTGRES_PASSWORD: bicho
+      POSTGRES_DB: achei_um_bicho
+    ports:
+      - "5432:5432"
+    volumes:
+      - banco:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bicho -d achei_um_bicho"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  banco:
