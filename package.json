@@ -1,0 +1,14 @@
+{
+  "name": "achei-um-bicho",
+  "private": true,
+  "description": "Mural georreferenciado de cães e gatos perdidos e encontrados em Santarém-PA",
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "banco": "docker compose up -d banco",
+    "build:contratos": "pnpm --filter @achei/contratos build",
+    "test": "pnpm -r --workspace-concurrency=1 test"
+  }
+}
