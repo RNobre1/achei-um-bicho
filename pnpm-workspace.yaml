@@ -5,3 +5,5 @@ packages:
 # pacotes autorizados a rodar script de instalação; o resto fica bloqueado
 allowBuilds:
   esbuild: true
+  '@swc/core': true
+  '@nestjs/core': false
