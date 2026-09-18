@@ -7,3 +7,6 @@ allowBuilds:
   esbuild: true
   '@swc/core': true
   '@nestjs/core': false
+  prisma: true
+  '@prisma/engines': true
+  '@prisma/client': true

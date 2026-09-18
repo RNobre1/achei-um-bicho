@@ -1,0 +1,182 @@
+// Esquema do banco do Achei um Bicho.
+//
+// As restrições CHECK do vocabulário fechado vivem fora deste arquivo, numa
+// migração própria, porque o Prisma não as representa. Elas são geradas a partir
+// de packages/contratos, nunca escritas à mão.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+model Pessoa {
+  id           String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome         String
+  telefone     String?
+  email        String?                @unique
+  senhaHash    String?                @map("senha_hash")
+  criadoEm     DateTime               @default(now()) @map("criado_em") @db.Timestamptz(6)
+  casos        Caso[]
+  avistamentos Avistamento[]
+  tentativas   TentativaVerificacao[]
+
+  @@map("pessoa")
+}
+
+model Animal {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  especie      String
+  porte        String
+  corDominante String   @map("cor_dominante")
+  coleira      String
+  nome         String?
+  castrado     Boolean?
+  caso         Caso?
+  fotos        Foto[]
+
+  @@map("animal")
+}
+
+model Foto {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  animalId  String   @map("animal_id") @db.Uuid
+  caminho   String
+  largura   Int
+  altura    Int
+  enviadaEm DateTime @default(now()) @map("enviada_em") @db.Timestamptz(6)
+  animal    Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@map("foto")
+}
+
+model Local {
+  id              String                                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // o ponto exato nunca sai da API; o que se publica é uma área aproximada
+  ponto           Unsupported("geography(Point, 4326)")
+  bairro          String?
+  raioImprecisaoM Int                                   @default(300) @map("raio_imprecisao_m")
+  referencia      String?
+  caso            Caso?
+  avistamentos    Avistamento[]
+
+  @@index([ponto], map: "idx_local_ponto", type: Gist)
+  @@map("local")
+}
+
+model Caso {
+  id                String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo              String
+  estado            String
+  autorId           String                 @map("autor_id") @db.Uuid
+  animalId          String                 @unique @map("animal_id") @db.Uuid
+  localId           String                 @unique @map("local_id") @db.Uuid
+  codigoEdicao      String?                @unique @map("codigo_edicao")
+  relato            String?
+  ocorridoEm        DateTime               @map("ocorrido_em") @db.Timestamptz(6)
+  publicadoEm       DateTime               @default(now()) @map("publicado_em") @db.Timestamptz(6)
+  ultimaInteracaoEm DateTime               @default(now()) @map("ultima_interacao_em") @db.Timestamptz(6)
+  autor             Pessoa                 @relation(fields: [autorId], references: [id], onDelete: Restrict)
+  animal            Animal                 @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  local             Local                  @relation(fields: [localId], references: [id], onDelete: Restrict)
+  avistamentos      Avistamento[]
+  perguntas         PerguntaVerificacao[]
+  tentativas        TentativaVerificacao[]
+  desfecho          Desfecho?
+  comoPerdido       Pareamento[]           @relation("lado_perdido")
+  comoEncontrado    Pareamento[]           @relation("lado_encontrado")
+
+  @@index([estado, tipo], map: "idx_caso_estado_tipo")
+  @@map("caso")
+}
+
+model Avistamento {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  casoId     String   @map("caso_id") @db.Uuid
+  pessoaId   String?  @map("pessoa_id") @db.Uuid
+  localId    String   @map("local_id") @db.Uuid
+  vistoEm    DateTime @map("visto_em") @db.Timestamptz(6)
+  observacao String?
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  caso       Caso     @relation(fields: [casoId], references: [id], onDelete: Cascade)
+  pessoa     Pessoa?  @relation(fields: [pessoaId], references: [id], onDelete: SetNull)
+  local      Local    @relation(fields: [localId], references: [id], onDelete: Restrict)
+
+  @@index([casoId, criadoEm(sort: Desc)], map: "idx_avistamento_caso")
+  @@map("avistamento")
+}
+
+model PerguntaVerificacao {
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  casoId           String                @map("caso_id") @db.Uuid
+  ordem            Int                   @db.SmallInt
+  enunciado        String
+  // a coluna mais sensível do banco: nunca é serializada em resposta da API
+  respostaEsperada String                @map("resposta_esperada")
+  caso             Caso                  @relation(fields: [casoId], references: [id], onDelete: Cascade)
+  respostas        RespostaVerificacao[]
+
+  @@unique([casoId, ordem])
+  @@map("pergunta_verificacao")
+}
+
+model TentativaVerificacao {
+  id         String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  casoId     String                @map("caso_id") @db.Uuid
+  pessoaId   String                @map("pessoa_id") @db.Uuid
+  veredito   String                @default("pendente")
+  criadoEm   DateTime              @default(now()) @map("criado_em") @db.Timestamptz(6)
+  decididoEm DateTime?             @map("decidido_em") @db.Timestamptz(6)
+  caso       Caso                  @relation(fields: [casoId], references: [id], onDelete: Cascade)
+  pessoa     Pessoa                @relation(fields: [pessoaId], references: [id], onDelete: Restrict)
+  respostas  RespostaVerificacao[]
+
+  @@map("tentativa_verificacao")
+}
+
+model RespostaVerificacao {
+  id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tentativaId String               @map("tentativa_id") @db.Uuid
+  perguntaId  String               @map("pergunta_id") @db.Uuid
+  texto       String
+  tentativa   TentativaVerificacao @relation(fields: [tentativaId], references: [id], onDelete: Cascade)
+  pergunta    PerguntaVerificacao  @relation(fields: [perguntaId], references: [id], onDelete: Cascade)
+
+  @@unique([tentativaId, perguntaId])
+  @@map("resposta_verificacao")
+}
+
+model Pareamento {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  casoPerdidoId     String    @map("caso_perdido_id") @db.Uuid
+  casoEncontradoId  String    @map("caso_encontrado_id") @db.Uuid
+  distanciaM        Int       @map("distancia_m")
+  diasDiferenca     Int       @map("dias_diferenca")
+  atributosBatem    Json      @default("[]") @map("atributos_batem")
+  atributosDivergem Json      @default("[]") @map("atributos_divergem")
+  veredito          String    @default("pendente")
+  geradoEm          DateTime  @default(now()) @map("gerado_em") @db.Timestamptz(6)
+  decididoEm        DateTime? @map("decidido_em") @db.Timestamptz(6)
+  casoPerdido       Caso      @relation("lado_perdido", fields: [casoPerdidoId], references: [id], onDelete: Cascade)
+  casoEncontrado    Caso      @relation("lado_encontrado", fields: [casoEncontradoId], references: [id], onDelete: Cascade)
+
+  @@unique([casoPerdidoId, casoEncontradoId])
+  @@index([casoPerdidoId, veredito], map: "idx_pareamento_perdido")
+  @@map("pareamento")
+}
+
+model Desfecho {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  casoId       String   @unique @map("caso_id") @db.Uuid
+  tipo         String
+  ocorridoEm   DateTime @map("ocorrido_em") @db.Timestamptz(6)
+  registradoEm DateTime @default(now()) @map("registrado_em") @db.Timestamptz(6)
+  caso         Caso     @relation(fields: [casoId], references: [id], onDelete: Cascade)
+
+  @@map("desfecho")
+}
