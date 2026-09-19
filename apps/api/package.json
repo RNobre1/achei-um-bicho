@@ -4,8 +4,10 @@
   "private": true,
   "description": "API do Achei um Bicho",
   "scripts": {
+    "prebuild": "pnpm --filter @achei/contratos build",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
+    "predev": "pnpm --filter @achei/contratos build",
     "dev": "nest start --watch",
     "test": "vitest run && vitest run -c vitest.int.config.ts",
     "test:unidade": "vitest run",
