@@ -15,6 +15,7 @@
     "gerar:vocabulario": "tsx prisma/gerar-vocabulario.ts"
   },
   "dependencies": {
+    "@achei/contratos": "workspace:*",
     "@nestjs/common": "^12.1.1",
     "@nestjs/core": "^12.1.1",
     "@nestjs/platform-express": "^12.1.1",
