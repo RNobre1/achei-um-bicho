@@ -1,0 +1,49 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="casos-de-uso" name="Casos de uso">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1"
+                  arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="900"
+                  math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="fronteira" value="Sistema Achei um Bicho" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingLeft=14;spacingTop=8;fontStyle=1;fontSize=15;fillColor=none;strokeColor=#123E4A;fontColor=#123E4A;" vertex="1" parent="1"><mxGeometry x="290" y="30" width="830" height="830" as="geometry"/></mxCell>
+        <mxCell id="visitante" value="Visitante" style="shape=umlActor;verticalLabelPosition=top;verticalAlign=bottom;html=1;outlineConnect=0;strokeColor=#123E4A;fontColor=#123E4A;fontSize=13;" vertex="1" parent="1"><mxGeometry x="90" y="110" width="36" height="72" as="geometry"/></mxCell>
+        <mxCell id="tutor" value="Tutor" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeColor=#123E4A;fontColor=#123E4A;fontSize=13;" vertex="1" parent="1"><mxGeometry x="40" y="400" width="36" height="72" as="geometry"/></mxCell>
+        <mxCell id="encontrou" value="Quem encontrou" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeColor=#123E4A;fontColor=#123E4A;fontSize=13;" vertex="1" parent="1"><mxGeometry x="150" y="650" width="36" height="72" as="geometry"/></mxCell>
+        <mxCell id="relogio" value="Relógio do sistema" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeColor=#123E4A;fontColor=#123E4A;fontSize=13;" vertex="1" parent="1"><mxGeometry x="1190" y="760" width="36" height="72" as="geometry"/></mxCell>
+        <mxCell id="uc03" value="UC03 Consultar casos perto de mim" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="330" y="70" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc04" value="UC04 Ver caso aberto" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="330" y="155" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc05" value="UC05 Registrar avistamento" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="330" y="240" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc07" value="UC07 Reivindicar animal" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="330" y="340" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc01" value="UC01 Publicar caso de animal perdido" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="330" y="425" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc06" value="UC06 Ver pistas de pareamento" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="330" y="510" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc09" value="UC09 Informar desfecho" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="330" y="595" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc02" value="UC02 Publicar caso de animal encontrado" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="330" y="680" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc08" value="UC08 Decidir reivindicação" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="330" y="765" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc10" value="UC10 Cadastrar perguntas de verificação" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="820" y="500" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc11" value="UC11 Publicar sem conexão" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="820" y="620" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="uc12" value="UC12 Expirar caso parado" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEF2EE;strokeColor=#123E4A;fontColor=#123E4A;fontSize=12;" vertex="1" parent="1"><mxGeometry x="820" y="780" width="250" height="60" as="geometry"/></mxCell>
+        <mxCell id="assoc0" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="visitante" target="uc03"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc1" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="visitante" target="uc04"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc2" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="visitante" target="uc05"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc3" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="tutor" target="uc01"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc4" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="tutor" target="uc07"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc5" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="tutor" target="uc06"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc6" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="tutor" target="uc09"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc7" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="encontrou" target="uc02"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc8" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="encontrou" target="uc08"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc9" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="encontrou" target="uc06"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc10" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="encontrou" target="uc09"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="assoc11" value="" style="endArrow=none;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="relogio" target="uc12"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="dep0" value="«include»" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#123E4A;fontColor=#123E4A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="uc01" target="uc10"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="dep1" value="«include»" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#123E4A;fontColor=#123E4A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="uc02" target="uc10"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="dep2" value="«extend»" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#123E4A;fontColor=#123E4A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="uc11" target="uc01"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="dep3" value="«extend»" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#123E4A;fontColor=#123E4A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="uc11" target="uc02"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="dep4" value="«extend»" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#123E4A;fontColor=#123E4A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="uc05" target="uc04"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="dep5" value="«extend»" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#123E4A;fontColor=#123E4A;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="uc07" target="uc04"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="640" y="370"/><mxPoint x="640" y="185"/></Array></mxGeometry></mxCell>
+        <mxCell id="gen0" value="" style="endArrow=block;endFill=0;endSize=12;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="tutor" target="visitante"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="gen1" value="" style="endArrow=block;endFill=0;endSize=12;html=1;strokeColor=#123E4A;" edge="1" parent="1" source="encontrou" target="visitante"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
