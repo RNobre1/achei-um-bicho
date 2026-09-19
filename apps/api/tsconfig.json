@@ -8,6 +8,10 @@
     "strictPropertyInitialization": false,
     "types": ["node"],
     "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@achei/contratos": ["../../packages/contratos/src/index.ts"]
+    },
     "noEmit": true
   },
   "include": ["src", "test", "prisma/*.ts", "vitest*.ts"]
