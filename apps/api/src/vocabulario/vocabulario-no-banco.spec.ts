@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { VOCABULARIO } from '@achei/contratos'
 import { describe, expect, it } from 'vitest'
 import {
   COLUNAS_COM_VOCABULARIO,
@@ -15,6 +16,17 @@ function migracoes(): { nome: string; sql: string }[] {
     .map((e) => e.name)
     .sort()
     .map((nome) => ({ nome, sql: readFileSync(join(PASTA_MIGRACOES, nome, 'migration.sql'), 'utf-8') }))
+}
+
+const SCHEMA = readFileSync(resolve(__dirname, '../../prisma/schema.prisma'), 'utf-8')
+
+/** Valor do @default("...") de uma coluna do schema do Prisma, se houver. */
+function defaultNoSchema(tabela: string, coluna: string): string | undefined {
+  const modelo = SCHEMA.split(/\nmodel /).find((bloco) => bloco.includes(`@@map("${tabela}")`))
+  const linha = modelo
+    ?.split('\n')
+    .find((l) => l.includes(`@map("${coluna}")`) || l.trim().startsWith(`${coluna} `))
+  return linha ? /@default\("([^"]+)"\)/.exec(linha)?.[1] : undefined
 }
 
 describe('vocabulário fechado no banco', () => {
@@ -40,6 +52,21 @@ describe('vocabulário fechado no banco', () => {
       expect(criacao, `tabela ${tabela}`).toBeDefined()
       expect(criacao, `${tabela}.${coluna}`).toContain(`"${coluna}"`)
     }
+  })
+
+  it('todo valor padrão de coluna com vocabulário existe no manifesto', () => {
+    for (const { tabela, coluna, conjunto } of COLUNAS_COM_VOCABULARIO) {
+      const padrao = defaultNoSchema(tabela, coluna)
+      if (padrao !== undefined) {
+        expect(VOCABULARIO[conjunto].valores, `${tabela}.${coluna}`).toContain(padrao)
+      }
+    }
+  })
+
+  it('gera o índice parcial dos casos abertos a partir do manifesto', () => {
+    expect(gerarSqlVocabulario()).toContain(
+      `CREATE INDEX "idx_caso_ultima_inter" ON "caso" ("ultima_interacao_em") WHERE "estado" IN ('procurando', 'abrigado_temporariamente');`,
+    )
   })
 
   it('gera uma restrição por coluna, com os valores na ordem do manifesto', () => {

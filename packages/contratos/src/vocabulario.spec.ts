@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ESTADO_CASO,
   ESTADO_INICIAL,
+  ESTADOS_ABERTOS,
   PORTE,
   TIPO_CASO,
   VOCABULARIO,
@@ -41,6 +42,10 @@ describe('vocabulário fechado', () => {
     for (const estado of Object.values(ESTADO_INICIAL)) {
       expect(ESTADO_CASO.valores).toContain(estado)
     }
+  })
+
+  it('caso aberto é todo caso que ainda está num estado inicial', () => {
+    expect([...ESTADOS_ABERTOS].sort()).toEqual(Object.values(ESTADO_INICIAL).sort())
   })
 
   it('opcoes devolve valor e rótulo na ordem declarada, pronto para virar chip', () => {
