@@ -209,6 +209,13 @@ export const ESTADO_INICIAL: Record<TipoCaso, EstadoCaso> = {
   encontrado: 'abrigado_temporariamente',
 }
 
+/**
+ * Casos abertos: os que ainda estão no estado em que nasceram. São os que aparecem
+ * no mural e os que as tarefas de cobrança e expiração vigiam. Derivado de
+ * ESTADO_INICIAL para as duas listas nunca discordarem.
+ */
+export const ESTADOS_ABERTOS: readonly EstadoCaso[] = [...new Set(Object.values(ESTADO_INICIAL))]
+
 /** Valor e rótulo na ordem declarada: é o que as telas usam para montar chips. */
 export function opcoes<V extends string>(c: Conjunto<V>): { valor: V; rotulo: string }[] {
   return c.valores.map((valor) => ({ valor, rotulo: c.entradas[valor].rotulo }))
