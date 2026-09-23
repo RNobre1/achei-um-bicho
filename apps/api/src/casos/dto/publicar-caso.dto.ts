@@ -26,6 +26,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator'
+import { NaoNoFuturo } from '../../comum/nao-no-futuro'
 
 // Os valores aceitos vêm do manifesto de packages/contratos. Nada de lista aqui.
 
@@ -62,7 +63,7 @@ export class PublicarCasoDto {
   @ValidateNested() @Type(() => LocalDto) local!: LocalDto
   @ValidateNested() @Type(() => AutorDto) autor!: AutorDto
 
-  @IsISO8601() ocorridoEm!: string
+  @IsISO8601() @NaoNoFuturo() ocorridoEm!: string
   @IsOptional() @IsString() @MaxLength(600) relato?: string
 
   /** Exatamente três, a regra de negócio RN3. */
