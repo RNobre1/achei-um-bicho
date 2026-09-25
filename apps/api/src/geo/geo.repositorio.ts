@@ -18,7 +18,7 @@ export interface LocalNoRaio {
   distanciaM: number
 }
 
-function pontoSql({ latitude, longitude }: Ponto): Prisma.Sql {
+export function pontoSql({ latitude, longitude }: Ponto): Prisma.Sql {
   return Prisma.sql`ST_SetSRID(ST_MakePoint(${longitude}::float8, ${latitude}::float8), 4326)::geography`
 }
 
