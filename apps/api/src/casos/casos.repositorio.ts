@@ -1,5 +1,13 @@
 import { Injectable } from '@nestjs/common'
-import { ESTADOS_ABERTOS, type EstadoCaso, type TipoCaso } from '@achei/contratos'
+import {
+  ESTADOS_ABERTOS,
+  type Coleira,
+  type Cor,
+  type Especie,
+  type EstadoCaso,
+  type Porte,
+  type TipoCaso,
+} from '@achei/contratos'
 import { Prisma } from '@prisma/client'
 import { GeoRepositorio, pontoSql } from '../geo/geo.repositorio'
 import type { Ponto } from '../geo/ponto'
@@ -12,17 +20,17 @@ const LIMITE_MURAL = 50
 
 interface LinhaMural {
   id: string
-  tipo: string
-  estado: string
+  tipo: TipoCaso
+  estado: EstadoCaso
   relato: string | null
   publicadoEm: Date
   ocorridoEm: Date
   bairro: string | null
   distanciaM: number
-  especie: string
-  porte: string
-  corDominante: string
-  coleira: string
+  especie: Especie
+  porte: Porte
+  corDominante: Cor
+  coleira: Coleira
   nome: string | null
 }
 
@@ -37,15 +45,15 @@ function filtroAbertosNoRaio(centro: Ponto, raioM: number, tipo?: TipoCaso): Pri
 /** Caso com o ponto real, que só existe dentro da API para calcular a área aproximada. */
 export interface CasoComPonto {
   id: string
-  tipo: string
-  estado: string
+  tipo: TipoCaso
+  estado: EstadoCaso
   relato: string | null
   ocorridoEm: Date
   publicadoEm: Date
-  especie: string
-  porte: string
-  corDominante: string
-  coleira: string
+  especie: Especie
+  porte: Porte
+  corDominante: Cor
+  coleira: Coleira
   nome: string | null
   castrado: boolean | null
   bairro: string | null

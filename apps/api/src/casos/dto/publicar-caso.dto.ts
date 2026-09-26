@@ -8,6 +8,11 @@ import {
   type Cor,
   type Especie,
   type Porte,
+  type AnimalNaPublicacao,
+  type AutorNaPublicacao,
+  type LocalNaPublicacao,
+  type NovaPublicacao,
+  type PerguntaNaPublicacao,
   type TipoCaso,
 } from '@achei/contratos'
 import { Type } from 'class-transformer'
@@ -30,7 +35,7 @@ import { NaoNoFuturo } from '../../comum/nao-no-futuro'
 
 // Os valores aceitos vêm do manifesto de packages/contratos. Nada de lista aqui.
 
-export class AnimalDto {
+export class AnimalDto implements AnimalNaPublicacao {
   @IsIn([...ESPECIE.valores]) especie!: Especie
   @IsIn([...PORTE.valores]) porte!: Porte
   @IsIn([...COR.valores]) corDominante!: Cor
@@ -39,24 +44,24 @@ export class AnimalDto {
   @IsOptional() @IsBoolean() castrado?: boolean
 }
 
-export class LocalDto {
+export class LocalDto implements LocalNaPublicacao {
   @IsLatitude() latitude!: number
   @IsLongitude() longitude!: number
   @IsOptional() @IsString() @MaxLength(80) bairro?: string
   @IsOptional() @IsString() @MaxLength(160) referencia?: string
 }
 
-export class AutorDto {
+export class AutorDto implements AutorNaPublicacao {
   @IsString() @IsNotEmpty() @MaxLength(80) nome!: string
   @IsOptional() @IsString() @MaxLength(20) telefone?: string
 }
 
-export class PerguntaDto {
+export class PerguntaDto implements PerguntaNaPublicacao {
   @IsString() @IsNotEmpty() @MaxLength(160) enunciado!: string
   @IsString() @IsNotEmpty() @MaxLength(160) respostaEsperada!: string
 }
 
-export class PublicarCasoDto {
+export class PublicarCasoDto implements NovaPublicacao {
   @IsIn([...TIPO_CASO.valores]) tipo!: TipoCaso
 
   @ValidateNested() @Type(() => AnimalDto) animal!: AnimalDto
@@ -75,9 +80,4 @@ export class PublicarCasoDto {
   perguntas!: PerguntaDto[]
 }
 
-export interface CasoPublicado {
-  id: string
-  tipo: TipoCaso
-  estado: string
-  codigoEdicao: string
-}
+export type { CasoPublicado } from '@achei/contratos'

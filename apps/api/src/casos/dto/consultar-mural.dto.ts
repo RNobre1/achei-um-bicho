@@ -1,8 +1,8 @@
-import { RAIO, TIPO_CASO, type TipoCaso } from '@achei/contratos'
+import { RAIO, TIPO_CASO, type ConsultaMural, type TipoCaso } from '@achei/contratos'
 import { Type } from 'class-transformer'
 import { IsIn, IsInt, IsLatitude, IsLongitude, IsOptional, Max, Min } from 'class-validator'
 
-export class ConsultarMuralDto {
+export class ConsultarMuralDto implements ConsultaMural {
   @Type(() => Number) @IsLatitude() latitude!: number
   @Type(() => Number) @IsLongitude() longitude!: number
 
@@ -13,27 +13,4 @@ export class ConsultarMuralDto {
   @IsOptional() @IsIn([...TIPO_CASO.valores]) tipo?: TipoCaso
 }
 
-export interface CasoNoMural {
-  id: string
-  tipo: string
-  estado: string
-  relato: string | null
-  publicadoEm: string
-  ocorridoEm: string
-  bairro: string | null
-  distanciaM: number
-  animal: {
-    especie: string
-    porte: string
-    corDominante: string
-    coleira: string
-    nome: string | null
-  }
-}
-
-export interface Mural {
-  raioM: number
-  casos: CasoNoMural[]
-  /** Quantos casos abertos existem até o raio máximo; o mural vazio usa para oferecer ampliar. */
-  totalNoRaioMaximo: number
-}
+export type { CasoNoMural, Mural } from '@achei/contratos'
