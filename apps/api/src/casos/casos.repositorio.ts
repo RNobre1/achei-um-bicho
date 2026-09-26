@@ -34,6 +34,26 @@ function filtroAbertosNoRaio(centro: Ponto, raioM: number, tipo?: TipoCaso): Pri
     ${tipo ? Prisma.sql`AND c.tipo = ${tipo}` : Prisma.empty}`
 }
 
+/** Caso com o ponto real, que só existe dentro da API para calcular a área aproximada. */
+export interface CasoComPonto {
+  id: string
+  tipo: string
+  estado: string
+  relato: string | null
+  ocorridoEm: Date
+  publicadoEm: Date
+  especie: string
+  porte: string
+  corDominante: string
+  coleira: string
+  nome: string | null
+  castrado: boolean | null
+  bairro: string | null
+  raioImprecisaoM: number
+  latitude: number
+  longitude: number
+}
+
 export interface NovoCaso {
   dados: PublicarCasoDto
   estado: EstadoCaso
@@ -112,5 +132,19 @@ export class CasosRepositorio {
         JOIN local l ON l.id = c.local_id
        WHERE ${filtroAbertosNoRaio(centro, raioM, tipo)}`
     return linha?.total ?? 0
+  }
+
+  async buscarComPonto(id: string): Promise<CasoComPonto | null> {
+    const [linha] = await this.prisma.$queryRaw<CasoComPonto[]>`
+      SELECT c.id, c.tipo, c.estado, c.relato,
+             c.ocorrido_em AS "ocorridoEm", c.publicado_em AS "publicadoEm",
+             a.especie, a.porte, a.cor_dominante AS "corDominante", a.coleira, a.nome, a.castrado,
+             l.bairro, l.raio_imprecisao_m AS "raioImprecisaoM",
+             ST_Y(l.ponto::geometry) AS latitude, ST_X(l.ponto::geometry) AS longitude
+        FROM caso c
+        JOIN animal a ON a.id = c.animal_id
+        JOIN local l ON l.id = c.local_id
+       WHERE c.id = ${id}::uuid`
+    return linha ?? null
   }
 }

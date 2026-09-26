@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common'
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common'
 import { CasosService } from './casos.service'
+import type { CasoAberto } from './dto/caso-aberto.dto'
 import type { Mural } from './dto/consultar-mural.dto'
 import { ConsultarMuralDto } from './dto/consultar-mural.dto'
 import type { CasoPublicado } from './dto/publicar-caso.dto'
@@ -17,5 +18,10 @@ export class CasosController {
   @Get()
   mural(@Query() consulta: ConsultarMuralDto): Promise<Mural> {
     return this.casos.mural(consulta)
+  }
+
+  @Get(':id')
+  abrir(@Param('id', new ParseUUIDPipe()) id: string): Promise<CasoAberto> {
+    return this.casos.abrir(id)
   }
 }
