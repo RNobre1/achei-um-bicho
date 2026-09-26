@@ -1,0 +1,12 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": ".",
+    "paths": {
+      "@achei/contratos": ["../../packages/contratos/src/index.ts"]
+    }
+  },
+  "include": ["src", "*.ts", "expo-env.d.ts"]
+}

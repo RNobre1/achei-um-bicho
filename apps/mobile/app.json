@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Achei um Bicho",
+    "slug": "achei-um-bicho",
+    "scheme": "acheiumbicho",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#EEF2EE",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "br.ufopa.acheiumbicho"
+    },
+    "android": {
+      "package": "br.ufopa.acheiumbicho"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "O Achei um Bicho usa sua localização para mostrar os casos perto de você."
+        }
+      ]
+    ]
+  }
+}
