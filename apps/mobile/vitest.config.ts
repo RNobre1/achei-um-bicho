@@ -12,5 +12,7 @@ export default defineConfig({
   test: {
     include: ['src/**/*.spec.ts'],
     environment: 'node',
+    // o aplicativo roda no fuso de Santarém; as datas dos testes também
+    env: { TZ: 'America/Santarem' },
   },
 })
