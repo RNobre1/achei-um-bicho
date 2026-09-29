@@ -14,5 +14,5 @@
     },
     "noEmit": true
   },
-  "include": ["src", "test", "prisma/*.ts", "vitest*.ts"]
+  "include": ["src", "test", "prisma/*.ts", "scripts", "vitest*.ts"]
 }

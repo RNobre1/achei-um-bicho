@@ -12,7 +12,8 @@
     "test": "vitest run && vitest run -c vitest.int.config.ts",
     "test:unidade": "vitest run",
     "test:integracao": "vitest run -c vitest.int.config.ts",
-    "gerar:vocabulario": "tsx prisma/gerar-vocabulario.ts"
+    "gerar:vocabulario": "tsx prisma/gerar-vocabulario.ts",
+    "semear:demo": "tsx scripts/semear-demo.ts"
   },
   "dependencies": {
     "@achei/contratos": "workspace:*",
