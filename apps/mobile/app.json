@@ -27,6 +27,14 @@
         {
           "locationWhenInUsePermission": "O Achei um Bicho usa sua localização para mostrar os casos perto de você."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
       ]
     ]
   }
