@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/dist-web
+**/.expo
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.venv*
+docs
+prototipo
+Aulas
+*.pptx
+*.pdf
+.playwright-mcp

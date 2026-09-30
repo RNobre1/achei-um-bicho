@@ -19,5 +19,25 @@ services:
       timeout: 3s
       retries: 20
 
+  # a API em contêiner, para quem só quer rodar o sistema e para o deploy; no dia a
+  # dia a API roda direto com pnpm, e este serviço fica fora do "up" padrão
+  api:
+    profiles: ["completo"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: achei-um-bicho-api
+    container_name: achei-um-bicho-api
+    environment:
+      DATABASE_URL: postgresql://bicho:bicho@banco:5432/achei_um_bicho
+      PORT: "3333"
+      CORS_ORIGINS: http://localhost:8081
+      RAIO_PADRAO_METROS: "1600"
+    ports:
+      - "3333:3333"
+    depends_on:
+      banco:
+        condition: service_healthy
+
 volumes:
   banco:
