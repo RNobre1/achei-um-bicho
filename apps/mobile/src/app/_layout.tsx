@@ -25,10 +25,7 @@ export default function Layout() {
   return (
     <>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: cores.chuva } }}>
-        <Stack.Screen name="(abas)" />
-        <Stack.Screen name="caso/[id]" />
-      </Stack>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: cores.chuva } }} />
     </>
   )
 }
