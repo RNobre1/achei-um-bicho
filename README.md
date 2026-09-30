@@ -1,0 +1,112 @@
+# Achei um Bicho
+
+Mural georreferenciado de cães e gatos perdidos e encontrados em Santarém-PA. Quem
+perdeu e quem achou publicam do mesmo jeito, e o mural mostra primeiro o que está
+perto: 70% dos cães recuperados estavam a menos de 1,6 km de casa.
+
+Projeto da disciplina Laboratório de Desenvolvimento de Software da UFOPA,
+Desafio 2 (Causa Animal e Cultura, ODS 15). Equipe: Bruna Kellen, Murilo Falcão e
+Rafael Nobre.
+
+## O que já funciona
+
+| Funcionalidade | No servidor | No aplicativo |
+|---|---|---|
+| F1 · Publicar caso de bicho perdido | `POST /casos` | Aba **Publicar**, quatro passos |
+| F2 · Publicar caso de bicho encontrado, sem conta | `POST /casos`, com código de edição | Código mostrado no fim e guardado no aparelho |
+| F3 · Mural por proximidade, com raio ajustável | `GET /casos` (PostGIS, índice GIST) | Aba **Perto**, filtros e botão Aumentar |
+| F4 · Caso aberto e registro de avistamento | `GET /casos/:id`, `POST` e `GET /casos/:id/avistamentos` | Tela do caso, "Vi esse bicho na rua" e avisos para quem publicou |
+
+Contato, código de edição, respostas de verificação e o ponto exato nunca saem nas
+respostas públicas; há testes automatizados que conferem isso a cada rodada.
+
+## Estrutura
+
+```
+apps/api/            API em NestJS, Prisma e PostgreSQL com PostGIS
+apps/mobile/         aplicativo em React Native com Expo
+packages/contratos/  vocabulário fechado e formato das requisições, usado pelos dois lados
+docs/                visão, MVP, modelo ER, cronograma, UML
+prototipo/           protótipo de média fidelidade
+```
+
+## Como rodar
+
+Precisa de Node 24 ou mais novo, Docker e do pnpm, que vem com o Node:
+
+```bash
+corepack enable
+pnpm install
+```
+
+### Banco
+
+O Postgres com PostGIS roda sempre em contêiner:
+
+```bash
+pnpm banco                  # o mesmo que: docker compose up -d banco
+```
+
+### API
+
+```bash
+cp apps/api/.env.example apps/api/.env
+pnpm --filter @achei/api exec prisma migrate deploy
+pnpm --filter @achei/api dev                    # http://localhost:3333
+pnpm --filter @achei/api semear:demo            # opcional: seis casos de demonstração
+```
+
+Para subir a API também em contêiner, do jeito que vai para o servidor:
+
+```bash
+docker compose --profile completo up -d --build
+```
+
+### Aplicativo
+
+```bash
+cp apps/mobile/.env.example apps/mobile/.env
+pnpm --filter @achei/mobile start
+```
+
+No celular, abra o QR code com o Expo Go. O celular não enxerga o `localhost` do
+computador: no `.env` do aplicativo, `EXPO_PUBLIC_API_URL` precisa apontar para o
+IP da máquina na rede, por exemplo `http://192.168.0.10:3333`.
+
+Para testar no navegador: `pnpm --filter @achei/mobile web`.
+
+### APK instalável
+
+O perfil `alpha` do `eas.json` gera um APK para instalar direto no Android, sem
+loja. Precisa de uma conta gratuita no Expo:
+
+```bash
+cd apps/mobile
+npx eas-cli login
+npx eas-cli build --profile alpha --platform android
+```
+
+## Testes
+
+```bash
+pnpm test
+```
+
+Roda tudo: regras do vocabulário, unidade e integração da API e regras do
+aplicativo. A integração usa um banco de teste separado dentro do mesmo contêiner,
+recriado a cada rodada, então o banco precisa estar de pé.
+
+## Vocabulário fechado
+
+Espécie, porte, cor, coleira, estados do caso e os demais conjuntos de valores
+são declarados uma única vez, em `packages/contratos/src/vocabulario.ts`. As
+restrições do banco, a validação da API, os chips das telas e a tabela em
+`docs/vocabulario.md` saem dali. Para acrescentar um valor, mude o manifesto e
+rode:
+
+```bash
+pnpm --filter @achei/api gerar:vocabulario      # nova migration com as restrições
+pnpm --filter @achei/contratos gerar:docs       # tabela da documentação
+```
+
+Os testes acusam qualquer lugar que tenha ficado para trás.

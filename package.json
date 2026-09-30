@@ -4,7 +4,7 @@
   "description": "Mural georreferenciado de cães e gatos perdidos e encontrados em Santarém-PA",
   "packageManager": "pnpm@11.22.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "banco": "docker compose up -d banco",
