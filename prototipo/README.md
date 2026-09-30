@@ -71,7 +71,8 @@ duplicar o markup em nove arquivos.
 
 ```bash
 cd prototipo
-CHROME=~/Library/Caches/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-mac-arm64/chrome-headless-shell
+# o Playwright troca o número da pasta a cada versão; procurar evita caminho quebrado
+CHROME=$(ls -d ~/Library/Caches/ms-playwright/chromium_headless_shell-*/*/chrome-headless-shell | tail -1)
 
 # prancheta inteira
 "$CHROME" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=2 \
