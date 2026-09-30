@@ -106,3 +106,36 @@ export interface CasoAberto {
     bairro: string | null
   }
 }
+
+/** Cabeçalho em que quem publicou prova a autoria com o código de edição. */
+export const CABECALHO_CODIGO_EDICAO = 'x-codigo-edicao'
+
+/** Corpo de POST /casos/:id/avistamentos. Registrar avistamento não exige conta. */
+export interface NovoAvistamento {
+  latitude: number
+  longitude: number
+  bairro?: string
+  /** Data e hora em ISO 8601. */
+  vistoEm: string
+  observacao?: string
+}
+
+/** Resposta de POST /casos/:id/avistamentos. */
+export interface AvistamentoRegistrado {
+  id: string
+  vistoEm: string
+}
+
+/**
+ * Item de GET /casos/:id/avistamentos, que só quem publicou vê. O ponto de quem
+ * avisou não sai: pode ser a casa dessa pessoa. Sai a distância e o bairro.
+ */
+export interface AvistamentoParaAutor {
+  id: string
+  vistoEm: string
+  registradoEm: string
+  observacao: string | null
+  bairro: string | null
+  /** Distância até o ponto do caso, em metros. */
+  distanciaM: number
+}
