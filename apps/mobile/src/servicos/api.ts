@@ -1,5 +1,7 @@
 import {
   CABECALHO_CODIGO_EDICAO,
+  CAMPO_FOTO,
+  type FotoEnviada,
   type AvistamentoParaAutor,
   type AvistamentoRegistrado,
   type CasoAberto,
@@ -29,7 +31,19 @@ export interface ClienteApi {
   publicar(dados: NovaPublicacao): Promise<CasoPublicado>
   registrarAvistamento(casoId: string, dados: NovoAvistamento): Promise<AvistamentoRegistrado>
   avistamentosDoMeuCaso(casoId: string, codigoEdicao: string): Promise<AvistamentoParaAutor[]>
+  enviarFoto(casoId: string, codigoEdicao: string, arquivo: ArquivoDeFoto): Promise<FotoEnviada>
+  urlDaFoto(caminho: string): string
 }
+
+/** Arquivo no formato que o FormData do React Native entende no celular. */
+export interface ArquivoNativo {
+  uri: string
+  name: string
+  type: string
+}
+
+/** Blob na web; objeto com uri no celular. */
+export type ArquivoDeFoto = Blob | ArquivoNativo
 
 type Buscar = (url: string, opcoes?: RequestInit) => Promise<Response>
 
@@ -82,6 +96,20 @@ export function criarClienteApi(urlBase: string, buscar: Buscar = fetch): Client
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dados),
       })
+    },
+    enviarFoto(casoId, codigoEdicao, arquivo) {
+      const formulario = new FormData()
+      if (arquivo instanceof Blob) formulario.append(CAMPO_FOTO, arquivo, 'foto.jpg')
+      // o FormData do React Native aceita { uri, name, type } no lugar do Blob
+      else formulario.append(CAMPO_FOTO, arquivo as unknown as Blob)
+      return pedir<FotoEnviada>(`/casos/${encodeURIComponent(casoId)}/fotos`, {
+        method: 'POST',
+        headers: { [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
+        body: formulario,
+      })
+    },
+    urlDaFoto(caminho) {
+      return `${base}${caminho}`
     },
     avistamentosDoMeuCaso(casoId, codigoEdicao) {
       return pedir<AvistamentoParaAutor[]>(`/casos/${encodeURIComponent(casoId)}/avistamentos`, {

@@ -42,6 +42,8 @@ export interface RascunhoPublicacao {
   relato: string
   autor: { nome: string; telefone: string }
   perguntas: PerguntaDoRascunho[]
+  /** Endereços locais das fotos já reduzidas; sobem depois que o caso é criado. */
+  fotos: string[]
 }
 
 // Quem perdeu responde sobre o que só o tutor sabe; quem achou, sobre o que só
@@ -73,6 +75,7 @@ export function rascunhoVazio(tipo: TipoCaso): RascunhoPublicacao {
     relato: '',
     autor: { nome: '', telefone: '' },
     perguntas: perguntasSugeridas(tipo).map((enunciado) => ({ enunciado, resposta: '' })),
+    fotos: [],
   }
 }
 

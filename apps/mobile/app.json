@@ -35,6 +35,14 @@
             "usesCleartextTraffic": true
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Achei um Bicho usa suas fotos para mostrar o animal no caso que você publica.",
+          "cameraPermission": "O Achei um Bicho usa a câmera para fotografar o animal que você achou ou perdeu.",
+          "microphonePermission": false
+        }
       ]
     ]
   }

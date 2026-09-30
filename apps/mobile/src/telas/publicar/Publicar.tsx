@@ -9,6 +9,7 @@ import { Passos } from '../../componentes/Passos'
 import { nomeDoAnimal } from '../../dominio/mural'
 import { montarPublicacao, PASSOS, pendenciasDoPasso, rascunhoVazio, type RascunhoPublicacao } from '../../dominio/publicacao'
 import { api, ErroApi } from '../../servicos/api'
+import { arquivoDaFoto } from '../../servicos/fotos'
 import { guardarMeuCaso } from '../../servicos/meus-casos'
 import { cores, fontes } from '../../tema'
 import { CodigoDeEdicao } from './CodigoDeEdicao'
@@ -29,6 +30,8 @@ export function Publicar() {
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string>()
   const [publicado, setPublicado] = useState<{ id: string; codigo: string }>()
+  const [fotosPendentes, setFotosPendentes] = useState<string[]>([])
+  const [reenviando, setReenviando] = useState(false)
 
   const passo = PASSOS[indice]!
   const mudar = (alterar: (r: RascunhoPublicacao) => RascunhoPublicacao) => {
@@ -49,6 +52,26 @@ export function Publicar() {
     irPara(1)
   }
 
+  /** Sobe as fotos uma a uma e devolve as que não subiram, para tentar de novo. */
+  async function enviarFotos(id: string, codigo: string, fotos: string[]): Promise<string[]> {
+    const falharam: string[] = []
+    for (const uri of fotos) {
+      try {
+        await api.enviarFoto(id, codigo, await arquivoDaFoto(uri))
+      } catch {
+        falharam.push(uri)
+      }
+    }
+    return falharam
+  }
+
+  async function reenviarFotos() {
+    if (!publicado) return
+    setReenviando(true)
+    setFotosPendentes(await enviarFotos(publicado.id, publicado.codigo, fotosPendentes))
+    setReenviando(false)
+  }
+
   async function publicar(r: RascunhoPublicacao) {
     setEnviando(true)
     setErro(undefined)
@@ -62,6 +85,8 @@ export function Publicar() {
         nome: nomeDoAnimal({ especie: corpo.animal.especie, nome: corpo.animal.nome ?? null }),
         publicadoEm: new Date().toISOString(),
       })
+      // o caso já existe: foto que falhar não desfaz a publicação, fica para tentar de novo
+      setFotosPendentes(await enviarFotos(resposta.id, resposta.codigoEdicao, r.fotos))
       setPublicado({ id: resposta.id, codigo: resposta.codigoEdicao })
       rolagem.current?.scrollTo({ y: 0, animated: false })
     } catch (e) {
@@ -84,6 +109,7 @@ export function Publicar() {
 
   function recomecar() {
     setPublicado(undefined)
+    setFotosPendentes([])
     setRascunho(undefined)
     irPara(0)
   }
@@ -98,6 +124,9 @@ export function Publicar() {
         {publicado ? (
           <CodigoDeEdicao
             codigo={publicado.codigo}
+            fotosPendentes={fotosPendentes.length}
+            reenviando={reenviando}
+            aoReenviarFotos={() => void reenviarFotos()}
             aoVerCaso={() => router.push(`/caso/${publicado.id}`)}
             aoPublicarOutro={recomecar}
           />

@@ -5,11 +5,14 @@ import { cores, fontes } from '../../tema'
 
 interface Props {
   codigo: string
+  fotosPendentes: number
+  reenviando: boolean
+  aoReenviarFotos: () => void
   aoVerCaso: () => void
   aoPublicarOutro: () => void
 }
 
-export function CodigoDeEdicao({ codigo, aoVerCaso, aoPublicarOutro }: Props) {
+export function CodigoDeEdicao({ codigo, fotosPendentes, reenviando, aoReenviarFotos, aoVerCaso, aoPublicarOutro }: Props) {
   return (
     <View style={{ gap: 18 }}>
       <Text style={estilos.titulo}>Publicado.</Text>
@@ -24,6 +27,15 @@ export function CodigoDeEdicao({ codigo, aoVerCaso, aoPublicarOutro }: Props) {
         titulo="Anote ou tire um print."
         texto="É com este código que você edita ou encerra o caso sem criar conta. Ele fica guardado neste celular, mas não aparece de novo em lugar nenhum."
       />
+      {fotosPendentes > 0 ? (
+        <>
+          <Aviso
+            titulo={fotosPendentes === 1 ? 'Uma foto não subiu.' : `${fotosPendentes} fotos não subiram.`}
+            texto="O caso já está publicado. Confira a internet e tente mandar a foto de novo."
+          />
+          <Botao rotulo="Enviar a foto de novo" variante="fraco" carregando={reenviando} aoTocar={aoReenviarFotos} />
+        </>
+      ) : null}
       <Botao rotulo="Ver meu caso" variante="escuro" aoTocar={aoVerCaso} />
       <Botao rotulo="Publicar outro caso" variante="fraco" aoTocar={aoPublicarOutro} />
     </View>

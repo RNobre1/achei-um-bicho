@@ -1,7 +1,7 @@
 import type { AvistamentoParaAutor, CasoAberto as Caso } from '@achei/contratos'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
@@ -21,6 +21,7 @@ export function CasoAberto() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const margens = useSafeAreaInsets()
+  const { width: larguraDaTela } = useWindowDimensions()
   const [caso, setCaso] = useState<Caso>()
   const [erro, setErro] = useState<string>()
   const [explicarReivindicacao, setExplicarReivindicacao] = useState(false)
@@ -77,7 +78,20 @@ export function CasoAberto() {
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: margens.bottom + 24 }}>
           <View>
-            <Placa rotulo="foto enviada por quem publicou" silte={caso.tipo === 'encontrado'} estilo={estilos.foto} />
+            {caso.fotos.length > 0 ? (
+              <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+                {caso.fotos.map((caminho, i) => (
+                  <Image
+                    key={caminho}
+                    source={{ uri: api.urlDaFoto(caminho) }}
+                    style={[estilos.foto, { width: larguraDaTela }]}
+                    accessibilityLabel={`Foto ${i + 1} de ${caso.fotos.length}`}
+                  />
+                ))}
+              </ScrollView>
+            ) : (
+              <Placa rotulo="foto enviada por quem publicou" silte={caso.tipo === 'encontrado'} estilo={estilos.foto} />
+            )}
             {caso.area.bairro ? <Text style={estilos.carimbo}>{caso.area.bairro.toUpperCase()} · PA</Text> : null}
           </View>
 
@@ -142,7 +156,7 @@ export function CasoAberto() {
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: cores.chuva },
   topo: { paddingHorizontal: 22, paddingBottom: 10 },
-  foto: { height: 198 },
+  foto: { height: 230 },
   carimbo: {
     position: 'absolute',
     top: 10,

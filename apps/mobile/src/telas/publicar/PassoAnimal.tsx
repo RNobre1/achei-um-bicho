@@ -2,6 +2,7 @@ import { COLEIRA, COR, ESPECIE, PORTE, opcoes } from '@achei/contratos'
 import { View } from 'react-native'
 import { Aviso } from '../../componentes/Aviso'
 import { Campo } from '../../componentes/Campo'
+import { FotosDoRascunho } from '../../componentes/FotosDoRascunho'
 import { GrupoDeChips } from '../../componentes/GrupoDeChips'
 import type { RascunhoPublicacao } from '../../dominio/publicacao'
 
@@ -17,6 +18,7 @@ export function PassoAnimal({ rascunho, mudar }: Props) {
 
   return (
     <View style={{ gap: 16 }}>
+      <FotosDoRascunho fotos={rascunho.fotos} aoMudar={(fotos) => mudar((r) => ({ ...r, fotos }))} />
       <GrupoDeChips rotulo="Bicho" opcoes={opcoes(ESPECIE)} marcado={animal.especie} aoEscolher={(especie) => mudarAnimal({ especie })} />
       <GrupoDeChips rotulo="Porte" opcoes={opcoes(PORTE)} marcado={animal.porte} aoEscolher={(porte) => mudarAnimal({ porte })} />
       <GrupoDeChips

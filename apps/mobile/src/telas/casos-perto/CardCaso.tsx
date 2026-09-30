@@ -1,16 +1,21 @@
 import type { CasoNoMural } from '@achei/contratos'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Etiqueta } from '../../componentes/Etiqueta'
 import { Placa } from '../../componentes/Placa'
 import { formatarDistancia, formatarTempoDesde } from '../../dominio/formatar'
 import { descreverAnimal, nomeDoAnimal } from '../../dominio/mural'
+import { api } from '../../servicos/api'
 import { cores, fontes } from '../../tema'
 
 export function CardCaso({ caso, aoTocar }: { caso: CasoNoMural; aoTocar: () => void }) {
   const onde = [caso.bairro, formatarDistancia(caso.distanciaM)].filter(Boolean).join(' · ')
   return (
     <Pressable onPress={aoTocar} accessibilityRole="button" style={estilos.card}>
-      <Placa rotulo="foto" silte={caso.tipo === 'encontrado'} estilo={estilos.foto} />
+      {caso.foto ? (
+        <Image source={{ uri: api.urlDaFoto(caso.foto) }} style={estilos.foto} accessibilityLabel={`Foto de ${nomeDoAnimal(caso.animal)}`} />
+      ) : (
+        <Placa rotulo="foto" silte={caso.tipo === 'encontrado'} estilo={estilos.foto} />
+      )}
       <View style={estilos.texto}>
         <View style={estilos.topo}>
           <Etiqueta tipo={caso.tipo} />
