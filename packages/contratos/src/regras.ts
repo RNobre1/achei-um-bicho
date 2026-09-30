@@ -12,3 +12,14 @@ export const RAIO = {
   /** Degraus que o botão "Aumentar" do mural percorre. */
   degrausM: [1600, 3000, 5000],
 } as const
+
+/**
+ * Foto do animal. O aplicativo reduz antes de enviar e a API recusa o que passar
+ * do limite: publicar um caso precisa caber em 1 MB de dados, com a foto (RNF2).
+ */
+export const FOTO = {
+  maximoBytes: 900_000,
+  /** Largura para a qual o aplicativo reduz a foto antes de enviar. */
+  larguraMaximaPx: 1080,
+  maximoPorCaso: 3,
+} as const
