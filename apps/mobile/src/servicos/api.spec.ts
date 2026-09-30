@@ -68,4 +68,26 @@ describe('cliente da API', () => {
       message: 'Sem conexão com o servidor. Confira a internet e tente de novo.',
     })
   })
+
+  it('registra avistamento por POST no caso, sem pedir identificação', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson({ id: 'av1', vistoEm: '2026-09-30T12:00:00.000Z' }, 201))
+    const aviso = { latitude: -2.44, longitude: -54.71, vistoEm: '2026-09-30T12:00:00.000Z' }
+
+    await criarClienteApi('http://api.teste', buscar).registrarAvistamento('abc', aviso)
+
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/avistamentos')
+    expect(opcoes).toMatchObject({ method: 'POST' })
+    expect(JSON.parse((opcoes as RequestInit).body as string)).toEqual(aviso)
+  })
+
+  it('lê os avistamentos do próprio caso mostrando o código de edição no cabeçalho', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson([]))
+
+    await criarClienteApi('http://api.teste', buscar).avistamentosDoMeuCaso('abc', 'ABCD-EFGH')
+
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/avistamentos')
+    expect((opcoes as RequestInit).headers).toEqual({ 'x-codigo-edicao': 'ABCD-EFGH' })
+  })
 })
