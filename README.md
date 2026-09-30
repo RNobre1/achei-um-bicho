@@ -77,16 +77,11 @@ IP da máquina na rede, por exemplo `http://192.168.0.10:3333`.
 
 Para testar no navegador: `pnpm --filter @achei/mobile web`.
 
-### APK instalável
+### APK instalável e iPhone
 
-O perfil `alpha` do `eas.json` gera um APK para instalar direto no Android, sem
-loja. Precisa de uma conta gratuita no Expo:
-
-```bash
-cd apps/mobile
-npx eas-cli login
-npx eas-cli build --profile alpha --platform android
-```
+O passo a passo do APK (sem loja) e as opções para iPhone estão em
+[docs/guia-apk.md](docs/guia-apk.md). Onde hospedar a API, o banco e a versão web
+sem pagar: [docs/hospedagem.md](docs/hospedagem.md).
 
 ## Testes
 
@@ -112,3 +107,16 @@ pnpm --filter @achei/contratos gerar:docs       # tabela da documentação
 ```
 
 Os testes acusam qualquer lugar que tenha ficado para trás.
+
+## Documentos
+
+| Documento | Onde |
+|---|---|
+| O que falta até o pitch | [docs/backlog.md](docs/backlog.md) |
+| Visão do produto | [docs/documento-de-visao.md](docs/documento-de-visao.md) |
+| Funcionalidades do MVP e critérios de aceite | [docs/mvp-funcionalidades.md](docs/mvp-funcionalidades.md) |
+| Modelo entidade-relacionamento | [docs/modelo-er.md](docs/modelo-er.md) |
+| Cronograma | [docs/cronograma.md](docs/cronograma.md) |
+| Diagramas UML | [docs/uml/](docs/uml/) |
+| Protótipo de média fidelidade | [prototipo/](prototipo/) |
+
