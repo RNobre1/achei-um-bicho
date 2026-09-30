@@ -15,7 +15,7 @@ WORKDIR /app
 FROM base AS construcao
 # primeiro só os manifestos: a camada de dependências fica em cache enquanto o
 # lockfile não muda
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/contratos/package.json packages/contratos/
 COPY apps/api/package.json apps/api/
 COPY apps/mobile/package.json apps/mobile/
