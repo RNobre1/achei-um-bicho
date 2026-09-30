@@ -1,4 +1,14 @@
-import type { CasoAberto, CasoPublicado, ConsultaMural, Mural, NovaPublicacao } from '@achei/contratos'
+import {
+  CABECALHO_CODIGO_EDICAO,
+  type AvistamentoParaAutor,
+  type AvistamentoRegistrado,
+  type CasoAberto,
+  type CasoPublicado,
+  type ConsultaMural,
+  type Mural,
+  type NovaPublicacao,
+  type NovoAvistamento,
+} from '@achei/contratos'
 
 const SEM_CONEXAO = 'Sem conexão com o servidor. Confira a internet e tente de novo.'
 
@@ -17,6 +27,8 @@ export interface ClienteApi {
   mural(consulta: ConsultaMural): Promise<Mural>
   abrirCaso(id: string): Promise<CasoAberto>
   publicar(dados: NovaPublicacao): Promise<CasoPublicado>
+  registrarAvistamento(casoId: string, dados: NovoAvistamento): Promise<AvistamentoRegistrado>
+  avistamentosDoMeuCaso(casoId: string, codigoEdicao: string): Promise<AvistamentoParaAutor[]>
 }
 
 type Buscar = (url: string, opcoes?: RequestInit) => Promise<Response>
@@ -62,6 +74,18 @@ export function criarClienteApi(urlBase: string, buscar: Buscar = fetch): Client
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dados),
+      })
+    },
+    registrarAvistamento(casoId, dados) {
+      return pedir<AvistamentoRegistrado>(`/casos/${encodeURIComponent(casoId)}/avistamentos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados),
+      })
+    },
+    avistamentosDoMeuCaso(casoId, codigoEdicao) {
+      return pedir<AvistamentoParaAutor[]>(`/casos/${encodeURIComponent(casoId)}/avistamentos`, {
+        headers: { [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
       })
     },
   }
