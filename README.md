@@ -12,21 +12,23 @@ Rafael Nobre.
 
 | Funcionalidade | No servidor | No aplicativo |
 |---|---|---|
-| F1 · Publicar caso de bicho perdido | `POST /casos` | Aba **Publicar**, quatro passos |
+| F1 · Publicar caso de bicho perdido | `POST /casos`, `POST /casos/:id/fotos` | Aba **Publicar**, quatro passos, com até três fotos |
 | F2 · Publicar caso de bicho encontrado, sem conta | `POST /casos`, com código de edição | Código mostrado no fim e guardado no aparelho |
 | F3 · Mural por proximidade, com raio ajustável | `GET /casos` (PostGIS, índice GIST) | Aba **Perto**, filtros e botão Aumentar |
 | F4 · Caso aberto e registro de avistamento | `GET /casos/:id`, `POST` e `GET /casos/:id/avistamentos` | Tela do caso, "Vi esse bicho na rua" e avisos para quem publicou |
 
 Contato, código de edição, respostas de verificação e o ponto exato nunca saem nas
-respostas públicas; há testes automatizados que conferem isso a cada rodada.
+respostas públicas; há testes automatizados que conferem isso a cada rodada. A foto
+é reduzida no celular antes de subir, e a API apaga os metadados em que a câmera
+grava a coordenada de onde ela foi tirada.
 
 ## Estrutura
 
 ```
-apps/api/            API em NestJS, Prisma e PostgreSQL com PostGIS
+apps/api/            API em NestJS, Prisma e PostgreSQL com PostGIS; fotos em apps/api/fotos/
 apps/mobile/         aplicativo em React Native com Expo
 packages/contratos/  vocabulário fechado e formato das requisições, usado pelos dois lados
-docs/                visão, MVP, modelo ER, cronograma, UML
+docs/                visão, MVP, modelo ER, cronograma, UML (casos de uso e classes)
 prototipo/           protótipo de média fidelidade
 ```
 
