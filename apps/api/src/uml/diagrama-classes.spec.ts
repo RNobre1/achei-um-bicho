@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { VOCABULARIO } from '@achei/contratos'
 import { Prisma } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
-import { ARQUIVO_DIAGRAMA, gerarDiagramaClasses, modeloDeClasses, POSICOES } from './diagrama-classes'
+import { ARQUIVO_DIAGRAMA, gerarDiagramaClasses, modeloDeClasses, POSICOES, posicoesDasEnumeracoes } from './diagrama-classes'
 
 const modelo = modeloDeClasses()
 const classe = (nome: string) => modelo.classes.find((c) => c.nome === nome)!
@@ -53,9 +53,21 @@ describe('diagrama de classes gerado do schema e do vocabulário', () => {
     expect(papeis.sort()).toEqual(['casoEncontrado', 'casoPerdido'])
   })
 
-  it('toda classe e toda enumeração tem lugar declarado no desenho', () => {
-    for (const nome of [...modelo.classes, ...modelo.enumeracoes].map((c) => c.nome)) {
+  it('toda classe tem lugar declarado no desenho', () => {
+    for (const { nome } of modelo.classes) {
       expect(POSICOES[nome], `${nome} sem posição no diagrama`).toBeDefined()
+    }
+  })
+
+  it('empilha as enumerações sem uma encostar na outra', () => {
+    const posicoes = posicoesDasEnumeracoes(modelo.enumeracoes)
+    const caixas = modelo.enumeracoes.map((e) => ({ ...posicoes[e.nome]!, altura: 40 + e.valores.length * 18 + 8 }))
+    for (const a of caixas) {
+      for (const b of caixas) {
+        if (a === b || a.x !== b.x) continue
+        const separadas = a.y + a.altura < b.y || b.y + b.altura < a.y
+        expect(separadas).toBe(true)
+      }
     }
   })
 
