@@ -1,4 +1,8 @@
-# dependências e builds
+# O que entra no repositório: código, testes, migrations, documentação em .md e
+# os documentos entregues (PDF, DOCX, PPTX). O que fica fora está abaixo, por
+# motivo. Na dúvida: se é gerado por comando, ou se é segredo, não entra.
+
+# dependências e saídas de build (geradas por pnpm install / build / export)
 node_modules/
 dist/
 build/
@@ -6,24 +10,47 @@ web-build/
 dist-web/
 .expo/
 coverage/
-
-# ambiente
-.env
-.env.*
-!.env.example
-
-# ferramentas locais
-__pycache__/
-.venv*/
-*.log
-.DS_Store
-
-# material da disciplina (não é do projeto)
-Aulas/
-
-# fotos enviadas em desenvolvimento
-apps/api/fotos/
+*.tsbuildinfo
+apps/mobile/expo-env.d.ts
 
 # pastas nativas geradas pelo expo prebuild a partir do app.json; nunca editar à mão
 apps/mobile/android/
 apps/mobile/ios/
+
+# aplicativo compilado e chaves de assinatura: o APK se distribui por link, e a
+# chave vazada permite publicar versão falsa do aplicativo
+*.apk
+*.aab
+*.ipa
+*.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+credentials.json
+
+# segredos: só o .env.example vai para o repositório
+.env
+.env.*
+!.env.example
+
+# dados locais de desenvolvimento
+apps/api/fotos/
+
+# Python e LaTeX dos scripts de documentação
+__pycache__/
+.venv*/
+*.aux
+*.out
+*.toc
+*.synctex.gz
+
+# sistema operacional e editores
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# material da disciplina (não é do projeto)
+Aulas/
