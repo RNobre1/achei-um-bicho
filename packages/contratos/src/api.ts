@@ -77,6 +77,8 @@ export interface CasoNoMural {
   bairro: string | null
   distanciaM: number
   animal: AnimalPublico
+  /** Caminho da primeira foto, relativo ao endereço da API; nulo quando não há foto. */
+  foto: string | null
 }
 
 /** Resposta de GET /casos. */
@@ -99,6 +101,8 @@ export interface CasoAberto {
   ocorridoEm: string
   publicadoEm: string
   animal: AnimalPublico & { castrado: boolean | null }
+  /** Caminhos das fotos, relativos ao endereço da API, na ordem de envio. */
+  fotos: string[]
   area: {
     latitude: number
     longitude: number
@@ -138,4 +142,14 @@ export interface AvistamentoParaAutor {
   bairro: string | null
   /** Distância até o ponto do caso, em metros. */
   distanciaM: number
+}
+
+/** Campo do formulário multipart em POST /casos/:id/fotos. */
+export const CAMPO_FOTO = 'foto'
+
+/** Resposta de POST /casos/:id/fotos. */
+export interface FotoEnviada {
+  id: string
+  /** Relativo ao endereço da API, por exemplo /fotos/<id>.jpg. */
+  caminho: string
 }

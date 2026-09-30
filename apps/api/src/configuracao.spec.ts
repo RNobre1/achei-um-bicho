@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { lerConfiguracao } from './configuracao'
 
@@ -7,6 +8,7 @@ describe('configuração lida do ambiente', () => {
       porta: 3333,
       origensCors: ['http://localhost:8081'],
       raioPadraoM: 1600,
+      pastaFotos: resolve('fotos'),
     })
   })
 
@@ -15,11 +17,13 @@ describe('configuração lida do ambiente', () => {
       PORT: '4000',
       CORS_ORIGINS: 'http://localhost:8081, https://achei.exemplo',
       RAIO_PADRAO_METROS: '2000',
+      PASTA_FOTOS: '/dados/fotos',
     })
     expect(config).toEqual({
       porta: 4000,
       origensCors: ['http://localhost:8081', 'https://achei.exemplo'],
       raioPadraoM: 2000,
+      pastaFotos: '/dados/fotos',
     })
   })
 
