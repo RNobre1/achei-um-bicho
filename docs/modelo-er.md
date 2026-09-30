@@ -46,9 +46,9 @@ erDiagram
         text tipo "perdido | encontrado"
         text estado "procurando | abrigado_temporariamente | em_contato | resolvido | expirado"
         uuid autor_id FK
-        uuid animal_id FK
-        uuid local_id FK
-        text codigo_edicao "para autor sem conta"
+        uuid animal_id FK "um caso por animal"
+        uuid local_id FK "um caso por local"
+        text codigo_edicao "hash do código, para autor sem conta"
         text relato
         timestamptz ocorrido_em
         timestamptz publicado_em
@@ -144,13 +144,15 @@ erDiagram
 
 ### `pessoa`
 Quem interage com o sistema. Pode existir sem conta, e nesse caso `email` e
-`senha_hash` ficam nulos: o acesso ao caso se dá pelo `codigo_edicao` guardado
-em `caso`. O telefone só é revelado depois que o autor do caso libera o contato.
+`senha_hash` ficam nulos: o acesso ao caso se dá pelo código de edição, do qual o
+banco guarda só o hash, em `caso.codigo_edicao`. O telefone só é revelado depois que o autor do caso libera o contato.
 
 ### `caso`
 A publicação. `tipo` define o lado: quem perdeu ou quem achou. `estado` guarda o
 ciclo de vida. `ultima_interacao_em` é a coluna que as tarefas agendadas de
-cobrança e expiração leem; sem ela, o mural acumula anúncio morto.
+cobrança e expiração leem; sem ela, o mural acumula anúncio morto. Cada caso tem
+o seu animal e o seu local, e nenhum dos dois é compartilhado: por isso
+`animal_id` e `local_id` são únicos. O avistamento grava o próprio local.
 
 ### `animal`
 Os atributos do bicho. Os quatro primeiros (espécie, porte, cor dominante e
@@ -243,9 +245,9 @@ CREATE TABLE caso (
                          CHECK (estado IN ('procurando','abrigado_temporariamente',
                                            'em_contato','resolvido','expirado')),
     autor_id             uuid NOT NULL REFERENCES pessoa(id) ON DELETE RESTRICT,
-    animal_id            uuid NOT NULL REFERENCES animal(id) ON DELETE CASCADE,
-    local_id             uuid NOT NULL REFERENCES local(id) ON DELETE RESTRICT,
-    codigo_edicao        text UNIQUE,
+    animal_id            uuid NOT NULL UNIQUE REFERENCES animal(id) ON DELETE CASCADE,
+    local_id             uuid NOT NULL UNIQUE REFERENCES local(id) ON DELETE RESTRICT,
+    codigo_edicao        text UNIQUE,  -- SHA-256 do código; o código em claro não é guardado
     relato               text,
     ocorrido_em          timestamptz NOT NULL,
     publicado_em         timestamptz NOT NULL DEFAULT now(),
@@ -366,6 +368,7 @@ Separação deliberada: o que estiver na coluna errada vira defeito silencioso.
 |---|---|
 | Vocabulário fechado, por `CHECK` | Que sejam exatamente 3 perguntas por caso |
 | Um desfecho por caso, por `UNIQUE` | Transição válida entre estados do caso |
+| Um animal e um local por caso, por `UNIQUE` | Que o código de edição só exista em claro na resposta da publicação |
 | Par de casos único, por `UNIQUE` | Que o pareamento só ligue lados opostos |
 | Uma resposta por pergunta em cada tentativa | Que `resposta_esperada` nunca seja serializada |
 | Integridade referencial | Deslocamento do ponto antes de publicar |
@@ -380,5 +383,7 @@ com teste.
 |---|---|---|
 | `pergunta_verificacao.resposta_esperada` | É a prova; vazou, acabou a verificação | Nunca sai da API. Teste automatizado sobre o corpo da resposta |
 | `pessoa.telefone` | Contato pessoal | Só após liberação (F7) |
+| `caso.codigo_edicao` | Dá poder de editar e encerrar o caso | Guardado só como hash; o código aparece uma vez, para quem publicou |
 | `local.ponto` | Pode revelar residência | Publicado como área aproximada |
+| `local.ponto` de um avistamento | Pode ser a casa de quem avisou | Quem publicou vê só a distância e o bairro |
 | `resposta_verificacao.texto` | Contém detalhe íntimo do animal | Visível só ao autor do caso |
