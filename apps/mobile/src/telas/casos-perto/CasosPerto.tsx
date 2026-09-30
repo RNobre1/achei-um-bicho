@@ -1,11 +1,11 @@
 import { RAIO, TIPO_CASO, type Mural, type TipoCaso } from '@achei/contratos'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Share, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Botao } from '../../componentes/Botao'
 import { formatarDistancia } from '../../dominio/formatar'
-import { proximoRaio } from '../../dominio/mural'
+import { proximoRaio, textoDoConvite } from '../../dominio/mural'
 import { api, ErroApi } from '../../servicos/api'
 import type { Posicao } from '../../dominio/posicao'
 import { obterPosicao } from '../../servicos/localizacao'
@@ -140,6 +140,11 @@ export function CasosPerto() {
                   É uma boa notícia. Se você achar ou perder um bicho, publique: o aviso chega a quem mora perto.
                 </Text>
               )}
+              <Botao
+                rotulo="Convidar vizinhos"
+                variante="fraco"
+                aoTocar={() => void Share.share({ message: textoDoConvite(raio) }).catch(() => undefined)}
+              />
             </View>
           }
         />

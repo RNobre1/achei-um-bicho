@@ -1,4 +1,5 @@
 import { COR, ESPECIE, PORTE, RAIO, type AnimalPublico, type Coleira } from '@achei/contratos'
+import { formatarDistancia } from './formatar'
 
 /** Próximo degrau do botão "Aumentar"; depois do último, volta ao padrão. */
 export function proximoRaio(atual: number): number {
@@ -22,4 +23,16 @@ export function descreverAnimal(animal: Omit<AnimalPublico, 'nome'>): string {
   const porte = PORTE.entradas[animal.porte].rotulo.toLowerCase()
   const cor = COR.entradas[animal.corDominante].rotulo.toLowerCase()
   return `Porte ${porte}, ${cor}, ${COLEIRA_NO_CARD[animal.coleira]}.`
+}
+
+/**
+ * Mensagem que o mural vazio oferece mandar para os vizinhos. O mural só funciona
+ * se quem mora perto também estiver nele; o grupo de WhatsApp é por onde chegam.
+ */
+export function textoDoConvite(raioM: number): string {
+  return (
+    'Estou usando o Achei um Bicho, um mural de cães e gatos perdidos e encontrados aqui em Santarém. ' +
+    `Agora não tem nenhum caso aberto a ${formatarDistancia(raioM)} daqui, mas se você perder ou achar um bicho, ` +
+    'publique lá: o aviso chega primeiro a quem mora perto.'
+  )
 }
