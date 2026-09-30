@@ -1,4 +1,4 @@
-import { createHash, randomInt } from 'node:crypto'
+import { createHash, randomInt, timingSafeEqual } from 'node:crypto'
 
 // sem 0/O e 1/I/L, que se confundem quando a pessoa anota à mão ou dita o código
 const ALFABETO = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
@@ -22,4 +22,15 @@ export function gerarCodigoEdicao(): string {
 export function hashCodigoEdicao(codigo: string): string {
   const normalizado = codigo.trim().toUpperCase().replace(/-/g, '')
   return createHash('sha256').update(normalizado).digest('hex')
+}
+
+/**
+ * Confere o código que a pessoa digitou contra o hash guardado. A comparação leva
+ * sempre o mesmo tempo, para não dar pista de quantos caracteres acertaram.
+ */
+export function conferirCodigoEdicao(codigo: string | undefined, hash: string | null): boolean {
+  if (!codigo?.trim() || !hash) return false
+  const digitado = Buffer.from(hashCodigoEdicao(codigo), 'hex')
+  const guardado = Buffer.from(hash, 'hex')
+  return digitado.length === guardado.length && timingSafeEqual(digitado, guardado)
 }
