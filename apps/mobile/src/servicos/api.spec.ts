@@ -90,4 +90,27 @@ describe('cliente da API', () => {
     expect(url).toBe('http://api.teste/casos/abc/avistamentos')
     expect((opcoes as RequestInit).headers).toEqual({ 'x-codigo-edicao': 'ABCD-EFGH' })
   })
+
+  it('envia a foto em multipart, com o código de edição, sem fixar Content-Type', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson({ id: 'f1', caminho: '/fotos/f1.jpg' }, 201))
+    const arquivo = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: 'image/jpeg' })
+
+    const foto = await criarClienteApi('http://api.teste', buscar).enviarFoto('abc', 'ABCD-EFGH', arquivo)
+
+    expect(foto.caminho).toBe('/fotos/f1.jpg')
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/fotos')
+    const { method, headers, body } = opcoes as RequestInit
+    expect(method).toBe('POST')
+    // o fetch monta o boundary do multipart; fixar o cabeçalho quebraria o envio
+    expect(headers).toEqual({ 'x-codigo-edicao': 'ABCD-EFGH' })
+    expect(body).toBeInstanceOf(FormData)
+    expect((body as FormData).get('foto')).toBeInstanceOf(Blob)
+  })
+
+  it('monta o endereço completo da foto a partir do caminho que a API devolve', () => {
+    const api = criarClienteApi('http://192.168.0.10:3333/', vi.fn())
+    expect(api.urlDaFoto('/fotos/f1.jpg')).toBe('http://192.168.0.10:3333/fotos/f1.jpg')
+  })
 })
+
