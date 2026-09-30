@@ -1,4 +1,4 @@
-import type { CasoAberto as Caso } from '@achei/contratos'
+import type { AvistamentoParaAutor, CasoAberto as Caso } from '@achei/contratos'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -13,7 +13,9 @@ import { atributosDoCaso, descreverQuando, fraseDoLocal, TITULO_DO_LOCAL } from 
 import { formatarTempoDesde } from '../../dominio/formatar'
 import { nomeDoAnimal } from '../../dominio/mural'
 import { api, ErroApi } from '../../servicos/api'
+import { meuCaso } from '../../servicos/meus-casos'
 import { cores, fontes } from '../../tema'
+import { AvisosDoAutor } from './AvisosDoAutor'
 
 export function CasoAberto() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -22,6 +24,9 @@ export function CasoAberto() {
   const [caso, setCaso] = useState<Caso>()
   const [erro, setErro] = useState<string>()
   const [explicarReivindicacao, setExplicarReivindicacao] = useState(false)
+  const [souAutor, setSouAutor] = useState(false)
+  const [avisos, setAvisos] = useState<AvistamentoParaAutor[]>()
+  const [erroAvisos, setErroAvisos] = useState<string>()
 
   const carregar = useCallback(async () => {
     setErro(undefined)
@@ -38,9 +43,22 @@ export function CasoAberto() {
     }
   }, [id])
 
+  const carregarAvisos = useCallback(async () => {
+    // o código de edição guardado na publicação é o que prova que o caso é deste aparelho
+    const meu = await meuCaso(id)
+    setSouAutor(Boolean(meu))
+    if (!meu) return
+    try {
+      setAvisos(await api.avistamentosDoMeuCaso(id, meu.codigoEdicao))
+    } catch (e) {
+      setErroAvisos(e instanceof ErroApi ? e.message : 'Não deu para carregar os avisos.')
+    }
+  }, [id])
+
   useEffect(() => {
     void carregar()
-  }, [carregar])
+    void carregarAvisos()
+  }, [carregar, carregarAvisos])
 
   return (
     <View style={[estilos.tela, { paddingTop: margens.top + 10 }]}>
@@ -91,24 +109,30 @@ export function CasoAberto() {
             </Text>
           </View>
 
-          <View style={[estilos.bloco, estilos.divisa, estilos.acoes]}>
-            <Botao
-              rotulo="Vi esse bicho na rua"
-              variante="acento"
-              aoTocar={() => router.push(`/caso/${caso.id}/avistamento`)}
-            />
-            <Botao
-              rotulo="Acho que esse bicho é meu"
-              variante="fraco"
-              aoTocar={() => setExplicarReivindicacao((v) => !v)}
-            />
-            {explicarReivindicacao ? (
-              <Aviso
-                titulo="Quem publicou confere antes de liberar o contato."
-                texto="Você vai responder às três perguntas sobre sinais que só o tutor conhece. Essa etapa abre na próxima versão do aplicativo."
+          {souAutor ? (
+            <View style={[estilos.bloco, estilos.divisa, estilos.acoes]}>
+              <AvisosDoAutor tipo={caso.tipo} avisos={avisos} erro={erroAvisos} />
+            </View>
+          ) : (
+            <View style={[estilos.bloco, estilos.divisa, estilos.acoes]}>
+              <Botao
+                rotulo="Vi esse bicho na rua"
+                variante="acento"
+                aoTocar={() => router.push(`/caso/${caso.id}/avistamento`)}
               />
-            ) : null}
-          </View>
+              <Botao
+                rotulo="Acho que esse bicho é meu"
+                variante="fraco"
+                aoTocar={() => setExplicarReivindicacao((v) => !v)}
+              />
+              {explicarReivindicacao ? (
+                <Aviso
+                  titulo="Quem publicou confere antes de liberar o contato."
+                  texto="Você vai responder às três perguntas sobre sinais que só o tutor conhece. Essa etapa abre na próxima versão do aplicativo."
+                />
+              ) : null}
+            </View>
+          )}
         </ScrollView>
       )}
     </View>
