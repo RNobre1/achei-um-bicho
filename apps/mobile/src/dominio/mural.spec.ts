@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { descreverAnimal, nomeDoAnimal, proximoRaio } from './mural'
+import { descreverAnimal, nomeDoAnimal, proximoRaio, textoDoConvite } from './mural'
 
 describe('botão "Aumentar" do mural', () => {
   it('sobe um degrau de cada vez: 1,6 km, 3 km, 5 km', () => {
@@ -31,3 +31,17 @@ describe('texto do card', () => {
     )
   })
 })
+
+describe('convite aos vizinhos no mural vazio', () => {
+  it('diz o raio que está vazio e o que fazer se perder ou achar um bicho', () => {
+    const texto = textoDoConvite(1600)
+    expect(texto).toContain('Achei um Bicho')
+    expect(texto).toContain('1,6 km')
+    expect(texto).toMatch(/perder ou achar/)
+  })
+
+  it('não inventa link de loja que ainda não existe', () => {
+    expect(textoDoConvite(500)).not.toMatch(/https?:\/\//)
+  })
+})
+
