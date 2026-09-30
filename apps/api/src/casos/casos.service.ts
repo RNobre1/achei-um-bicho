@@ -40,6 +40,7 @@ export class CasosService {
   async abrir(id: string): Promise<CasoAberto> {
     const caso = await this.repositorio.buscarComPonto(id)
     if (!caso) throw new NotFoundException('caso não encontrado')
+    const fotos = await this.repositorio.fotosDoCaso(id)
 
     const { centro, raioM } = areaAproximada(
       caso.id,
@@ -61,6 +62,7 @@ export class CasosService {
         nome: caso.nome,
         castrado: caso.castrado,
       },
+      fotos,
       area: { latitude: centro.latitude, longitude: centro.longitude, raioM, bairro: caso.bairro },
     }
   }

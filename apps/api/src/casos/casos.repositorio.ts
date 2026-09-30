@@ -32,6 +32,7 @@ interface LinhaMural {
   corDominante: Cor
   coleira: Coleira
   nome: string | null
+  foto: string | null
 }
 
 function filtroAbertosNoRaio(centro: Ponto, raioM: number, tipo?: TipoCaso): Prisma.Sql {
@@ -118,7 +119,9 @@ export class CasosRepositorio {
       SELECT c.id, c.tipo, c.estado, c.relato,
              c.publicado_em AS "publicadoEm", c.ocorrido_em AS "ocorridoEm",
              l.bairro, ST_Distance(l.ponto, ${pontoSql(centro)})::int AS "distanciaM",
-             a.especie, a.porte, a.cor_dominante AS "corDominante", a.coleira, a.nome
+             a.especie, a.porte, a.cor_dominante AS "corDominante", a.coleira, a.nome,
+             (SELECT f.caminho FROM foto f WHERE f.animal_id = a.id
+               ORDER BY f.enviada_em, f.id LIMIT 1) AS foto
         FROM caso c
         JOIN local l ON l.id = c.local_id
         JOIN animal a ON a.id = c.animal_id
@@ -154,5 +157,15 @@ export class CasosRepositorio {
         JOIN local l ON l.id = c.local_id
        WHERE c.id = ${id}::uuid`
     return linha ?? null
+  }
+
+  async fotosDoCaso(id: string): Promise<string[]> {
+    const linhas = await this.prisma.$queryRaw<{ caminho: string }[]>`
+      SELECT f.caminho
+        FROM foto f
+        JOIN caso c ON c.animal_id = f.animal_id
+       WHERE c.id = ${id}::uuid
+       ORDER BY f.enviada_em, f.id`
+    return linhas.map((linha) => linha.caminho)
   }
 }

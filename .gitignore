@@ -21,6 +21,9 @@ __pycache__/
 # material da disciplina (não é do projeto)
 Aulas/
 
+# fotos enviadas em desenvolvimento
+apps/api/fotos/
+
 # pastas nativas geradas pelo expo prebuild a partir do app.json; nunca editar à mão
 apps/mobile/android/
 apps/mobile/ios/
