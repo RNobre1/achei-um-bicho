@@ -1,5 +1,5 @@
 import { RAIO, TIPO_CASO, type Mural, type TipoCaso } from '@achei/contratos'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -52,9 +52,12 @@ export function CasosPerto() {
     }
   }, [posicao, raio, filtro])
 
-  useEffect(() => {
-    void carregar()
-  }, [carregar])
+  // recarrega ao voltar para a aba: o caso que acabou de ser publicado já aparece
+  useFocusEffect(
+    useCallback(() => {
+      void carregar()
+    }, [carregar]),
+  )
 
   const casos = mural?.casos ?? []
   const lugar = !posicao
