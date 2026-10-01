@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FOTO, RAIO } from './regras'
+import { FOTO, PAREAMENTO, RAIO } from './regras'
 
 describe('regras do raio do mural', () => {
   it('parte de 1,6 km, a distância em que 7 de cada 10 cães recuperados apareceram', () => {
@@ -30,6 +30,21 @@ describe('regras da foto do animal', () => {
 
   it('tem um limite de fotos por caso', () => {
     expect(FOTO.maximoPorCaso).toBe(3)
+  })
+})
+
+describe('regras do pareamento', () => {
+  it('só procura candidato até o raio máximo do mural, a regra RN7', () => {
+    expect(PAREAMENTO.raioMaximoM).toBe(RAIO.maximoM)
+  })
+
+  it('conta a distância como coincidência dentro do raio padrão, onde aparecem 7 de 10 cães', () => {
+    expect(PAREAMENTO.distanciaQueBateM).toBe(RAIO.padraoM)
+  })
+
+  it('aceita achado um pouco antes do sumiço declarado, porque memória e relógio erram', () => {
+    expect(PAREAMENTO.diasAntesQueAindaBatem).toBeGreaterThanOrEqual(0)
+    expect(PAREAMENTO.diasAntesQueAindaBatem).toBeLessThan(PAREAMENTO.diasDepoisQueBatem)
   })
 })
 
