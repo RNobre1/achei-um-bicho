@@ -9,6 +9,7 @@ describe('configuração lida do ambiente', () => {
       origensCors: ['http://localhost:8081'],
       raioPadraoM: 1600,
       pastaFotos: resolve('fotos'),
+      raioMaximoPareamentoM: 5000,
     })
   })
 
@@ -18,12 +19,14 @@ describe('configuração lida do ambiente', () => {
       CORS_ORIGINS: 'http://localhost:8081, https://achei.exemplo',
       RAIO_PADRAO_METROS: '2000',
       PASTA_FOTOS: '/dados/fotos',
+      RAIO_MAXIMO_PAREAMENTO_METROS: '3000',
     })
     expect(config).toEqual({
       porta: 4000,
       origensCors: ['http://localhost:8081', 'https://achei.exemplo'],
       raioPadraoM: 2000,
       pastaFotos: '/dados/fotos',
+      raioMaximoPareamentoM: 3000,
     })
   })
 
@@ -35,4 +38,9 @@ describe('configuração lida do ambiente', () => {
   it('recusa porta que não é número', () => {
     expect(() => lerConfiguracao({ PORT: 'abc' })).toThrow(/PORT/)
   })
+
+  it('recusa teto de pareamento fora dos limites do mural', () => {
+    expect(() => lerConfiguracao({ RAIO_MAXIMO_PAREAMENTO_METROS: '20000' })).toThrow(/RAIO_MAXIMO_PAREAMENTO_METROS/)
+  })
 })
+
