@@ -23,3 +23,18 @@ export const FOTO = {
   larguraMaximaPx: 1080,
   maximoPorCaso: 3,
 } as const
+
+/**
+ * Pareamento determinístico (F5). Os limites são explicáveis em uma frase cada,
+ * e é isso que a tela de pistas mostra: nenhuma nota, só o que bateu e o que não.
+ */
+export const PAREAMENTO = {
+  /** Candidato só até aqui, a regra RN7. */
+  raioMaximoM: RAIO.maximoM,
+  /** Até esta distância o par ganha um ponto a favor: é onde aparecem 7 de 10 cães. */
+  distanciaQueBateM: RAIO.padraoM,
+  /** Achado até um dia antes do sumiço declarado ainda bate: memória e relógio erram. */
+  diasAntesQueAindaBatem: 1,
+  /** Achado até um mês depois do sumiço bate; depois disso, já não conta a favor. */
+  diasDepoisQueBatem: 30,
+} as const

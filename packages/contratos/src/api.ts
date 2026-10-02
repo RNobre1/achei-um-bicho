@@ -2,7 +2,7 @@
  * Formato das requisições e respostas da API. A API implementa estas interfaces e
  * o aplicativo as consome: é o contrato entre os dois, declarado uma vez só.
  */
-import type { Coleira, Cor, Especie, EstadoCaso, Porte, TipoCaso } from './vocabulario'
+import type { Coleira, Cor, Especie, EstadoCaso, Porte, TipoCaso, VereditoPareamento } from './vocabulario'
 
 export interface AnimalNaPublicacao {
   especie: Especie
@@ -152,4 +152,42 @@ export interface FotoEnviada {
   id: string
   /** Relativo ao endereço da API, por exemplo /fotos/<id>.jpg. */
   caminho: string
+}
+
+/**
+ * Um item da comparação entre o caso perdido e o encontrado. A distância e o
+ * tempo vêm em número; os atributos, com o valor de cada lado.
+ */
+export type Comparacao =
+  | { atributo: 'porte'; perdido: Porte; encontrado: Porte }
+  | { atributo: 'cor'; perdido: Cor; encontrado: Cor }
+  | { atributo: 'coleira'; perdido: Coleira; encontrado: Coleira }
+  | { atributo: 'distancia'; metros: number }
+  /** Dias entre o sumiço e o achado; negativo quando foi achado antes de sumir. */
+  | { atributo: 'tempo'; dias: number }
+
+export type AtributoComparado = Comparacao['atributo']
+
+/** Item de GET /casos/:id/pistas: o outro lado de um par, visto por quem publicou. */
+export interface Pista {
+  id: string
+  veredito: VereditoPareamento
+  distanciaM: number
+  diasDiferenca: number
+  batem: Comparacao[]
+  divergem: Comparacao[]
+  /** O caso do outro lado, com o que já é público no mural. */
+  outro: {
+    id: string
+    tipo: TipoCaso
+    bairro: string | null
+    publicadoEm: string
+    animal: AnimalPublico
+    foto: string | null
+  }
+}
+
+/** Corpo de POST /casos/:id/pistas/:pistaId/veredito. Confirmar vem com a verificação (F6). */
+export interface NovoVereditoDaPista {
+  veredito: 'descartado'
 }
