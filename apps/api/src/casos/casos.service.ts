@@ -3,6 +3,7 @@ import { ESTADO_INICIAL, RAIO } from '@achei/contratos'
 import type { Configuracao } from '../configuracao'
 import { CONFIGURACAO } from '../configuracao.module'
 import { areaAproximada } from '../geo/area-aproximada'
+import { GeradorDePareamentos } from '../pareamento/gerador-de-pareamentos'
 import { CasosRepositorio } from './casos.repositorio'
 import { gerarCodigoEdicao, hashCodigoEdicao } from './codigo-edicao'
 import type { CasoAberto } from './dto/caso-aberto.dto'
@@ -13,6 +14,7 @@ import type { CasoPublicado, PublicarCasoDto } from './dto/publicar-caso.dto'
 export class CasosService {
   constructor(
     private readonly repositorio: CasosRepositorio,
+    private readonly gerador: GeradorDePareamentos,
     @Inject(CONFIGURACAO) private readonly configuracao: Configuracao,
   ) {}
 
@@ -24,6 +26,7 @@ export class CasosService {
       estado,
       codigoEdicaoHash: hashCodigoEdicao(codigoEdicao),
     })
+    await this.gerador.gerarPara(id)
     return { id, tipo: dados.tipo, estado, codigoEdicao }
   }
 

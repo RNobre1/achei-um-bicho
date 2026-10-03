@@ -1,5 +1,5 @@
 import { resolve } from 'node:path'
-import { RAIO } from '@achei/contratos'
+import { PAREAMENTO, RAIO } from '@achei/contratos'
 
 export interface Configuracao {
   porta: number
@@ -7,6 +7,8 @@ export interface Configuracao {
   raioPadraoM: number
   /** Onde as fotos ficam no disco. Em contêiner, precisa ser um volume. */
   pastaFotos: string
+  /** Teto de distância para um caso virar candidato de outro (RN7). */
+  raioMaximoPareamentoM: number
 }
 
 type Ambiente = Record<string, string | undefined>
@@ -29,6 +31,12 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
       `RAIO_PADRAO_METROS precisa ficar entre ${RAIO.minimoM} e ${RAIO.maximoM}; veio ${raioPadraoM}`,
     )
   }
+  const raioMaximoPareamentoM = inteiro(ambiente, 'RAIO_MAXIMO_PAREAMENTO_METROS', PAREAMENTO.raioMaximoM)
+  if (raioMaximoPareamentoM < RAIO.minimoM || raioMaximoPareamentoM > RAIO.maximoM) {
+    throw new Error(
+      `RAIO_MAXIMO_PAREAMENTO_METROS precisa ficar entre ${RAIO.minimoM} e ${RAIO.maximoM}; veio ${raioMaximoPareamentoM}`,
+    )
+  }
   return {
     porta: inteiro(ambiente, 'PORT', 3333),
     origensCors: (ambiente.CORS_ORIGINS ?? 'http://localhost:8081')
@@ -37,5 +45,6 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
       .filter(Boolean),
     raioPadraoM,
     pastaFotos: resolve(ambiente.PASTA_FOTOS?.trim() || 'fotos'),
+    raioMaximoPareamentoM,
   }
 }
