@@ -10,6 +10,7 @@ import {
   type Mural,
   type NovaPublicacao,
   type NovoAvistamento,
+  type Pista,
 } from '@achei/contratos'
 
 const SEM_CONEXAO = 'Sem conexão com o servidor. Confira a internet e tente de novo.'
@@ -33,6 +34,8 @@ export interface ClienteApi {
   avistamentosDoMeuCaso(casoId: string, codigoEdicao: string): Promise<AvistamentoParaAutor[]>
   enviarFoto(casoId: string, codigoEdicao: string, arquivo: ArquivoDeFoto): Promise<FotoEnviada>
   urlDaFoto(caminho: string): string
+  pistasDoMeuCaso(casoId: string, codigoEdicao: string): Promise<Pista[]>
+  descartarPista(casoId: string, pistaId: string, codigoEdicao: string): Promise<void>
 }
 
 /** Arquivo no formato que o FormData do React Native entende no celular. */
@@ -110,6 +113,18 @@ export function criarClienteApi(urlBase: string, buscar: Buscar = fetch): Client
     },
     urlDaFoto(caminho) {
       return `${base}${caminho}`
+    },
+    pistasDoMeuCaso(casoId, codigoEdicao) {
+      return pedir<Pista[]>(`/casos/${encodeURIComponent(casoId)}/pistas`, {
+        headers: { [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
+      })
+    },
+    async descartarPista(casoId, pistaId, codigoEdicao) {
+      await pedir(`/casos/${encodeURIComponent(casoId)}/pistas/${encodeURIComponent(pistaId)}/veredito`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
+        body: JSON.stringify({ veredito: 'descartado' }),
+      })
     },
     avistamentosDoMeuCaso(casoId, codigoEdicao) {
       return pedir<AvistamentoParaAutor[]>(`/casos/${encodeURIComponent(casoId)}/avistamentos`, {

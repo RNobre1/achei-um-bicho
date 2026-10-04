@@ -20,3 +20,15 @@ export function IconePublicar({ cor }: { cor: ColorValue }) {
     </View>
   )
 }
+
+export function IconePistas({ cor }: { cor: ColorValue }) {
+  const lado = { width: 7, height: 12, borderWidth: 1.6, borderColor: cor }
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={lado} />
+      <View style={{ width: 4, height: 1.6, backgroundColor: cor }} />
+      <View style={lado} />
+    </View>
+  )
+}
+
