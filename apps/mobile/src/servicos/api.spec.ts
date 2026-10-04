@@ -112,5 +112,24 @@ describe('cliente da API', () => {
     const api = criarClienteApi('http://192.168.0.10:3333/', vi.fn())
     expect(api.urlDaFoto('/fotos/f1.jpg')).toBe('http://192.168.0.10:3333/fotos/f1.jpg')
   })
+
+  it('lê as pistas do próprio caso com o código de edição', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson([]))
+    await criarClienteApi('http://api.teste', buscar).pistasDoMeuCaso('abc', 'ABCD-EFGH')
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/pistas')
+    expect((opcoes as RequestInit).headers).toEqual({ 'x-codigo-edicao': 'ABCD-EFGH' })
+  })
+
+  it('descarta uma pista com "Não é"', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson({ id: 'p1', veredito: 'descartado' }))
+    await criarClienteApi('http://api.teste', buscar).descartarPista('abc', 'p1', 'ABCD-EFGH')
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/pistas/p1/veredito')
+    const { method, headers, body } = opcoes as RequestInit
+    expect(method).toBe('POST')
+    expect(headers).toEqual({ 'Content-Type': 'application/json', 'x-codigo-edicao': 'ABCD-EFGH' })
+    expect(JSON.parse(body as string)).toEqual({ veredito: 'descartado' })
+  })
 })
 
