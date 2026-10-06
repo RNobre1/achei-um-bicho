@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router/tabs'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { IconePerto, IconePistas, IconePublicar } from '../../componentes/Icones'
+import { IconeMeusCasos, IconePerto, IconePistas, IconePublicar } from '../../componentes/Icones'
 import { cores, fontes } from '../../tema'
 
 export default function Abas() {
@@ -33,6 +33,10 @@ export default function Abas() {
       <Tabs.Screen
         name="pistas"
         options={{ title: 'Pistas', tabBarIcon: ({ color }) => <IconePistas cor={color} /> }}
+      />
+      <Tabs.Screen
+        name="meus-casos"
+        options={{ title: 'Meus casos', tabBarIcon: ({ color }) => <IconeMeusCasos cor={color} /> }}
       />
     </Tabs>
   )

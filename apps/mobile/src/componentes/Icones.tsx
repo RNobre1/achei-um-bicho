@@ -32,3 +32,11 @@ export function IconePistas({ cor }: { cor: ColorValue }) {
   )
 }
 
+export function IconeMeusCasos({ cor }: { cor: ColorValue }) {
+  return (
+    <View style={{ alignItems: 'center', gap: 2 }}>
+      <View style={{ width: 8, height: 8, borderRadius: 4, borderWidth: 1.6, borderColor: cor }} />
+      <View style={{ width: 15, height: 7, borderTopLeftRadius: 7, borderTopRightRadius: 7, borderWidth: 1.6, borderBottomWidth: 0, borderColor: cor }} />
+    </View>
+  )
+}
