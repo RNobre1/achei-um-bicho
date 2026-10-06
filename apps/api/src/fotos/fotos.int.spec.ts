@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, readdirSync, rmSync } from 'node:fs'
 import type { INestApplication } from '@nestjs/common'
 import { FOTO } from '@achei/contratos'
 import { PrismaClient } from '@prisma/client'
@@ -11,12 +10,6 @@ import { jpegDeTeste } from '../../test/jpeg-de-teste'
 import { limparBanco } from '../../test/limpar-banco'
 import { CENTRO_SANTAREM } from '../../test/pontos'
 
-const PASTA = process.env.PASTA_FOTOS!
-
-function fotosNaPasta(): string[] {
-  return existsSync(PASTA) ? readdirSync(PASTA) : []
-}
-
 describe('fotos do animal', () => {
   let app: INestApplication
   const prisma = new PrismaClient()
@@ -27,7 +20,6 @@ describe('fotos do animal', () => {
 
   beforeEach(async () => {
     await limparBanco(prisma)
-    rmSync(PASTA, { recursive: true, force: true })
   })
 
   afterAll(async () => {
@@ -65,6 +57,16 @@ describe('fotos do animal', () => {
     expect(body).toEqual({ id: expect.any(String), caminho: `/fotos/${body.id}.jpg` })
     const gravada = await prisma.foto.findUniqueOrThrow({ where: { id: body.id } })
     expect(gravada).toMatchObject({ caminho: body.caminho, largura: 800, altura: 600 })
+  })
+
+  it('guarda o arquivo no próprio banco, que sobrevive a reinício e a deploy da API', async () => {
+    const { id, codigoEdicao } = await publicar()
+    const { body } = await enviar(id, codigoEdicao).expect(201)
+
+    const arquivo = await prisma.arquivoFoto.findUniqueOrThrow({ where: { nome: `${body.id}.jpg` } })
+
+    expect(Buffer.from(arquivo.conteudo).toString('latin1')).toContain('JFIF')
+    expect(Buffer.from(arquivo.conteudo).toString('latin1')).not.toContain('GPS')
   })
 
   it('serve a foto sem os metadados em que o celular grava a localização', async () => {
@@ -105,7 +107,7 @@ describe('fotos do animal', () => {
 
     await enviar(id, undefined).expect(403)
     await enviar(id, outro.codigoEdicao).expect(403)
-    expect(fotosNaPasta()).toEqual([])
+    expect(await prisma.arquivoFoto.count()).toBe(0)
   })
 
   it('recusa arquivo que não é JPEG', async () => {
@@ -123,7 +125,7 @@ describe('fotos do animal', () => {
     const { id, codigoEdicao } = await publicar()
     const grande = Buffer.concat([jpegDeTeste(), Buffer.alloc(FOTO.maximoBytes)])
     await enviar(id, codigoEdicao, grande).expect(413)
-    expect(fotosNaPasta()).toEqual([])
+    expect(await prisma.arquivoFoto.count()).toBe(0)
   })
 
   it(`não passa de ${FOTO.maximoPorCaso} fotos por caso`, async () => {

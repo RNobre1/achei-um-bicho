@@ -1,5 +1,4 @@
-import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { resolve } from 'node:path'
 import swc from 'unplugin-swc'
 import { defineConfig } from 'vitest/config'
 import { URL_BANCO_TESTE } from './test/banco-teste'
@@ -18,7 +17,7 @@ export default defineConfig({
     environment: 'node',
     globalSetup: ['./test/preparar-banco.ts'],
     fileParallelism: false,
-    env: { DATABASE_URL: URL_BANCO_TESTE, PASTA_FOTOS: join(tmpdir(), 'achei-um-bicho-fotos-teste') },
+    env: { DATABASE_URL: URL_BANCO_TESTE },
     hookTimeout: 60_000,
   },
 })
