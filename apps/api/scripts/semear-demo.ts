@@ -50,58 +50,79 @@ function perguntas([p1, p2, p3]: Tres, [r1, r2, r3]: Tres) {
   ]
 }
 
+// Pensado para o roteiro do alpha: quem publicar ao vivo um cachorro caramelo,
+// porte médio e com coleira, sumido perto da praça central, vê três pistas, uma
+// forte, uma média e uma fraca. Os outros casos dão variedade ao mural.
 const CASOS: NovaPublicacao[] = [
   {
-    tipo: 'perdido',
-    animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'com', nome: 'Nego', castrado: true },
-    local: { ...perto(250, -300), bairro: 'Aparecida', referencia: 'Perto da praça da igreja' },
-    autor: { nome: 'Tutor do Nego', telefone: '93991234567' },
+    tipo: 'encontrado',
+    animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'sem' },
+    local: { ...perto(900, 350), bairro: 'Prainha', referencia: 'Orla, perto do mercadão' },
+    autor: { nome: 'Quem achou na orla', telefone: '93992345678' },
     ocorridoEm: horasAtras(20),
-    relato: 'Saiu pelo portão no fim da tarde e não voltou. É dócil, mas foge de moto.',
-    perguntas: perguntas(PERGUNTAS_TUTOR, ['Falta um pedaço da orelha esquerda', 'Nego', 'Coleira vermelha de nylon']),
+    relato: 'Estava assustado debaixo de um banco da orla. Está comigo, bem alimentado.',
+    perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma cicatriz na orelha', 'Abana o rabo e vem', 'Estava sem nada']),
   },
   {
     tipo: 'encontrado',
     animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'com' },
-    local: { ...perto(900, 350), bairro: 'Prainha', referencia: 'Orla, perto do mercadão' },
-    autor: { nome: 'Quem achou na orla', telefone: '93992345678' },
-    ocorridoEm: horasAtras(6),
-    relato: 'Estava assustado debaixo de um banco da orla. Está comigo, bem alimentado.',
-    perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma cicatriz na orelha', 'Abana o rabo e vem', 'Coleira vermelha']),
+    local: { ...perto(-1300, 450), bairro: 'Santa Clara', referencia: 'Rua de trás da escola' },
+    autor: { nome: 'Vizinha da Santa Clara', telefone: '93993456789' },
+    ocorridoEm: horasAtras(30),
+    relato: 'Apareceu no meu portão de manhã, com coleira azul e sem plaquinha.',
+    perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma mancha branca no peito', 'Fica de barriga para cima', 'Coleira azul sem plaquinha']),
+  },
+  {
+    tipo: 'encontrado',
+    animal: { especie: 'cachorro', porte: 'medio', corDominante: 'malhado', coleira: 'nao_observado' },
+    local: { ...perto(-3300, -900), bairro: 'Esperança', referencia: 'Avenida Cuiabá' },
+    autor: { nome: 'Motorista que viu' },
+    ocorridoEm: horasAtras(50),
+    relato: 'Vi andando sozinho na avenida, perto do ponto de ônibus. Consegui segurar e está no quintal.',
+    perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Manca um pouco da pata de trás', 'Não reagiu a nenhum nome', 'Não deu para ver']),
   },
   {
     tipo: 'perdido',
     animal: { especie: 'gato', porte: 'pequeno', corDominante: 'cinza', coleira: 'sem', nome: 'Fumaça', castrado: true },
     local: { ...perto(-600, 500), bairro: 'Santa Clara', referencia: 'Rua de trás do posto de saúde' },
     autor: { nome: 'Tutora da Fumaça' },
-    ocorridoEm: horasAtras(50),
+    ocorridoEm: horasAtras(60),
     relato: 'Gata castrada, muito medrosa. Deve estar escondida em algum quintal perto.',
     perguntas: perguntas(PERGUNTAS_TUTOR, ['Tem a ponta do rabo branca', 'Fumaça', 'Nada, estava sem coleira']),
   },
   {
     tipo: 'encontrado',
-    animal: { especie: 'cachorro', porte: 'pequeno', corDominante: 'branco', coleira: 'nao_observado' },
-    local: { ...perto(-1100, -700), bairro: 'Fátima', referencia: 'Perto da feira' },
-    autor: { nome: 'Vizinha da feira', telefone: '93993456789' },
-    ocorridoEm: horasAtras(30),
-    relato: 'Vi andando sozinho perto da feira no começo da manhã, parecia perdido.',
-    perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma mancha marrom nas costas', 'Não reagiu a nenhum nome', 'Não deu para ver']),
+    animal: { especie: 'gato', porte: 'pequeno', corDominante: 'cinza', coleira: 'sem' },
+    local: { ...perto(-450, 900), bairro: 'Santa Clara' },
+    autor: { nome: 'Quem achou a gatinha' },
+    ocorridoEm: horasAtras(12),
+    relato: 'Gatinha cinza miando no telhado da vizinha. Desceu e está aqui dentro.',
+    perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['A ponta do rabo é branca', 'Se esconde quando chamam', 'Estava sem nada']),
   },
   {
     tipo: 'perdido',
     animal: { especie: 'cachorro', porte: 'grande', corDominante: 'preto', coleira: 'com', nome: 'Thor', castrado: false },
     local: { ...perto(1400, -1500), bairro: 'Aldeia', referencia: 'Próximo à escola estadual' },
     autor: { nome: 'Tutor do Thor', telefone: '93994567890' },
-    ocorridoEm: horasAtras(72),
+    ocorridoEm: horasAtras(80),
     relato: 'Cachorro grande, mas manso. Sumiu durante a chuva forte de domingo.',
     perguntas: perguntas(PERGUNTAS_TUTOR, ['Tem um dente da frente quebrado', 'Thor', 'Coleira azul com plaquinha']),
+  },
+  {
+    tipo: 'perdido',
+    animal: { especie: 'cachorro', porte: 'pequeno', corDominante: 'branco', coleira: 'com', nome: 'Mel', castrado: true },
+    local: { ...perto(-2100, -300), bairro: 'Fátima', referencia: 'Perto da feira' },
+    autor: { nome: 'Tutora da Mel', telefone: '93995678901' },
+    ocorridoEm: horasAtras(26),
+    relato: 'Pequena, branca, com uma mancha marrom nas costas. Saiu atrás de outro cachorro.',
+    perguntas: perguntas(PERGUNTAS_TUTOR, ['Mancha marrom nas costas', 'Mel', 'Coleira rosa com guizo']),
   },
   {
     tipo: 'encontrado',
     animal: { especie: 'gato', porte: 'pequeno', corDominante: 'malhado', coleira: 'sem' },
     local: { ...perto(-2600, 1800), bairro: 'Interventoria' },
     autor: { nome: 'Quem achou o filhote' },
-    ocorridoEm: horasAtras(12),
+    ocorridoEm: horasAtras(8),
     relato: 'Filhote malhado miando na calçada. Está abrigado aqui em casa.',
     perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem os olhos de cores diferentes', 'Não responde a nome', 'Estava sem nada']),
   },
@@ -121,7 +142,8 @@ async function main() {
   for (const caso of CASOS) {
     const publicado = await publicar(caso)
     const quem = caso.animal.nome ?? `${caso.animal.especie} sem nome`
-    console.log(`${publicado.tipo.padEnd(10)} ${quem.padEnd(20)} ${caso.local.bairro ?? ''}`)
+    // o código só aparece aqui, uma vez: é com ele que a equipe edita ou encerra o caso
+    console.log(`${publicado.tipo.padEnd(10)} ${quem.padEnd(18)} ${(caso.local.bairro ?? '').padEnd(14)} ${publicado.codigoEdicao}`)
   }
   console.log(`${CASOS.length} casos publicados em ${API_URL}`)
 }
