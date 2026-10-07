@@ -27,10 +27,7 @@ RUN pnpm --filter @achei/api exec prisma generate && pnpm --filter @achei/api bu
 
 FROM base AS execucao
 ENV NODE_ENV=production
-ENV PASTA_FOTOS=/app/apps/api/fotos
 COPY --from=construcao /app /app
-# a pasta das fotos é um volume; criada aqui para já nascer com dono node
-RUN mkdir -p /app/apps/api/fotos && chown node:node /app/apps/api/fotos
 WORKDIR /app/apps/api
 USER node
 EXPOSE 3333

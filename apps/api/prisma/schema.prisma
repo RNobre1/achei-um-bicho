@@ -56,6 +56,15 @@ model Foto {
   @@map("foto")
 }
 
+/// Bytes da foto, separados da tabela foto para a consulta do mural não carregá-los.
+model ArquivoFoto {
+  nome       String   @id
+  conteudo   Bytes
+  guardadoEm DateTime @default(now()) @map("guardado_em") @db.Timestamptz(6)
+
+  @@map("arquivo_foto")
+}
+
 model Local {
   id              String                                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   // o ponto exato nunca sai da API; o que se publica é uma área aproximada

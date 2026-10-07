@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs'
 import { CABECALHO_CODIGO_EDICAO, CAMPO_FOTO, FOTO, type FotoEnviada } from '@achei/contratos'
 import {
   Controller,
@@ -41,12 +40,12 @@ export class FotosController {
   }
 
   @Get('fotos/:arquivo')
-  servir(@Param('arquivo') arquivo: string, @Res() resposta: Response): void {
+  async servir(@Param('arquivo') arquivo: string, @Res() resposta: Response): Promise<void> {
     if (!NOME_DE_FOTO.test(arquivo)) throw new NotFoundException()
-    const caminho = this.armazenamento.caminhoNoDisco(arquivo)
-    if (!existsSync(caminho)) throw new NotFoundException()
+    const conteudo = await this.armazenamento.ler(arquivo)
+    if (!conteudo) throw new NotFoundException()
     // o nome é o id da foto, que nunca muda de conteúdo
     resposta.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
-    resposta.type('image/jpeg').sendFile(caminho)
+    resposta.type('image/jpeg').send(conteudo)
   }
 }

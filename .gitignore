@@ -34,9 +34,6 @@ credentials.json
 .env.*
 !.env.example
 
-# dados locais de desenvolvimento
-apps/api/fotos/
-
 # Python e LaTeX dos scripts de documentação
 __pycache__/
 .venv*/

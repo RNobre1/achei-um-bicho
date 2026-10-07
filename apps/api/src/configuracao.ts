@@ -1,12 +1,9 @@
-import { resolve } from 'node:path'
 import { PAREAMENTO, RAIO } from '@achei/contratos'
 
 export interface Configuracao {
   porta: number
   origensCors: string[]
   raioPadraoM: number
-  /** Onde as fotos ficam no disco. Em contêiner, precisa ser um volume. */
-  pastaFotos: string
   /** Teto de distância para um caso virar candidato de outro (RN7). */
   raioMaximoPareamentoM: number
 }
@@ -44,7 +41,6 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
       .map((origem) => origem.trim())
       .filter(Boolean),
     raioPadraoM,
-    pastaFotos: resolve(ambiente.PASTA_FOTOS?.trim() || 'fotos'),
     raioMaximoPareamentoM,
   }
 }

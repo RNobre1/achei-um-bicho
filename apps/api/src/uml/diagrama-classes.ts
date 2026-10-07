@@ -54,6 +54,7 @@ export const POSICOES: Record<string, { x: number; y: number }> = {
   Desfecho: { x: 40, y: 640 },
   Local: { x: 380, y: 640 },
   PerguntaVerificacao: { x: 1060, y: 600 },
+  ArquivoFoto: { x: 720, y: 640 },
 }
 
 const X_ENUMERACOES = [1420, 1660]
