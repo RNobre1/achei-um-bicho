@@ -12,7 +12,11 @@
       "bundleIdentifier": "br.ufopa.acheiumbicho"
     },
     "android": {
-      "package": "br.ufopa.acheiumbicho"
+      "package": "br.ufopa.acheiumbicho",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -44,6 +48,13 @@
           "microphonePermission": false
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a8383a0d-08ce-43de-8335-fa8bd47ae5df"
+      }
+    },
+    "owner": "acheiumbicho"
   }
 }

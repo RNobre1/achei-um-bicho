@@ -10,3 +10,5 @@ allowBuilds:
   prisma: true
   '@prisma/engines': true
   '@prisma/client': true
+  dtrace-provider: false
+  protobufjs: false
