@@ -5,6 +5,7 @@ import {
   ESTADOS_ABERTOS,
   PORTE,
   TIPO_CASO,
+  TRANSICOES_DO_CASO,
   VOCABULARIO,
   opcoes,
 } from './vocabulario'
@@ -56,3 +57,48 @@ describe('vocabulário fechado', () => {
     ])
   })
 })
+
+describe('transições do ciclo de vida do caso', () => {
+  const saidas = (estado: string) => TRANSICOES_DO_CASO.filter((t) => t.de === estado).map((t) => t.para)
+  const finais = ESTADO_CASO.valores.filter((estado) => saidas(estado).length === 0)
+
+  it('só usa estados do vocabulário e explica cada transição', () => {
+    for (const t of TRANSICOES_DO_CASO) {
+      expect(ESTADO_CASO.valores).toContain(t.de)
+      expect(ESTADO_CASO.valores).toContain(t.para)
+      expect(t.quando.trim().length).toBeGreaterThan(5)
+    }
+  })
+
+  it('todo caso aberto pode ser resolvido pelo autor ou expirar por falta de movimento', () => {
+    for (const aberto of ESTADOS_ABERTOS) {
+      expect(saidas(aberto)).toContain('resolvido')
+      expect(saidas(aberto)).toContain('expirado')
+    }
+  })
+
+  it('resolvido e expirado são os únicos estados finais', () => {
+    expect(finais.sort()).toEqual(['expirado', 'resolvido'])
+  })
+
+  it('todo estado é alcançável a partir de um estado inicial', () => {
+    const alcancados = new Set<string>(Object.values(ESTADO_INICIAL))
+    let mudou = true
+    while (mudou) {
+      mudou = false
+      for (const t of TRANSICOES_DO_CASO) {
+        if (alcancados.has(t.de) && !alcancados.has(t.para)) {
+          alcancados.add(t.para)
+          mudou = true
+        }
+      }
+    }
+    expect([...alcancados].sort()).toEqual([...ESTADO_CASO.valores].sort())
+  })
+
+  it('não repete transição', () => {
+    const pares = TRANSICOES_DO_CASO.map((t) => `${t.de}>${t.para}`)
+    expect(new Set(pares).size).toBe(pares.length)
+  })
+})
+
