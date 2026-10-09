@@ -216,6 +216,28 @@ export const ESTADO_INICIAL: Record<TipoCaso, EstadoCaso> = {
  */
 export const ESTADOS_ABERTOS: readonly EstadoCaso[] = [...new Set(Object.values(ESTADO_INICIAL))]
 
+export interface TransicaoDoCaso {
+  de: EstadoCaso
+  para: EstadoCaso
+  /** O evento que provoca a mudança, como aparece no diagrama de estados. */
+  quando: string
+}
+
+/**
+ * Ciclo de vida do caso (F8). O diagrama de estados é gerado daqui, e a regra de
+ * mudança de estado da API vai ler a mesma lista: uma transição que não estiver
+ * aqui não existe.
+ */
+export const TRANSICOES_DO_CASO: readonly TransicaoDoCaso[] = [
+  { de: 'procurando', para: 'em_contato', quando: 'reivindicação aceita pelo autor' },
+  { de: 'abrigado_temporariamente', para: 'em_contato', quando: 'reivindicação aceita pelo autor' },
+  { de: 'procurando', para: 'resolvido', quando: 'autor informa o desfecho' },
+  { de: 'abrigado_temporariamente', para: 'resolvido', quando: 'autor informa o desfecho' },
+  { de: 'em_contato', para: 'resolvido', quando: 'autor informa o desfecho' },
+  { de: 'procurando', para: 'expirado', quando: '15 dias sem interação' },
+  { de: 'abrigado_temporariamente', para: 'expirado', quando: '15 dias sem interação' },
+]
+
 /** Valor e rótulo na ordem declarada: é o que as telas usam para montar chips. */
 export function opcoes<V extends string>(c: Conjunto<V>): { valor: V; rotulo: string }[] {
   return c.valores.map((valor) => ({ valor, rotulo: c.entradas[valor].rotulo }))
