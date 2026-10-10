@@ -5,18 +5,28 @@
  *
  *     pnpm --filter @achei/api semear:demo            # API em http://localhost:3333
  *     API_URL=http://outro:3333 pnpm --filter @achei/api semear:demo
+ *     CENTRO=-2.4385,-54.7085 pnpm --filter @achei/api semear:demo   # outro ponto
  *
- * Os casos são fictícios. Os bairros são de Santarém e os pontos ficam a poucos
- * quilômetros da praça central, mas não são endereços de ninguém.
+ * Os casos são fictícios e ficam a poucos quilômetros do CENTRO, que por padrão é a
+ * Unidade Tapajós da UFOPA, onde o alpha é apresentado: o mural do celular na sala
+ * precisa mostrar casos dentro do raio de 1,6 km. Os bairros são de Santarém, mas
+ * os pontos não são endereços de ninguém. O campus fica na beira do rio, por isso
+ * os casos estão ao sul e aos lados, nunca ao norte.
  */
 import type { CasoPublicado, NovaPublicacao } from '@achei/contratos'
 
 const API_URL = (process.env.API_URL ?? 'http://localhost:3333').replace(/\/+$/, '')
-const CENTRO = { latitude: -2.4385, longitude: -54.7085 }
+// Unidade Tapajós da UFOPA (Rua Vera Paz, Salé), segundo o OpenStreetMap
+const UFOPA_TAPAJOS = '-2.4191,-54.7408'
+const [latitudeCentro, longitudeCentro] = (process.env.CENTRO ?? UFOPA_TAPAJOS).split(',').map(Number)
+if (!Number.isFinite(latitudeCentro) || !Number.isFinite(longitudeCentro)) {
+  throw new Error(`CENTRO precisa ser "latitude,longitude"; veio "${process.env.CENTRO}"`)
+}
+const CENTRO = { latitude: latitudeCentro!, longitude: longitudeCentro! }
 const METROS_POR_GRAU = 110574
 const HORA = 60 * 60 * 1000
 
-/** Ponto a tantos metros ao norte e a leste da praça central. */
+/** Ponto a tantos metros ao norte e a leste do CENTRO. */
 function perto(norteM: number, lesteM: number) {
   return {
     latitude: CENTRO.latitude + norteM / METROS_POR_GRAU,
@@ -50,24 +60,24 @@ function perguntas([p1, p2, p3]: Tres, [r1, r2, r3]: Tres) {
   ]
 }
 
-// Pensado para o roteiro do alpha: quem publicar ao vivo um cachorro caramelo,
-// porte médio e com coleira, sumido perto da praça central, vê três pistas, uma
-// forte, uma média e uma fraca. Os outros casos dão variedade ao mural.
+// Pensado para o roteiro do alpha: quem publicar ao vivo, do CENTRO, um cachorro
+// caramelo de porte médio e com coleira vê três pistas, uma forte, uma média e uma
+// fraca. Os outros casos dão variedade ao mural.
 const CASOS: NovaPublicacao[] = [
   {
     tipo: 'encontrado',
     animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'sem' },
-    local: { ...perto(900, 350), bairro: 'Prainha', referencia: 'Orla, perto do mercadão' },
-    autor: { nome: 'Quem achou na orla', telefone: '93992345678' },
+    local: { ...perto(-300, 600), bairro: 'Salé', referencia: 'Perto da quadra do bairro' },
+    autor: { nome: 'Quem achou no Salé', telefone: '93992345678' },
     ocorridoEm: horasAtras(20),
-    relato: 'Estava assustado debaixo de um banco da orla. Está comigo, bem alimentado.',
+    relato: 'Estava assustado debaixo de um carro na rua. Está comigo, bem alimentado.',
     perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma cicatriz na orelha', 'Abana o rabo e vem', 'Estava sem nada']),
   },
   {
     tipo: 'encontrado',
     animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'com' },
-    local: { ...perto(-1300, 450), bairro: 'Santa Clara', referencia: 'Rua de trás da escola' },
-    autor: { nome: 'Vizinha da Santa Clara', telefone: '93993456789' },
+    local: { ...perto(-1200, 300), bairro: 'Aeroporto Velho', referencia: 'Rua de trás da escola' },
+    autor: { nome: 'Vizinha do Aeroporto Velho', telefone: '93993456789' },
     ocorridoEm: horasAtras(30),
     relato: 'Apareceu no meu portão de manhã, com coleira azul e sem plaquinha.',
     perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma mancha branca no peito', 'Fica de barriga para cima', 'Coleira azul sem plaquinha']),
@@ -75,16 +85,16 @@ const CASOS: NovaPublicacao[] = [
   {
     tipo: 'encontrado',
     animal: { especie: 'cachorro', porte: 'medio', corDominante: 'malhado', coleira: 'nao_observado' },
-    local: { ...perto(-3300, -900), bairro: 'Esperança', referencia: 'Avenida Cuiabá' },
+    local: { ...perto(-3000, 1500), bairro: 'Liberdade', referencia: 'Perto do ponto de ônibus' },
     autor: { nome: 'Motorista que viu' },
     ocorridoEm: horasAtras(50),
-    relato: 'Vi andando sozinho na avenida, perto do ponto de ônibus. Consegui segurar e está no quintal.',
+    relato: 'Vi andando sozinho perto do ponto de ônibus. Consegui segurar e está no quintal.',
     perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Manca um pouco da pata de trás', 'Não reagiu a nenhum nome', 'Não deu para ver']),
   },
   {
     tipo: 'perdido',
     animal: { especie: 'gato', porte: 'pequeno', corDominante: 'cinza', coleira: 'sem', nome: 'Fumaça', castrado: true },
-    local: { ...perto(-600, 500), bairro: 'Santa Clara', referencia: 'Rua de trás do posto de saúde' },
+    local: { ...perto(-700, -500), bairro: 'Mapiri', referencia: 'Rua de trás do posto de saúde' },
     autor: { nome: 'Tutora da Fumaça' },
     ocorridoEm: horasAtras(60),
     relato: 'Gata castrada, muito medrosa. Deve estar escondida em algum quintal perto.',
@@ -93,7 +103,7 @@ const CASOS: NovaPublicacao[] = [
   {
     tipo: 'encontrado',
     animal: { especie: 'gato', porte: 'pequeno', corDominante: 'cinza', coleira: 'sem' },
-    local: { ...perto(-450, 900), bairro: 'Santa Clara' },
+    local: { ...perto(-500, -900), bairro: 'Mapiri' },
     autor: { nome: 'Quem achou a gatinha' },
     ocorridoEm: horasAtras(12),
     relato: 'Gatinha cinza miando no telhado da vizinha. Desceu e está aqui dentro.',
@@ -102,7 +112,7 @@ const CASOS: NovaPublicacao[] = [
   {
     tipo: 'perdido',
     animal: { especie: 'cachorro', porte: 'grande', corDominante: 'preto', coleira: 'com', nome: 'Thor', castrado: false },
-    local: { ...perto(1400, -1500), bairro: 'Aldeia', referencia: 'Próximo à escola estadual' },
+    local: { ...perto(-1500, 1800), bairro: 'Laguinho', referencia: 'Próximo à escola estadual' },
     autor: { nome: 'Tutor do Thor', telefone: '93994567890' },
     ocorridoEm: horasAtras(80),
     relato: 'Cachorro grande, mas manso. Sumiu durante a chuva forte de domingo.',
@@ -111,7 +121,7 @@ const CASOS: NovaPublicacao[] = [
   {
     tipo: 'perdido',
     animal: { especie: 'cachorro', porte: 'pequeno', corDominante: 'branco', coleira: 'com', nome: 'Mel', castrado: true },
-    local: { ...perto(-2100, -300), bairro: 'Fátima', referencia: 'Perto da feira' },
+    local: { ...perto(-2200, -400), bairro: 'Uruará', referencia: 'Perto da feira' },
     autor: { nome: 'Tutora da Mel', telefone: '93995678901' },
     ocorridoEm: horasAtras(26),
     relato: 'Pequena, branca, com uma mancha marrom nas costas. Saiu atrás de outro cachorro.',
@@ -120,7 +130,7 @@ const CASOS: NovaPublicacao[] = [
   {
     tipo: 'encontrado',
     animal: { especie: 'gato', porte: 'pequeno', corDominante: 'malhado', coleira: 'sem' },
-    local: { ...perto(-2600, 1800), bairro: 'Interventoria' },
+    local: { ...perto(-2600, 2400), bairro: 'Caranazal' },
     autor: { nome: 'Quem achou o filhote' },
     ocorridoEm: horasAtras(8),
     relato: 'Filhote malhado miando na calçada. Está abrigado aqui em casa.',
