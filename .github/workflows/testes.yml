@@ -1,0 +1,55 @@
+# A cada push e pull request na main: tipos, testes de unidade e testes de
+# integração contra um PostgreSQL com PostGIS de verdade, igual ao do contêiner
+# de desenvolvimento. Teste vermelho aqui bloqueia o merge.
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      banco:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_USER: bicho
+          POSTGRES_PASSWORD: bicho
+          POSTGRES_DB: achei_um_bicho
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bicho -d achei_um_bicho"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Cliente do Prisma
+        run: pnpm --filter @achei/api exec prisma generate
+
+      - name: Tipos
+        run: |
+          pnpm --filter @achei/contratos exec tsc --noEmit -p tsconfig.json
+          pnpm --filter @achei/api exec tsc --noEmit -p tsconfig.json
+          pnpm --filter @achei/mobile exec tsc --noEmit
+
+      - name: Testes (contratos, API com banco real, aplicativo)
+        run: pnpm test
