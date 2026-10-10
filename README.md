@@ -8,6 +8,10 @@ Projeto da disciplina Laboratório de Desenvolvimento de Software da UFOPA,
 Desafio 2 (Causa Animal e Cultura, ODS 15). Equipe: Bruna Kellen, Murilo Falcão e
 Rafael Nobre.
 
+**No ar:** <https://achei-um-bicho.onrender.com> (versão web) · API em
+<https://achei-um-bicho-api.onrender.com>. Para Android, há um APK instalável
+sem loja; ver [docs/guia-apk.md](docs/guia-apk.md).
+
 ## O que já funciona
 
 | Funcionalidade | No servidor | No aplicativo |
@@ -16,11 +20,15 @@ Rafael Nobre.
 | F2 · Publicar caso de bicho encontrado, sem conta | `POST /casos`, com código de edição | Código mostrado no fim e guardado no aparelho |
 | F3 · Mural por proximidade, com raio ajustável | `GET /casos` (PostGIS, índice GIST) | Aba **Perto**, filtros e botão Aumentar |
 | F4 · Caso aberto e registro de avistamento | `GET /casos/:id`, `POST` e `GET /casos/:id/avistamentos` | Tela do caso, "Vi esse bicho na rua" e avisos para quem publicou |
+| F5 · Pareamento determinístico | Gerado ao publicar; `GET /casos/:id/pistas` e `POST .../veredito` | Abas **Pistas** e **Meus casos**: o que bateu, o que não bateu, "Pode ser ele" e "Não é" |
 
 Contato, código de edição, respostas de verificação e o ponto exato nunca saem nas
 respostas públicas; há testes automatizados que conferem isso a cada rodada. A foto
 é reduzida no celular antes de subir, e a API apaga os metadados em que a câmera
 grava a coordenada de onde ela foi tirada.
+
+A cada push na `main`, o GitHub Actions confere os tipos e roda a suíte inteira
+contra um PostgreSQL com PostGIS de verdade.
 
 ## Estrutura
 
@@ -113,10 +121,12 @@ Os testes acusam qualquer lugar que tenha ficado para trás.
 | Documento | Onde |
 |---|---|
 | O que falta até o pitch | [docs/backlog.md](docs/backlog.md) |
+| Roteiro e slides do alpha | [docs/alpha/roteiro.md](docs/alpha/roteiro.md) · `Achei_um_Bicho_Alpha.pdf` |
+| Onde o sistema está hospedado | [docs/hospedagem.md](docs/hospedagem.md) |
 | Visão do produto | [docs/documento-de-visao.md](docs/documento-de-visao.md) |
 | Funcionalidades do MVP e critérios de aceite | [docs/mvp-funcionalidades.md](docs/mvp-funcionalidades.md) |
 | Modelo entidade-relacionamento | [docs/modelo-er.md](docs/modelo-er.md) |
 | Cronograma | [docs/cronograma.md](docs/cronograma.md) |
-| Diagramas UML | [docs/uml/](docs/uml/) |
+| Diagramas UML: casos de uso, classes, estados e sequência | [docs/uml/](docs/uml/) |
 | Protótipo de média fidelidade | [prototipo/](prototipo/) |
 

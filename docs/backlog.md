@@ -2,23 +2,16 @@
 
 O que falta até o pitch de 21/11, em ordem de prioridade dentro de cada bloco.
 Item concluído sai daqui e vira linha no README ("O que já funciona").
-Atualizado em 30/09/2026.
+Atualizado em 10/10/2026. O alpha foi adiado pela professora para 16/10.
 
-## Sprint 2 · Aproximar · 03/10 a 08/10 (fecha o alpha de 09/10)
+## Alpha · 16/10 (adiado de 09/10)
 
-- [ ] **F5 · Gerador de pareamentos determinístico.** Ao publicar ou editar um
-  caso, procurar candidatos do lado oposto: mesma espécie e menos de 5 km (RN7).
-  Guardar o que bateu e o que não bateu (porte, cor, coleira, distância, dias).
-- [ ] **F5 · Tela de pistas.** O que bateu e o que não bateu, com "Pode ser ele" e
-  "Não é". Nenhuma porcentagem.
-- [ ] **Deploy público** conforme [hospedagem.md](hospedagem.md): banco no Neon,
-  API e versão web no Render.
-- [ ] **Fotos em armazenamento de objeto** (Supabase Storage, compatível com S3).
-  Sem isso as fotos somem a cada reinício da API no Render. A troca fica toda na
-  classe `ArmazenamentoDeFotos`.
-- [ ] **APK do alpha** conforme [guia-apk.md](guia-apk.md), instalado em pelo menos
-  um celular da equipe (RNF1).
-- [ ] **Roteiro do alpha ensaiado**, com os casos de demonstração no ar.
+Tudo da Sprint 2 está pronto: F5 (gerador de pareamentos e telas de Pistas e Meus
+casos), deploy público, fotos guardadas no banco, APK do Android, dados de
+demonstração em volta da Unidade Tapajós, roteiro e slides. Falta só:
+
+- [ ] **Ensaiar o roteiro** ([alpha/roteiro.md](alpha/roteiro.md)) com o APK no
+  celular, pelo menos uma vez, na véspera.
 
 ## Sprint 3 · Proteger · 10/10 a 23/10
 
@@ -47,11 +40,10 @@ Atualizado em 30/09/2026.
 - [ ] **Testes E2E com Maestro** nos caminhos críticos: publicar (os dois lados),
   mural com filtro e raio, caso aberto e avistamento. Precisa de emulador Android
   ou celular ligado ao computador.
-- [ ] **Integração contínua no GitHub Actions**: lint, testes de unidade e de
-  integração (com PostGIS como serviço do job), build da API e export web.
-  Bloquear merge com teste vermelho.
-- [ ] **Linter e formatter** (ESLint e Prettier) como etapa obrigatória, antes da
-  integração contínua.
+- [ ] **Linter e formatter** (ESLint e Prettier) como etapa obrigatória da
+  integração contínua, que hoje confere tipos e testes.
+- [ ] **Proteger a branch `main`** no GitHub para exigir a integração contínua
+  verde antes do merge.
 - [ ] **Análise estática de segurança** (CodeQL, grátis para repositório público)
   e auditoria de dependências.
 - [ ] **Teste de carga** da consulta do mural (k6), com o banco cheio de casos.
@@ -68,6 +60,5 @@ Atualizado em 30/09/2026.
 
 ## Documentação e entrega
 
-- [ ] Diagramas UML de estado (ciclo do caso) e de sequência (publicar e parear).
 - [ ] Artigo SBC: rascunho completo até 15/11.
 - [ ] Vídeo de reserva do sistema funcionando, para o caso de a rede falhar no pitch.
