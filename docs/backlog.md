@@ -53,6 +53,8 @@ demonstração em volta da Unidade Tapajós, roteiro e slides. Falta só:
 ## Aplicativo
 
 - [ ] Ícone e tela de abertura próprios (hoje são os padrões do Expo).
+- [ ] APK menor: hoje tem cerca de 100 MB por levar o código de todas as
+  arquiteturas; gerar só para `arm64-v8a`, que cobre os celulares atuais.
 - [ ] Bairro preenchido sozinho a partir do ponto (geocodificação reversa,
   guardando o resultado no banco).
 - [ ] Ajustar o ponto no mapa arrastando, como no protótipo.

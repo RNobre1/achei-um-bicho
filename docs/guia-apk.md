@@ -9,63 +9,37 @@ no fim deste guia.
 O EAS Build é o serviço de build do Expo. Ele compila o APK na nuvem, então não é
 preciso Android Studio nem Android SDK na máquina de ninguém.
 
-### O que precisa
+### Já está feito
 
-| Item | Custo | Observação |
-|---|---|---|
-| Conta no Expo (expo.dev) | Grátis | Uma conta da equipe; os três podem ser membros |
-| API no ar, com HTTPS | Grátis | Ver [hospedagem.md](hospedagem.md). Sem ela o APK só funciona na mesma rede Wi-Fi do computador que roda a API |
-| Celular Android | — | Qualquer um da equipe, para o teste real (RNF1) |
+- Conta da equipe no Expo, usuário `acheiumbicho`, plano gratuito.
+- Projeto `@acheiumbicho/achei-um-bicho` ligado ao repositório (`app.json`).
+- Chave de assinatura criada e guardada pelo próprio Expo, na conta. **Não apagar
+  essa credencial no painel**: todo APK futuro precisa ser assinado com ela, senão
+  o Android recusa instalar por cima da versão anterior.
+- Perfil `alpha` no `eas.json`, apontando para a API publicada
+  (`EXPO_PUBLIC_API_URL`). O endereço é gravado dentro do APK na hora do build.
+- Primeiro APK do alpha (versão 0.1.0):
+  <https://expo.dev/accounts/acheiumbicho/projects/achei-um-bicho/builds/adb42d04-2bdc-4d29-bcdd-1b377a4b1382>
 
-O plano gratuito do EAS tem um número limitado de builds por mês e fila de menor
-prioridade (o build pode esperar alguns minutos para começar). Para o projeto,
-sobra.
+### Instalar no celular
 
-### Passo a passo
-
-1. **Entrar no Expo e ligar o projeto** (uma vez só):
-
-   ```bash
-   cd apps/mobile
-   npx eas-cli@latest login
-   npx eas-cli@latest init
-   ```
-
-   O `init` grava o identificador do projeto no `app.json`. Esse arquivo muda e
-   deve ser commitado.
-
-2. **Dizer ao aplicativo onde está a API.** Variável `EXPO_PUBLIC_` é gravada
-   dentro do APK na hora do build, então o endereço tem que estar definido antes.
-   No `eas.json`, dentro do perfil `alpha`:
-
-   ```json
-   "alpha": {
-     "distribution": "internal",
-     "android": { "buildType": "apk" },
-     "env": { "EXPO_PUBLIC_API_URL": "https://<nome-da-api>.onrender.com" }
-   }
-   ```
-
-3. **Gerar o APK:**
-
-   ```bash
-   npx eas-cli@latest build --profile alpha --platform android
-   ```
-
-   Na primeira vez o EAS pergunta se pode criar a chave de assinatura: responder
-   que sim. Ele guarda a chave na conta. **Todo APK futuro precisa ser assinado
-   com a mesma chave**, senão o Android recusa instalar por cima da versão
-   anterior. Não apagar essa credencial no painel do Expo.
-
-4. **Instalar:** no fim do build aparece um link e um QR code. No celular, abrir
-   o link, baixar o APK e permitir *instalar apps desconhecidos* para o navegador
-   quando o Android pedir. O Play Protect pode avisar que o app não é da loja;
-   é esperado.
+Abrir o link acima no celular Android, tocar em instalar e permitir *instalar
+apps desconhecidos* para o navegador quando o Android pedir. O Play Protect pode
+avisar que o app não é da loja; é esperado. O arquivo tem cerca de 100 MB:
+baixar no Wi-Fi.
 
 ### A cada versão nova
 
-Repetir o passo 3 e mandar o link novo para quem vai testar. O APK instala por
-cima do anterior e mantém os casos guardados no aparelho.
+Com o token de acesso da conta do Expo na variável `EXPO_TOKEN`:
+
+```bash
+cd apps/mobile
+npx eas build --profile alpha --platform android --non-interactive
+```
+
+O build leva uns 20 minutos no plano gratuito. No fim sai um link novo; o APK
+instala por cima do anterior e mantém os casos guardados no aparelho. O `eas-cli`
+já está nas dependências de desenvolvimento do aplicativo.
 
 ### Build local, se o EAS estiver indisponível
 
@@ -73,7 +47,7 @@ Precisa de Android Studio com Android SDK e JDK 17 instalados:
 
 ```bash
 cd apps/mobile
-npx eas-cli@latest build --profile alpha --platform android --local
+npx eas build --profile alpha --platform android --local
 ```
 
 ## iPhone

@@ -10,8 +10,9 @@ mostrar, na hora, quem pode ser o mesmo bicho.
 - [ ] Abrir <https://achei-um-bicho.onrender.com> no notebook e esperar o mural
   carregar. A API gratuita dorme depois de 15 minutos parada e leva cerca de um
   minuto para acordar; acordar antes evita a tela girando na frente da turma.
-- [ ] No celular Android, abrir o aplicativo instalado pelo APK e confirmar que o
-  mural mostra os casos perto do campus (o título diz "perto de você").
+- [ ] No celular Android, abrir o aplicativo instalado pelo APK (link e passo a
+  passo em [../guia-apk.md](../guia-apk.md)) e confirmar que o mural mostra os
+  casos perto do campus (o título diz "perto de você").
 - [ ] Localização do celular ligada e permitida para o aplicativo.
 - [ ] Internet no celular: Wi-Fi da sala ou dados móveis de reserva.
 - [ ] Espelhar a tela do celular no projetor, se a sala permitir; se não, mostrar
