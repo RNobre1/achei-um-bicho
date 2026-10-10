@@ -18,13 +18,15 @@ preciso Android Studio nem Android SDK na máquina de ninguém.
   o Android recusa instalar por cima da versão anterior.
 - Perfil `alpha` no `eas.json`, apontando para a API publicada
   (`EXPO_PUBLIC_API_URL`). O endereço é gravado dentro do APK na hora do build.
-- Primeiro APK do alpha (versão 0.1.0):
-  <https://expo.dev/accounts/acheiumbicho/projects/achei-um-bicho/builds/adb42d04-2bdc-4d29-bcdd-1b377a4b1382>
+- Primeiro APK do alpha (versão 0.1.0), publicado como release do GitHub, que não
+  expira nem pede login: <https://github.com/RNobre1/achei-um-bicho/releases/tag/alpha-0.1.0>
 
 ### Instalar no celular
 
-Abrir o link acima no celular Android, tocar em instalar e permitir *instalar
-apps desconhecidos* para o navegador quando o Android pedir. O Play Protect pode
+No celular Android, abrir
+<https://github.com/RNobre1/achei-um-bicho/releases/download/alpha-0.1.0/achei-um-bicho-alpha.apk>
+(ou ler o QR code do último slide do alpha), baixar e permitir *instalar apps
+desconhecidos* para o navegador quando o Android pedir. O Play Protect pode
 avisar que o app não é da loja; é esperado. O arquivo tem cerca de 100 MB:
 baixar no Wi-Fi.
 
@@ -37,8 +39,9 @@ cd apps/mobile
 npx eas build --profile alpha --platform android --non-interactive
 ```
 
-O build leva uns 20 minutos no plano gratuito. No fim sai um link novo; o APK
-instala por cima do anterior e mantém os casos guardados no aparelho. O `eas-cli`
+O build leva uns 20 minutos no plano gratuito. No fim sai um link do Expo, que
+expira em algumas semanas: baixe o APK e publique como release nova do GitHub. O
+APK instala por cima do anterior e mantém os casos guardados no aparelho. O `eas-cli`
 já está nas dependências de desenvolvimento do aplicativo.
 
 ### Build local, se o EAS estiver indisponível

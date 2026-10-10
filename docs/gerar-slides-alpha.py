@@ -28,7 +28,8 @@ k = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(k)
 
 LINK_WEB = "https://achei-um-bicho.onrender.com"
-LINK_APK = "https://expo.dev/accounts/acheiumbicho/projects/achei-um-bicho/builds/adb42d04-2bdc-4d29-bcdd-1b377a4b1382"
+# release no GitHub: link permanente e público, ao contrário do artefato do Expo, que expira
+LINK_APK = "https://github.com/RNobre1/achei-um-bicho/releases/download/alpha-0.1.0/achei-um-bicho-alpha.apk"
 
 # Contagem da suíte completa (pnpm test) no fechamento do alpha, por camada.
 TESTES = [
