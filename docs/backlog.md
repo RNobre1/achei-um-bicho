@@ -52,6 +52,15 @@ demonstração em volta da Unidade Tapajós, roteiro e slides. Falta só:
 
 ## Aplicativo
 
+- [ ] **iPhone sem loja, de graça** (decidido em 11/10, para depois do alpha). O
+  instalável de verdade exige a conta paga da Apple (US$ 99/ano), então seguem os
+  dois caminhos gratuitos:
+  - versão web instalável: manifesto, `apple-touch-icon` e
+    `apple-mobile-web-app-capable`, para abrir em tela cheia com ícone próprio ao
+    adicionar à tela de início;
+  - app nativo pelo Expo Go, publicado com EAS Update (`runtimeVersion` fixado na
+    versão do SDK) e aberto por QR code sem o notebook. Precisa de um iPhone da
+    equipe para confirmar que o Expo Go aceita.
 - [ ] Ícone e tela de abertura próprios (hoje são os padrões do Expo).
 - [ ] APK menor: hoje tem cerca de 100 MB por levar o código de todas as
   arquiteturas; gerar só para `arm64-v8a`, que cobre os celulares atuais.
