@@ -1,11 +1,14 @@
+import Constants from 'expo-constants'
 import { useState } from 'react'
 import { Image, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native'
 import { formatarDistancia } from '../dominio/formatar'
-import { montarMapa } from '../dominio/mapa'
+import { cabecalhosDosLadrilhos, montarMapa } from '../dominio/mapa'
 import type { Coordenada } from '../dominio/posicao'
 import { cores, fontes } from '../tema'
 
 const LADRILHOS = process.env.EXPO_PUBLIC_TILES_URL ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+// a versão vem do app.json, a mesma que o APK mostra nas configurações do Android
+const CABECALHOS = cabecalhosDosLadrilhos(Constants.expoConfig?.version ?? '0')
 
 interface Props {
   centro: Coordenada
@@ -25,7 +28,11 @@ export function MapaArea({ centro, raioM, altura = 150 }: Props) {
       accessibilityLabel={`Mapa com a área aproximada, raio de ${formatarDistancia(raioM)}`}
     >
       {mapa?.ladrilhos.map((l) => (
-        <Image key={l.url} source={{ uri: l.url }} style={[estilos.ladrilho, { left: l.esquerda, top: l.topo }]} />
+        <Image
+          key={l.url}
+          source={{ uri: l.url, headers: CABECALHOS }}
+          style={[estilos.ladrilho, { left: l.esquerda, top: l.topo }]}
+        />
       ))}
       {mapa ? (
         <View

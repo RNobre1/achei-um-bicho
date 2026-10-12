@@ -85,3 +85,18 @@ export function montarMapa(opcoes: {
     circulo: { x: largura / 2, y: altura / 2, raio: raioM / metrosPorPixel(centro.latitude, zoom) },
   }
 }
+
+/** Endereço público do projeto, que a política do OpenStreetMap pede como contato. */
+const CONTATO = 'https://github.com/RNobre1/achei-um-bicho'
+
+/**
+ * Cabeçalhos de cada pedido de ladrilho. O OpenStreetMap bloqueia quem pede com a
+ * identificação genérica da biblioteca de rede (no Android, "okhttp/..."): devolve
+ * uma imagem de "403 Access blocked" no lugar do mapa. A política de uso exige que
+ * o aplicativo se identifique, com nome e contato. Na web o navegador não deixa
+ * trocar o User-Agent, e lá não precisa: ele já manda o endereço do site.
+ */
+export function cabecalhosDosLadrilhos(versao: string): { 'User-Agent': string } {
+  return { 'User-Agent': `AcheiUmBicho/${versao} (+${CONTATO})` }
+}
+
