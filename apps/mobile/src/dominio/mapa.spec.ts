@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { metrosPorPixel, montarMapa, pontoEmLadrilhos, TAMANHO_LADRILHO, zoomParaArea } from './mapa'
+import { cabecalhosDosLadrilhos, metrosPorPixel, montarMapa, pontoEmLadrilhos, TAMANHO_LADRILHO, zoomParaArea } from './mapa'
 
 const PRACA = { latitude: -2.4385, longitude: -54.7085 }
 const MODELO = 'https://ladrilhos.exemplo/{z}/{x}/{y}.png'
@@ -57,3 +57,23 @@ describe('mapa da área aproximada', () => {
     })
   })
 })
+
+describe('identificação nos pedidos de ladrilho', () => {
+  // Regressão: no APK o mapa vinha como a imagem "403 Access blocked", porque o
+  // Android pedia os ladrilhos com a identificação genérica da biblioteca de rede
+  // (okhttp), que a política de uso do OpenStreetMap bloqueia.
+  const { 'User-Agent': agente } = cabecalhosDosLadrilhos('0.1.0')
+
+  it('identifica o aplicativo pelo nome e pela versão', () => {
+    expect(agente).toMatch(/^AcheiUmBicho\/0\.1\.0 /)
+  })
+
+  it('traz um endereço de contato, como pede a política do OpenStreetMap', () => {
+    expect(agente).toContain('https://github.com/RNobre1/achei-um-bicho')
+  })
+
+  it('não se passa por navegador nem pela biblioteca de rede', () => {
+    expect(agente).not.toMatch(/okhttp|Mozilla|Dalvik/i)
+  })
+})
+
