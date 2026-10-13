@@ -51,3 +51,6 @@ __pycache__/
 
 # material da disciplina (não é do projeto)
 Aulas/
+
+# ferramentas baixadas localmente (adb do Android), nunca versionadas
+.ferramentas/
