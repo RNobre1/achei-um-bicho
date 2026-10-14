@@ -100,3 +100,12 @@ export function cabecalhosDosLadrilhos(versao: string): { 'User-Agent': string }
   return { 'User-Agent': `AcheiUmBicho/${versao} (+${CONTATO})` }
 }
 
+/**
+ * Fonte da imagem de um ladrilho, sempre em lista. No React Native 0.86, o Image do
+ * Android descarta os cabeçalhos de um source que seja objeto único: só os repassa
+ * ao nativo quando o source é uma lista (ver Libraries/Image/Image.android.js).
+ */
+export function fonteDoLadrilho(url: string, cabecalhos: Record<string, string>): { uri: string; headers: Record<string, string> }[] {
+  return [{ uri: url, headers: cabecalhos }]
+}
+
