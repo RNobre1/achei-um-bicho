@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cabecalhosDosLadrilhos, metrosPorPixel, montarMapa, pontoEmLadrilhos, TAMANHO_LADRILHO, zoomParaArea } from './mapa'
+import { cabecalhosDosLadrilhos, fonteDoLadrilho, metrosPorPixel, montarMapa, pontoEmLadrilhos, TAMANHO_LADRILHO, zoomParaArea } from './mapa'
 
 const PRACA = { latitude: -2.4385, longitude: -54.7085 }
 const MODELO = 'https://ladrilhos.exemplo/{z}/{x}/{y}.png'
@@ -74,6 +74,19 @@ describe('identificação nos pedidos de ladrilho', () => {
 
   it('não se passa por navegador nem pela biblioteca de rede', () => {
     expect(agente).not.toMatch(/okhttp|Mozilla|Dalvik/i)
+  })
+})
+
+describe('fonte da imagem de cada ladrilho', () => {
+  // Regressão: no React Native 0.86, o Image do Android só repassa os cabeçalhos
+  // ao nativo quando o source é uma lista; com um objeto único eles são descartados
+  // e o pedido sai com a identificação genérica, que o OpenStreetMap bloqueia.
+  it('é uma lista, para o Android não descartar os cabeçalhos', () => {
+    const fonte = fonteDoLadrilho('https://ladrilhos.exemplo/14/1/2.png', cabecalhosDosLadrilhos('0.1.2'))
+    expect(Array.isArray(fonte)).toBe(true)
+    expect(fonte).toEqual([
+      { uri: 'https://ladrilhos.exemplo/14/1/2.png', headers: cabecalhosDosLadrilhos('0.1.2') },
+    ])
   })
 })
 
