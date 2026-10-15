@@ -2,12 +2,22 @@
  * Casos fictícios de demonstração, publicados pelo `semear-demo.ts`. Ficam aqui,
  * separados do envio, para o teste conferir o que a demonstração do alpha mostra.
  */
+import { join } from 'node:path'
 import type { NovaPublicacao } from '@achei/contratos'
 
 export interface Ponto {
   latitude: number
   longitude: number
 }
+
+/** Caso a publicar e a foto que vai junto, um arquivo de PASTA_DAS_FOTOS. */
+export interface CasoDeDemonstracao {
+  publicacao: NovaPublicacao
+  foto: string
+}
+
+/** Fotos livres de direitos (domínio público ou CC0); a origem de cada uma está no README da pasta. */
+export const PASTA_DAS_FOTOS = join(__dirname, 'fotos-demo')
 
 // metros num grau de latitude (o de longitude encolhe com o cosseno da latitude)
 const METROS_POR_GRAU = 110574
@@ -41,7 +51,7 @@ function perguntas([p1, p2, p3]: Tres, [r1, r2, r3]: Tres) {
 // antes de semear: o caso ao vivo sumiu "ontem à tarde", e achado mais de um dia
 // antes do sumiço já não bate no tempo. Por isso o banco se semeia na véspera ou no
 // dia da apresentação, nunca uma semana antes.
-export function casosDeDemonstracao(centro: Ponto, agora: Date): NovaPublicacao[] {
+export function casosDeDemonstracao(centro: Ponto, agora: Date): CasoDeDemonstracao[] {
   /** Ponto a tantos metros ao norte e a leste do centro. */
   const perto = (norteM: number, lesteM: number): Ponto => ({
     latitude: centro.latitude + norteM / METROS_POR_GRAU,
@@ -51,76 +61,100 @@ export function casosDeDemonstracao(centro: Ponto, agora: Date): NovaPublicacao[
 
   return [
     {
-      tipo: 'encontrado',
-      animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'sem' },
-      local: { ...perto(-300, 600), bairro: 'Salé', referencia: 'Perto da quadra do bairro' },
-      autor: { nome: 'Quem achou no Salé', telefone: '93992345678' },
-      ocorridoEm: horasAtras(3),
-      relato: 'Estava assustado debaixo de um carro na rua. Está comigo, bem alimentado.',
-      perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma cicatriz na orelha', 'Abana o rabo e vem', 'Estava sem nada']),
+      foto: 'sale-caramelo-sem-coleira.jpg',
+      publicacao: {
+        tipo: 'encontrado',
+        animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'sem' },
+        local: { ...perto(-300, 600), bairro: 'Salé', referencia: 'Perto da quadra do bairro' },
+        autor: { nome: 'Quem achou no Salé', telefone: '93992345678' },
+        ocorridoEm: horasAtras(3),
+        relato: 'Estava assustado debaixo de um carro na rua. Está comigo, bem alimentado.',
+        perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma cicatriz na orelha', 'Abana o rabo e vem', 'Estava sem nada']),
+      },
     },
     {
-      tipo: 'encontrado',
-      animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'com' },
-      local: { ...perto(-1200, 300), bairro: 'Aeroporto Velho', referencia: 'Rua de trás da escola' },
-      autor: { nome: 'Vizinha do Aeroporto Velho', telefone: '93993456789' },
-      ocorridoEm: horasAtras(5),
-      relato: 'Apareceu no meu portão, com coleira azul e sem plaquinha.',
-      perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma mancha branca no peito', 'Fica de barriga para cima', 'Coleira azul sem plaquinha']),
+      foto: 'aeroporto-velho-caramelo-com-coleira.jpg',
+      publicacao: {
+        tipo: 'encontrado',
+        animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'com' },
+        local: { ...perto(-1200, 300), bairro: 'Aeroporto Velho', referencia: 'Rua de trás da escola' },
+        autor: { nome: 'Vizinha do Aeroporto Velho', telefone: '93993456789' },
+        ocorridoEm: horasAtras(5),
+        relato: 'Apareceu no meu portão, de coleira e sem plaquinha.',
+        perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma mancha branca no peito', 'Fica de barriga para cima', 'Coleira de corrente, sem plaquinha']),
+      },
     },
     {
-      tipo: 'encontrado',
-      animal: { especie: 'cachorro', porte: 'medio', corDominante: 'malhado', coleira: 'nao_observado' },
-      local: { ...perto(-3000, 1500), bairro: 'Liberdade', referencia: 'Perto do ponto de ônibus' },
-      autor: { nome: 'Motorista que viu' },
-      ocorridoEm: horasAtras(7),
-      relato: 'Vi andando sozinho perto do ponto de ônibus. Consegui segurar e está no quintal.',
-      perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Manca um pouco da pata de trás', 'Não reagiu a nenhum nome', 'Não deu para ver']),
+      foto: 'liberdade-malhado.jpg',
+      publicacao: {
+        tipo: 'encontrado',
+        animal: { especie: 'cachorro', porte: 'medio', corDominante: 'malhado', coleira: 'nao_observado' },
+        local: { ...perto(-3000, 1500), bairro: 'Liberdade', referencia: 'Perto do ponto de ônibus' },
+        autor: { nome: 'Motorista que viu' },
+        ocorridoEm: horasAtras(7),
+        relato: 'Vi andando sozinho perto do ponto de ônibus. Consegui segurar e está no quintal.',
+        perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Manca um pouco da pata de trás', 'Não reagiu a nenhum nome', 'Não deu para ver']),
+      },
     },
     {
-      tipo: 'perdido',
-      animal: { especie: 'gato', porte: 'pequeno', corDominante: 'cinza', coleira: 'sem', nome: 'Fumaça', castrado: true },
-      local: { ...perto(-700, -500), bairro: 'Mapiri', referencia: 'Rua de trás do posto de saúde' },
-      autor: { nome: 'Tutora da Fumaça' },
-      ocorridoEm: horasAtras(60),
-      relato: 'Gata castrada, muito medrosa. Deve estar escondida em algum quintal perto.',
-      perguntas: perguntas(PERGUNTAS_TUTOR, ['Tem a ponta do rabo branca', 'Fumaça', 'Nada, estava sem coleira']),
+      foto: 'fumaca.jpg',
+      publicacao: {
+        tipo: 'perdido',
+        animal: { especie: 'gato', porte: 'pequeno', corDominante: 'cinza', coleira: 'sem', nome: 'Fumaça', castrado: true },
+        local: { ...perto(-700, -500), bairro: 'Mapiri', referencia: 'Rua de trás do posto de saúde' },
+        autor: { nome: 'Tutora da Fumaça' },
+        ocorridoEm: horasAtras(60),
+        relato: 'Gata castrada, muito medrosa. Deve estar escondida em algum quintal perto.',
+        perguntas: perguntas(PERGUNTAS_TUTOR, ['Tem a ponta do rabo branca', 'Fumaça', 'Nada, estava sem coleira']),
+      },
     },
     {
-      tipo: 'encontrado',
-      animal: { especie: 'gato', porte: 'pequeno', corDominante: 'cinza', coleira: 'sem' },
-      local: { ...perto(-500, -900), bairro: 'Mapiri' },
-      autor: { nome: 'Quem achou a gatinha' },
-      ocorridoEm: horasAtras(12),
-      relato: 'Gatinha cinza miando no telhado da vizinha. Desceu e está aqui dentro.',
-      perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['A ponta do rabo é branca', 'Se esconde quando chamam', 'Estava sem nada']),
+      foto: 'mapiri-gatinha-cinza.jpg',
+      publicacao: {
+        tipo: 'encontrado',
+        animal: { especie: 'gato', porte: 'pequeno', corDominante: 'cinza', coleira: 'sem' },
+        local: { ...perto(-500, -900), bairro: 'Mapiri' },
+        autor: { nome: 'Quem achou a gatinha' },
+        ocorridoEm: horasAtras(12),
+        relato: 'Gatinha cinza miando no telhado da vizinha. Desceu e está aqui dentro.',
+        perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['A ponta do rabo é branca', 'Se esconde quando chamam', 'Estava sem nada']),
+      },
     },
     {
-      tipo: 'perdido',
-      animal: { especie: 'cachorro', porte: 'grande', corDominante: 'preto', coleira: 'com', nome: 'Thor', castrado: false },
-      local: { ...perto(-1500, 1800), bairro: 'Laguinho', referencia: 'Próximo à escola estadual' },
-      autor: { nome: 'Tutor do Thor', telefone: '93994567890' },
-      ocorridoEm: horasAtras(80),
-      relato: 'Cachorro grande, mas manso. Sumiu durante a chuva forte de domingo.',
-      perguntas: perguntas(PERGUNTAS_TUTOR, ['Tem um dente da frente quebrado', 'Thor', 'Coleira azul com plaquinha']),
+      foto: 'thor.jpg',
+      publicacao: {
+        tipo: 'perdido',
+        animal: { especie: 'cachorro', porte: 'grande', corDominante: 'preto', coleira: 'com', nome: 'Thor', castrado: false },
+        local: { ...perto(-1500, 1800), bairro: 'Laguinho', referencia: 'Próximo à escola estadual' },
+        autor: { nome: 'Tutor do Thor', telefone: '93994567890' },
+        ocorridoEm: horasAtras(80),
+        relato: 'Cachorro grande, mas manso. Sumiu durante a chuva forte de domingo.',
+        perguntas: perguntas(PERGUNTAS_TUTOR, ['Tem um dente da frente quebrado', 'Thor', 'Coleira azul com plaquinha']),
+      },
     },
     {
-      tipo: 'perdido',
-      animal: { especie: 'cachorro', porte: 'pequeno', corDominante: 'branco', coleira: 'com', nome: 'Mel', castrado: true },
-      local: { ...perto(-2200, -400), bairro: 'Uruará', referencia: 'Perto da feira' },
-      autor: { nome: 'Tutora da Mel', telefone: '93995678901' },
-      ocorridoEm: horasAtras(26),
-      relato: 'Pequena, branca, com uma mancha marrom nas costas. Saiu atrás de outro cachorro.',
-      perguntas: perguntas(PERGUNTAS_TUTOR, ['Mancha marrom nas costas', 'Mel', 'Coleira rosa com guizo']),
+      foto: 'mel.jpg',
+      publicacao: {
+        tipo: 'perdido',
+        animal: { especie: 'cachorro', porte: 'pequeno', corDominante: 'branco', coleira: 'com', nome: 'Mel', castrado: true },
+        local: { ...perto(-2200, -400), bairro: 'Uruará', referencia: 'Perto da feira' },
+        autor: { nome: 'Tutora da Mel', telefone: '93995678901' },
+        ocorridoEm: horasAtras(26),
+        relato: 'Pequena, branca, com uma mancha marrom nas costas. Saiu atrás de outro cachorro.',
+        perguntas: perguntas(PERGUNTAS_TUTOR, ['Mancha marrom nas costas', 'Mel', 'Coleira rosa com guizo']),
+      },
     },
     {
-      tipo: 'encontrado',
-      animal: { especie: 'gato', porte: 'pequeno', corDominante: 'malhado', coleira: 'sem' },
-      local: { ...perto(-2600, 2400), bairro: 'Caranazal' },
-      autor: { nome: 'Quem achou o filhote' },
-      ocorridoEm: horasAtras(8),
-      relato: 'Filhote malhado miando na calçada. Está abrigado aqui em casa.',
-      perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem os olhos de cores diferentes', 'Não responde a nome', 'Estava sem nada']),
+      foto: 'caranazal-filhote-malhado.jpg',
+      publicacao: {
+        tipo: 'encontrado',
+        animal: { especie: 'gato', porte: 'pequeno', corDominante: 'malhado', coleira: 'sem' },
+        local: { ...perto(-2600, 2400), bairro: 'Caranazal' },
+        autor: { nome: 'Quem achou o filhote' },
+        ocorridoEm: horasAtras(8),
+        relato: 'Filhote malhado miando na calçada. Está abrigado aqui em casa.',
+        perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem os olhos de cores diferentes', 'Não responde a nome', 'Estava sem nada']),
+      },
     },
   ]
 }
