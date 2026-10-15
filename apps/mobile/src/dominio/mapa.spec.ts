@@ -78,15 +78,19 @@ describe('identificação nos pedidos de ladrilho', () => {
 })
 
 describe('fonte da imagem de cada ladrilho', () => {
+  const url = 'https://ladrilhos.exemplo/14/1/2.png'
+  const cabecalhos = cabecalhosDosLadrilhos('0.1.2')
+
   // Regressão: no React Native 0.86, o Image do Android só repassa os cabeçalhos
   // ao nativo quando o source é uma lista; com um objeto único eles são descartados
   // e o pedido sai com a identificação genérica, que o OpenStreetMap bloqueia.
-  it('é uma lista, para o Android não descartar os cabeçalhos', () => {
-    const fonte = fonteDoLadrilho('https://ladrilhos.exemplo/14/1/2.png', cabecalhosDosLadrilhos('0.1.2'))
-    expect(Array.isArray(fonte)).toBe(true)
-    expect(fonte).toEqual([
-      { uri: 'https://ladrilhos.exemplo/14/1/2.png', headers: cabecalhosDosLadrilhos('0.1.2') },
-    ])
+  it('no celular é uma lista, para o Android não descartar os cabeçalhos', () => {
+    expect(fonteDoLadrilho(url, cabecalhos, 'android')).toEqual([{ uri: url, headers: cabecalhos }])
+  })
+
+  // Regressão: o react-native-web só lê source.uri de um objeto; com lista, o mapa
+  // da versão web ficava em branco.
+  it('na web é um objeto com o endereço', () => {
+    expect(fonteDoLadrilho(url, cabecalhos, 'web')).toEqual({ uri: url })
   })
 })
-
