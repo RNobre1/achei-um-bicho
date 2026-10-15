@@ -3,7 +3,7 @@
     "name": "Achei um Bicho",
     "slug": "achei-um-bicho",
     "scheme": "acheiumbicho",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#EEF2EE",
@@ -17,7 +17,7 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
-      "versionCode": 5
+      "versionCode": 6
     },
     "web": {
       "bundler": "metro",
