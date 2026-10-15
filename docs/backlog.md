@@ -2,13 +2,15 @@
 
 O que falta até o pitch de 21/11, em ordem de prioridade dentro de cada bloco.
 Item concluído sai daqui e vira linha no README ("O que já funciona").
-Atualizado em 10/10/2026. O alpha foi adiado pela professora para 16/10.
+Atualizado em 15/10/2026. O alpha foi adiado pela professora para 16/10.
 
 ## Alpha · 16/10 (adiado de 09/10)
 
 Tudo da Sprint 2 está pronto: F5 (gerador de pareamentos e telas de Pistas e Meus
 casos), deploy público, fotos guardadas no banco, APK do Android, dados de
-demonstração em volta da Unidade Tapajós, roteiro e slides. Falta só:
+demonstração com foto em volta da Unidade Tapajós, roteiro e slides. Em 15/10 o
+aplicativo foi testado num celular de verdade, e o APK 0.1.2 corrigiu o mapa
+bloqueado e a foto que não subia. Falta só:
 
 - [ ] **Ensaiar o roteiro** ([alpha/roteiro.md](alpha/roteiro.md)) com o APK no
   celular, pelo menos uma vez, na véspera.
@@ -47,6 +49,8 @@ demonstração em volta da Unidade Tapajós, roteiro e slides. Falta só:
 - [ ] **Análise estática de segurança** (CodeQL, grátis para repositório público)
   e auditoria de dependências.
 - [ ] **Teste de carga** da consulta do mural (k6), com o banco cheio de casos.
+- [ ] **Números de testes dos slides gerados da suíte**, não copiados à mão: o
+  script dos slides lê o relatório JSON do Vitest da última integração contínua.
 - [ ] **RNF2 medido:** publicar um caso com foto consome menos de 1 MB.
 - [ ] **RNF5 conferido:** contraste AA de toda a paleta.
 
