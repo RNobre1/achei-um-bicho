@@ -7,6 +7,7 @@ function gps(sobrescrever: Partial<Gps> = {}): Gps {
   return {
     pedirPermissao: async () => true,
     posicaoAtual: async () => NO_QUINTAL,
+    ultimaPosicao: async () => undefined,
     ...sobrescrever,
   }
 }
@@ -67,5 +68,28 @@ describe('localizar', () => {
     const resultado = localizar(semSinal)
     await vi.advanceTimersByTimeAsync(PRAZO_GPS_MS)
     await expect(resultado).resolves.toEqual({ ponto: CENTRO_SANTAREM, aproximada: true })
+  })
+
+  // o celular quase sempre já sabe onde está: esperar uma posição nova à toa fazia o
+  // mural cair no centro da cidade numa abertura sim, noutra não
+  it('usa a posição recente que o aparelho já tem, sem esperar o GPS', async () => {
+    const naEsquina = { latitude: -2.441, longitude: -54.711 }
+    const comPosicaoRecente = gps({ ultimaPosicao: async () => naEsquina, posicaoAtual: () => new Promise(() => {}) })
+    await expect(localizar(comPosicaoRecente)).resolves.toEqual({ ponto: naEsquina, aproximada: false })
+  })
+
+  it('se o GPS passa do prazo, usa a posição que o aparelho conseguiu enquanto isso', async () => {
+    const naEsquina = { latitude: -2.441, longitude: -54.711 }
+    const respostas = [undefined, naEsquina]
+    const demorado = gps({ ultimaPosicao: async () => respostas.shift(), posicaoAtual: () => new Promise(() => {}) })
+    const resultado = localizar(demorado)
+    await vi.advanceTimersByTimeAsync(PRAZO_GPS_MS)
+    await expect(resultado).resolves.toEqual({ ponto: naEsquina, aproximada: false })
+  })
+
+  it('sem permissão, nem a posição guardada no aparelho é lida', async () => {
+    const ultimaPosicao = vi.fn(async () => NO_QUINTAL)
+    await localizar(gps({ pedirPermissao: async () => false, ultimaPosicao }))
+    expect(ultimaPosicao).not.toHaveBeenCalled()
   })
 })
