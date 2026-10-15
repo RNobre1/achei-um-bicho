@@ -112,3 +112,17 @@ export type FonteDoLadrilho = { uri: string; headers: Record<string, string> }[]
 export function fonteDoLadrilho(url: string, cabecalhos: Record<string, string>, plataforma: string): FonteDoLadrilho {
   return plataforma === 'web' ? { uri: url } : [{ uri: url, headers: cabecalhos }]
 }
+
+/** Largura de tela de celular, em pixels de layout, para o zoom do mapa externo. */
+const LARGURA_DE_CELULAR_PX = 400
+
+/**
+ * Endereço que abre a área no Google Maps, centrado e sem pino: o centro publicado é
+ * deslocado do ponto real (D12), e um pino diria "é aqui" sobre a rua errada ou a
+ * casa de um vizinho (D6). O zoom é o mesmo que o mapa do aplicativo usaria numa
+ * tela de celular.
+ */
+export function enderecoNoGoogleMaps({ latitude, longitude }: Coordenada, raioM: number): string {
+  const zoom = zoomParaArea(raioM, latitude, LARGURA_DE_CELULAR_PX, LARGURA_DE_CELULAR_PX)
+  return `https://www.google.com/maps/@?api=1&map_action=map&center=${latitude.toFixed(6)},${longitude.toFixed(6)}&zoom=${zoom}`
+}

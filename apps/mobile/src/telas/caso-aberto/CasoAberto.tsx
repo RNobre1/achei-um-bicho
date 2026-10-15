@@ -1,7 +1,7 @@
 import type { AvistamentoParaAutor, CasoAberto as Caso } from '@achei/contratos'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
@@ -11,6 +11,7 @@ import { Placa } from '../../componentes/Placa'
 import { Voltar } from '../../componentes/Voltar'
 import { atributosDoCaso, descreverQuando, fraseDoLocal, TITULO_DO_LOCAL } from '../../dominio/caso-aberto'
 import { formatarTempoDesde } from '../../dominio/formatar'
+import { enderecoNoGoogleMaps } from '../../dominio/mapa'
 import { nomeDoAnimal } from '../../dominio/mural'
 import { api, ErroApi } from '../../servicos/api'
 import { meuCaso } from '../../servicos/meus-casos'
@@ -117,7 +118,11 @@ export function CasoAberto() {
 
           <View style={estilos.bloco}>
             <Text style={estilos.rotulo}>{TITULO_DO_LOCAL[caso.tipo].toUpperCase()}</Text>
-            <MapaArea centro={caso.area} raioM={caso.area.raioM} />
+            <MapaArea
+              centro={caso.area}
+              raioM={caso.area.raioM}
+              aoTocar={() => void Linking.openURL(enderecoNoGoogleMaps(caso.area, caso.area.raioM))}
+            />
             <Text style={[estilos.paragrafo, estilos.pequeno]}>
               {descreverQuando(caso.ocorridoEm)}. {fraseDoLocal(caso.area.bairro)}
             </Text>

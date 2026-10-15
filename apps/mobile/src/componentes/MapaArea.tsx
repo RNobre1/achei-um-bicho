@@ -1,6 +1,6 @@
 import Constants from 'expo-constants'
 import { useState } from 'react'
-import { Image, Platform, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native'
+import { Image, Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native'
 import { formatarDistancia } from '../dominio/formatar'
 import { cabecalhosDosLadrilhos, fonteDoLadrilho, montarMapa } from '../dominio/mapa'
 import type { Coordenada } from '../dominio/posicao'
@@ -14,18 +14,24 @@ interface Props {
   centro: Coordenada
   raioM: number
   altura?: number
+  /** Quando existe, o mapa vira um botão (a tela do caso abre a área no Google Maps). */
+  aoTocar?: () => void
 }
 
 /** Círculo da área aproximada sobre o mapa. Nunca um pino no endereço exato. */
-export function MapaArea({ centro, raioM, altura = 150 }: Props) {
+export function MapaArea({ centro, raioM, altura = 150, aoTocar }: Props) {
   const [largura, setLargura] = useState(0)
   const mapa = largura > 0 ? montarMapa({ centro, raioM, largura, altura, modeloUrl: LADRILHOS }) : undefined
 
   return (
-    <View
+    <Pressable
+      disabled={!aoTocar}
+      onPress={aoTocar}
       style={[estilos.mapa, { height: altura }]}
       onLayout={(e: LayoutChangeEvent) => setLargura(Math.round(e.nativeEvent.layout.width))}
+      accessibilityRole={aoTocar ? 'link' : undefined}
       accessibilityLabel={`Mapa com a área aproximada, raio de ${formatarDistancia(raioM)}`}
+      accessibilityHint={aoTocar ? 'Abre a área no Google Maps' : undefined}
     >
       {mapa?.ladrilhos.map((l) => (
         <Image
@@ -52,7 +58,8 @@ export function MapaArea({ centro, raioM, altura = 150 }: Props) {
         ÁREA APROXIMADA · {formatarDistancia(raioM).toUpperCase()}
       </Text>
       <Text style={[estilos.etiqueta, estilos.atribuicao]}>© OpenStreetMap</Text>
-    </View>
+      {aoTocar ? <Text style={[estilos.etiqueta, estilos.abrir]}>ABRIR NO MAPA ↗</Text> : null}
+    </Pressable>
   )
 }
 
@@ -78,4 +85,5 @@ const estilos = StyleSheet.create({
   },
   etiquetaArea: { right: 8, bottom: 8 },
   atribuicao: { left: 8, top: 8, letterSpacing: 0 },
+  abrir: { right: 8, top: 8 },
 })
