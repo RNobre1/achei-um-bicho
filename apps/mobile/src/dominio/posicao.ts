@@ -19,23 +19,34 @@ export interface Gps {
 export const CENTRO_SANTAREM: Coordenada = { latitude: -2.4385, longitude: -54.7085 }
 
 /**
- * Tempo máximo esperando permissão e sinal. Depois disso o mural abre no centro da
- * cidade: mostrar casos da cidade já é mais útil que uma tela girando.
+ * Tempo máximo esperando o sinal do GPS, contado depois que a pessoa respondeu à
+ * permissão. Depois disso o mural abre no centro da cidade: mostrar casos da cidade
+ * já é mais útil que uma tela girando.
  */
 export const PRAZO_GPS_MS = 8000
 
+/**
+ * Tempo máximo esperando a resposta ao pedido de permissão. No celular a janela
+ * espera a pessoa; no navegador o pedido ignorado nunca responde, e o mural não pode
+ * girar para sempre por isso.
+ */
+export const PRAZO_PERMISSAO_MS = 30000
+
 const RESERVA: Posicao = { ponto: CENTRO_SANTAREM, aproximada: true }
 
-async function doGps(gps: Gps): Promise<Posicao> {
-  if (!(await gps.pedirPermissao())) return RESERVA
-  return { ponto: await gps.posicaoAtual(), aproximada: false }
+/** A promessa, ou a reserva se ela falhar ou não responder dentro do prazo. */
+function comPrazo<T>(promessa: Promise<T>, prazoMs: number, reserva: T): Promise<T> {
+  let relogio: ReturnType<typeof setTimeout> | undefined
+  const prazo = new Promise<T>((resolver) => {
+    relogio = setTimeout(() => resolver(reserva), prazoMs)
+  })
+  return Promise.race([promessa.catch(() => reserva), prazo]).finally(() => clearTimeout(relogio))
 }
 
-export function localizar(gps: Gps, prazoMs = PRAZO_GPS_MS): Promise<Posicao> {
-  let relogio: ReturnType<typeof setTimeout> | undefined
-  const prazo = new Promise<Posicao>((resolver) => {
-    relogio = setTimeout(() => resolver(RESERVA), prazoMs)
-  })
-  const tentativa = doGps(gps).catch(() => RESERVA)
-  return Promise.race([tentativa, prazo]).finally(() => clearTimeout(relogio))
+export async function localizar(gps: Gps, prazoMs = PRAZO_GPS_MS): Promise<Posicao> {
+  // o tempo lendo a janela de permissão não pode gastar o prazo do GPS
+  const permitiu = await comPrazo(gps.pedirPermissao(), PRAZO_PERMISSAO_MS, false)
+  if (!permitiu) return RESERVA
+  const ponto = gps.posicaoAtual().then((coordenada): Posicao => ({ ponto: coordenada, aproximada: false }))
+  return comPrazo(ponto, prazoMs, RESERVA)
 }
