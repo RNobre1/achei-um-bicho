@@ -14,6 +14,8 @@ import { CardDaPista } from './CardDaPista'
 interface Grupo {
   caso: MeuCaso
   pistas: Pista[]
+  /** Primeira foto do próprio caso, para o par aparecer lado a lado. */
+  minhaFoto?: string
 }
 
 export function Pistas() {
@@ -30,7 +32,14 @@ export function Pistas() {
     setSemCasos(meus.length === 0)
     try {
       const lidos = await Promise.all(
-        meus.map(async (caso) => ({ caso, pistas: await api.pistasDoMeuCaso(caso.id, caso.codigoEdicao) })),
+        meus.map(async (caso) => {
+          // a foto do próprio caso é enfeite: se não vier, o card fica com a placa
+          const [pistas, aberto] = await Promise.all([
+            api.pistasDoMeuCaso(caso.id, caso.codigoEdicao),
+            api.abrirCaso(caso.id).catch(() => undefined),
+          ])
+          return { caso, pistas, minhaFoto: aberto?.fotos[0] }
+        }),
       )
       setGrupos(lidos.filter((grupo) => grupo.pistas.length > 0))
     } catch (e) {
@@ -108,6 +117,7 @@ export function Pistas() {
                   pista={pista}
                   meuTipo={grupo.caso.tipo}
                   meuNome={grupo.caso.nome}
+                  minhaFoto={grupo.minhaFoto}
                   descartando={descartando === pista.id}
                   aoAbrir={() => router.push(`/caso/${pista.outro.id}`)}
                   aoDescartar={() => void descartar(grupo, pista)}

@@ -15,18 +15,23 @@ interface Props {
   pista: Pista
   meuTipo: TipoCaso
   meuNome: string
+  minhaFoto?: string
   descartando: boolean
   aoAbrir: () => void
   aoDescartar: () => void
 }
 
-export function CardDaPista({ pista, meuTipo, meuNome, descartando, aoAbrir, aoDescartar }: Props) {
+export function CardDaPista({ pista, meuTipo, meuNome, minhaFoto, descartando, aoAbrir, aoDescartar }: Props) {
   const outro = pista.outro
   return (
     <View style={estilos.par}>
       <View style={estilos.faces}>
         <View style={estilos.face}>
-          <Placa rotulo={NA_PLACA[meuTipo]} silte={meuTipo === 'encontrado'} estilo={estilos.foto} />
+          {minhaFoto ? (
+            <Image source={{ uri: api.urlDaFoto(minhaFoto) }} style={estilos.foto} accessibilityLabel={`Foto do seu caso: ${meuNome}`} />
+          ) : (
+            <Placa rotulo={NA_PLACA[meuTipo]} silte={meuTipo === 'encontrado'} estilo={estilos.foto} />
+          )}
           <Text style={estilos.legenda} numberOfLines={1}>
             {meuNome.toUpperCase()} · SEU CASO
           </Text>
