@@ -5,6 +5,20 @@ Apresentação na Unidade Tapajós da UFOPA. Slides em
 a demonstração ao vivo no celular: publicar um caso perdido e ver o aplicativo
 mostrar, na hora, quem pode ser o mesmo bicho.
 
+## Na véspera
+
+- [x] Banco de produção semeado de novo em 15/10, com os oito casos de
+  demonstração e as fotos. Os horários dos casos contam a partir da hora em que se
+  semeia, por isso o banco se semeia na véspera ou no dia, nunca uma semana antes:
+  achado mais de um dia antes do sumiço não bate no tempo. Para refazer, apagar os
+  casos e rodar `API_URL=$API_URL_PRODUCAO pnpm --filter @achei/api semear:demo`
+  (chaves em `.env.contas`).
+- [ ] APK 0.1.2 instalado no celular da demonstração (o 0.1.0 e o 0.1.1 mostram o
+  mapa bloqueado e não enviam foto).
+- [ ] Na galeria do celular, a foto do cachorro caramelo que vai no caso ao vivo
+  (pasta *AcheiTeste*). É o mesmo cachorro da pista forte, fotografado de outro
+  ângulo: na tela de pistas, as duas fotos lado a lado convencem mais que a lista.
+
 ## Antes de começar (10 minutos antes)
 
 - [ ] Abrir <https://achei-um-bicho.onrender.com> no notebook e esperar o mural
@@ -25,7 +39,7 @@ mostrar, na hora, quem pode ser o mesmo bicho.
 | 0:00 | 1 · Capa | Quem somos e o desafio: causa animal, ODS 15. |
 | 0:30 | 2 · Onde estamos | Cinco das nove funcionalidades prontas e no ar. Quem quiser acompanha pelo QR code. |
 | 1:00 | 3 · Casos perto | **No celular:** abrir o mural. Mostrar o raio de 1,6 km, os filtros e o botão Aumentar. |
-| 2:00 | 4 · Publicar | **No celular, ao vivo:** "Meu bicho sumiu" → cachorro, porte médio, caramelo, com coleira, um nome qualquer → localização atual, ontem à tarde → três respostas e um nome → Publicar. Mostrar o código de edição. |
+| 2:00 | 4 · Publicar | **No celular, ao vivo:** "Meu bicho sumiu" → foto da galeria (pasta *AcheiTeste*) → cachorro, porte médio, caramelo, com coleira, um nome qualquer → localização atual, ontem à tarde → três respostas e um nome → Publicar. Mostrar o código de edição. |
 | 4:00 | 6 · Pode ser o mesmo bicho | **No celular:** aba Pistas. Três casos de quem achou aparecem. Ler o primeiro: o que bateu e o que não bateu. Destacar que não há nota nem porcentagem, e que o par que bate em tudo vem antes do mais perto. Tocar em "Não é" no último. |
 | 5:30 | 5 · Caso aberto | **No celular:** tocar em "Pode ser ele" no primeiro par e mostrar o caso aberto: área aproximada, nunca o endereço. Tocar em "Vi esse bicho na rua" para mostrar o aviso sem conta. |
 | 6:30 | 7 · Por dentro | Três peças grátis. A consulta por raio no banco com índice espacial, e a privacidade por construção. |
@@ -34,13 +48,15 @@ mostrar, na hora, quem pode ser o mesmo bicho.
 
 ## O que a demonstração mostra, e por quê
 
-Os casos de demonstração estão em volta do campus. Quem publica, do campus, um
-cachorro caramelo de porte médio com coleira recebe três pistas:
+Os casos de demonstração estão em volta do campus, cada um com foto (domínio
+público, origem em `apps/api/scripts/fotos-demo/`). Quem publica, do campus, um
+cachorro caramelo de porte médio com coleira que sumiu ontem à tarde recebe três
+pistas. O teste `casos-de-demonstracao.spec.ts` confere que é isso que sai:
 
 | Caso de quem achou | Onde | O que acontece na tela |
 |---|---|---|
-| Caramelo com coleira | Aeroporto Velho, ~1,1 km | Bate em tudo; aparece primeiro, com o botão amarelo |
-| Caramelo sem coleira | Salé, ~600 m | Mais perto, mas a coleira não confere; aparece em segundo |
+| Caramelo com coleira | Aeroporto Velho, ~1,2 km | Bate em tudo; aparece primeiro, com o botão amarelo |
+| Caramelo sem coleira | Salé, ~700 m | Mais perto, mas a coleira não confere; aparece em segundo |
 | Malhado | Liberdade, ~3,4 km | Cor e distância contra; aparece por último, com o botão fraco |
 
 ## Se algo der errado
