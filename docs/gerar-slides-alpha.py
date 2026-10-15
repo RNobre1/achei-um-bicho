@@ -3,9 +3,10 @@
 
 Reaproveita o estilo do deck do kickoff (docs/gerar-slides.py): mesmas cores,
 fontes e peças. As telas, em docs/alpha/telas/, são prints do APK num celular Android
-e da versão web (o mesmo aplicativo), com os casos de demonstração no ar. Aviso,
-pistas e meus casos vêm da web porque precisam do GPS no campus, e o simulador de
-posição do Android não alcança a localização do Google Play Services.
+e da versão web (o mesmo aplicativo), com os casos de demonstração no ar. Caso
+aberto, aviso, pistas e meus casos vêm da web: precisam do GPS no campus ou da
+versão 0.1.4, e o simulador de posição do Android não alcança a localização do
+Google Play Services.
 
     .venv-slides/bin/python docs/gerar-slides-alpha.py
 
@@ -36,12 +37,12 @@ LINK_WEB = "https://achei-um-bicho.onrender.com"
 LINK_APK = "https://github.com/RNobre1/achei-um-bicho/releases/latest/download/achei-um-bicho-alpha.apk"
 
 # Contagem da suíte completa no fechamento do alpha, por camada, tirada da integração
-# contínua de 15/10 (execução 38793071095, commit 9aa4eb7). Conferir de novo a cada deck.
+# contínua de 15/10 (execução 38798844785, commit 5947caa). Conferir de novo a cada deck.
 TESTES = [
     ("Contratos e vocabulário", 47),
     ("API, unidade", 75),
     ("API, integração com Postgres real", 95),
-    ("Aplicativo, regras de tela", 97),
+    ("Aplicativo, regras de tela", 99),
 ]
 
 STATUS = [
@@ -72,7 +73,7 @@ TELAS_DECK = [
     dict(arquivo="03-caso-aberto.png", extra="04-avistamento.png", titulo="Caso aberto e avistamento",
          resolve="Quem passou na rua avisa sem conta; quem publicou vê onde e quando.",
          pontos=[
-             "O mapa mostra uma área aproximada, sempre o mesmo círculo, nunca a casa de ninguém.",
+             "O mapa mostra uma área aproximada, sempre o mesmo círculo; tocar abre no Google Maps, sem pino.",
              "Quem publicou vê a distância e o bairro de quem avisou, nunca o ponto exato.",
          ], fs=["F4"]),
     dict(arquivo="06-pistas.png", extra="07-meus-casos.png", titulo="Pode ser o mesmo bicho",
