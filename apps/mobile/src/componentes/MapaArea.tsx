@@ -1,6 +1,6 @@
 import Constants from 'expo-constants'
 import { useState } from 'react'
-import { Image, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native'
+import { Image, Platform, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native'
 import { formatarDistancia } from '../dominio/formatar'
 import { cabecalhosDosLadrilhos, fonteDoLadrilho, montarMapa } from '../dominio/mapa'
 import type { Coordenada } from '../dominio/posicao'
@@ -30,7 +30,7 @@ export function MapaArea({ centro, raioM, altura = 150 }: Props) {
       {mapa?.ladrilhos.map((l) => (
         <Image
           key={l.url}
-          source={fonteDoLadrilho(l.url, CABECALHOS)}
+          source={fonteDoLadrilho(l.url, CABECALHOS, Platform.OS)}
           style={[estilos.ladrilho, { left: l.esquerda, top: l.topo }]}
         />
       ))}

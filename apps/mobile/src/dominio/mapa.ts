@@ -100,12 +100,15 @@ export function cabecalhosDosLadrilhos(versao: string): { 'User-Agent': string }
   return { 'User-Agent': `AcheiUmBicho/${versao} (+${CONTATO})` }
 }
 
-/**
- * Fonte da imagem de um ladrilho, sempre em lista. No React Native 0.86, o Image do
- * Android descarta os cabeçalhos de um source que seja objeto único: só os repassa
- * ao nativo quando o source é uma lista (ver Libraries/Image/Image.android.js).
- */
-export function fonteDoLadrilho(url: string, cabecalhos: Record<string, string>): { uri: string; headers: Record<string, string> }[] {
-  return [{ uri: url, headers: cabecalhos }]
-}
+/** Fonte que o componente Image aceita: lista com cabeçalhos no celular, objeto na web. */
+export type FonteDoLadrilho = { uri: string; headers: Record<string, string> }[] | { uri: string }
 
+/**
+ * Fonte da imagem de um ladrilho. No celular vai em lista: no React Native 0.86, o
+ * Image do Android descarta os cabeçalhos de um source que seja objeto único (ver
+ * Libraries/Image/Image.android.js). Na web vai como objeto: o react-native-web só
+ * lê source.uri, e o navegador não deixa trocar o User-Agent de qualquer forma.
+ */
+export function fonteDoLadrilho(url: string, cabecalhos: Record<string, string>, plataforma: string): FonteDoLadrilho {
+  return plataforma === 'web' ? { uri: url } : [{ uri: url, headers: cabecalhos }]
+}
