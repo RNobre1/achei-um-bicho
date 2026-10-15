@@ -13,8 +13,9 @@ mostrar, na hora, quem pode ser o mesmo bicho.
   achado mais de um dia antes do sumiço não bate no tempo. Para refazer, apagar os
   casos e rodar `API_URL=$API_URL_PRODUCAO pnpm --filter @achei/api semear:demo`
   (chaves em `.env.contas`).
-- [ ] APK 0.1.3 instalado no celular da demonstração. As versões anteriores mostram
-  o mapa bloqueado, não enviam foto ou não mostram a sua foto nas pistas.
+- [ ] APK 0.1.4 instalado no celular da demonstração. As versões anteriores mostram
+  o mapa bloqueado, não enviam foto, não mostram a sua foto nas pistas ou não abrem
+  a área no Google Maps.
 - [ ] Na galeria do celular, a foto do cachorro caramelo que vai no caso ao vivo
   (pasta *AcheiTeste*). É o mesmo cachorro da pista forte, fotografado de outro
   ângulo: na tela de pistas, as duas fotos lado a lado convencem mais que a lista.
@@ -41,7 +42,7 @@ mostrar, na hora, quem pode ser o mesmo bicho.
 | 1:00 | 3 · Casos perto | **No celular:** abrir o mural. Mostrar o raio de 1,6 km, os filtros e o botão Aumentar. |
 | 2:00 | 4 · Publicar | **No celular, ao vivo:** "Meu bicho sumiu" → foto da galeria (pasta *AcheiTeste*) → cachorro, porte médio, caramelo, com coleira, um nome qualquer → localização atual, ontem à tarde → três respostas e um nome → Publicar. Mostrar o código de edição. |
 | 4:00 | 6 · Pode ser o mesmo bicho | **No celular:** aba Pistas. Três casos de quem achou aparecem. Ler o primeiro: o que bateu e o que não bateu. Destacar que não há nota nem porcentagem, e que o par que bate em tudo vem antes do mais perto. Tocar em "Não é" no último. |
-| 5:30 | 5 · Caso aberto | **No celular:** tocar em "Pode ser ele" no primeiro par e mostrar o caso aberto: área aproximada, nunca o endereço. Tocar em "Vi esse bicho na rua" para mostrar o aviso sem conta. |
+| 5:30 | 5 · Caso aberto | **No celular:** tocar em "Pode ser ele" no primeiro par e mostrar o caso aberto: área aproximada, nunca o endereço. Tocar no mapa abre o Google Maps na região, sem pino. Tocar em "Vi esse bicho na rua" para mostrar o aviso sem conta. |
 | 6:30 | 7 · Por dentro | Três peças grátis. A consulta por raio no banco com índice espacial, e a privacidade por construção. |
 | 7:00 | 8 e 9 · Modelagem e qualidade | UML gerada do código; testes escritos antes, rodando contra o banco de verdade. |
 | 7:30 | 10 · Próximos passos | Verificação por sinal particular, contato mediado, ciclo de vida, protetores locais. Agradecer. |
