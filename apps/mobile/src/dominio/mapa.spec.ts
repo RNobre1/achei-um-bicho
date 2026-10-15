@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cabecalhosDosLadrilhos, fonteDoLadrilho, metrosPorPixel, montarMapa, pontoEmLadrilhos, TAMANHO_LADRILHO, zoomParaArea } from './mapa'
+import { cabecalhosDosLadrilhos, fonteDoLadrilho, metrosPorPixel, montarMapa, pontoEmLadrilhos, TAMANHO_LADRILHO, zoomParaArea, enderecoNoGoogleMaps } from './mapa'
 
 const PRACA = { latitude: -2.4385, longitude: -54.7085 }
 const MODELO = 'https://ladrilhos.exemplo/{z}/{x}/{y}.png'
@@ -92,5 +92,21 @@ describe('fonte da imagem de cada ladrilho', () => {
   // da versão web ficava em branco.
   it('na web é um objeto com o endereço', () => {
     expect(fonteDoLadrilho(url, cabecalhos, 'web')).toEqual({ uri: url })
+  })
+})
+
+describe('abrir a área no Google Maps', () => {
+  const area = { latitude: -2.4191, longitude: -54.7408 }
+
+  // o centro publicado é deslocado do ponto real (D12): um pino mandaria gente à rua errada
+  it('abre o mapa centrado na área, sem pino', () => {
+    const endereco = enderecoNoGoogleMaps(area, 300)
+    expect(endereco.startsWith('https://www.google.com/maps/@?api=1&map_action=map&center=-2.419100,-54.740800&zoom=')).toBe(true)
+    expect(endereco).not.toMatch(/query=|search|place/)
+  })
+
+  it('usa o mesmo zoom de bairro que o mapa do aplicativo daria numa tela de celular', () => {
+    expect(enderecoNoGoogleMaps(area, 300)).toMatch(/&zoom=15$/)
+    expect(enderecoNoGoogleMaps(area, 1200)).toMatch(/&zoom=13$/)
   })
 })
