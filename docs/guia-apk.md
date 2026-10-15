@@ -19,9 +19,9 @@ preciso Android Studio nem Android SDK na máquina de ninguém.
 - Perfil `alpha` no `eas.json`, apontando para a API publicada
   (`EXPO_PUBLIC_API_URL`). O endereço é gravado dentro do APK na hora do build.
 - APK do alpha publicado como release do GitHub, que não expira nem pede login. A
-  versão atual é a 0.1.4: mapa e envio de foto funcionando no aparelho, a sua foto
-  ao lado da outra nas pistas, o prazo do GPS contado depois da permissão e o mapa
-  do caso que abre no Google Maps (as anteriores não servem mais):
+  versão atual é a 0.1.5: mapa e envio de foto funcionando no aparelho, a sua foto
+  ao lado da outra nas pistas, o mapa do caso que abre no Google Maps e o GPS que
+  aproveita a posição que o celular já tem (as anteriores não servem mais):
   <https://github.com/RNobre1/achei-um-bicho/releases/latest>
 
 ### Instalar no celular
