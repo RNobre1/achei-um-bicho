@@ -38,15 +38,8 @@ export interface ClienteApi {
   descartarPista(casoId: string, pistaId: string, codigoEdicao: string): Promise<void>
 }
 
-/** Arquivo no formato que o FormData do React Native entende no celular. */
-export interface ArquivoNativo {
-  uri: string
-  name: string
-  type: string
-}
-
-/** Blob na web; objeto com uri no celular. */
-export type ArquivoDeFoto = Blob | ArquivoNativo
+/** Blob na web; no celular, o File do expo-file-system, que se comporta como Blob. */
+export type ArquivoDeFoto = Blob
 
 type Buscar = (url: string, opcoes?: RequestInit) => Promise<Response>
 
@@ -102,9 +95,8 @@ export function criarClienteApi(urlBase: string, buscar: Buscar = fetch): Client
     },
     enviarFoto(casoId, codigoEdicao, arquivo) {
       const formulario = new FormData()
-      if (arquivo instanceof Blob) formulario.append(CAMPO_FOTO, arquivo, 'foto.jpg')
-      // o FormData do React Native aceita { uri, name, type } no lugar do Blob
-      else formulario.append(CAMPO_FOTO, arquivo as unknown as Blob)
+      // o nome vale para o Blob da web; o File do celular já leva o próprio nome
+      formulario.append(CAMPO_FOTO, arquivo, 'foto.jpg')
       return pedir<FotoEnviada>(`/casos/${encodeURIComponent(casoId)}/fotos`, {
         method: 'POST',
         headers: { [CABECALHO_CODIGO_EDICAO]: codigoEdicao },

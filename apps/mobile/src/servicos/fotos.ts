@@ -1,3 +1,4 @@
+import { File } from 'expo-file-system'
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
 import * as ImagePicker from 'expo-image-picker'
 import { Platform } from 'react-native'
@@ -30,8 +31,12 @@ export async function escolherFoto(origem: OrigemDaFoto): Promise<string | undef
   return reduzida.uri
 }
 
-/** Na web o FormData quer Blob; no celular, o objeto com uri. */
+/**
+ * Na web o FormData quer Blob. No celular vai o File do expo-file-system: o Expo 57
+ * troca o fetch global pelo expo/fetch, que lê os bytes de um File e recusa o
+ * objeto { uri, name, type } do FormData antigo do React Native.
+ */
 export async function arquivoDaFoto(uri: string): Promise<ArquivoDeFoto> {
   if (Platform.OS === 'web') return (await fetch(uri)).blob()
-  return { uri, name: 'foto.jpg', type: 'image/jpeg' }
+  return new File(uri)
 }
