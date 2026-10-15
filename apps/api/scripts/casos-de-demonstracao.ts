@@ -37,7 +37,10 @@ function perguntas([p1, p2, p3]: Tres, [r1, r2, r3]: Tres) {
 
 // Pensado para o roteiro do alpha: quem publicar ao vivo, do CENTRO, um cachorro
 // caramelo de porte médio e com coleira vê três pistas, uma forte, uma média e uma
-// fraca. Os outros casos dão variedade ao mural.
+// fraca. Os outros casos dão variedade ao mural. Os três achados são de poucas horas
+// antes de semear: o caso ao vivo sumiu "ontem à tarde", e achado mais de um dia
+// antes do sumiço já não bate no tempo. Por isso o banco se semeia na véspera ou no
+// dia da apresentação, nunca uma semana antes.
 export function casosDeDemonstracao(centro: Ponto, agora: Date): NovaPublicacao[] {
   /** Ponto a tantos metros ao norte e a leste do centro. */
   const perto = (norteM: number, lesteM: number): Ponto => ({
@@ -52,7 +55,7 @@ export function casosDeDemonstracao(centro: Ponto, agora: Date): NovaPublicacao[
       animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'sem' },
       local: { ...perto(-300, 600), bairro: 'Salé', referencia: 'Perto da quadra do bairro' },
       autor: { nome: 'Quem achou no Salé', telefone: '93992345678' },
-      ocorridoEm: horasAtras(20),
+      ocorridoEm: horasAtras(3),
       relato: 'Estava assustado debaixo de um carro na rua. Está comigo, bem alimentado.',
       perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma cicatriz na orelha', 'Abana o rabo e vem', 'Estava sem nada']),
     },
@@ -61,8 +64,8 @@ export function casosDeDemonstracao(centro: Ponto, agora: Date): NovaPublicacao[
       animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'com' },
       local: { ...perto(-1200, 300), bairro: 'Aeroporto Velho', referencia: 'Rua de trás da escola' },
       autor: { nome: 'Vizinha do Aeroporto Velho', telefone: '93993456789' },
-      ocorridoEm: horasAtras(30),
-      relato: 'Apareceu no meu portão de manhã, com coleira azul e sem plaquinha.',
+      ocorridoEm: horasAtras(5),
+      relato: 'Apareceu no meu portão, com coleira azul e sem plaquinha.',
       perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Tem uma mancha branca no peito', 'Fica de barriga para cima', 'Coleira azul sem plaquinha']),
     },
     {
@@ -70,7 +73,7 @@ export function casosDeDemonstracao(centro: Ponto, agora: Date): NovaPublicacao[
       animal: { especie: 'cachorro', porte: 'medio', corDominante: 'malhado', coleira: 'nao_observado' },
       local: { ...perto(-3000, 1500), bairro: 'Liberdade', referencia: 'Perto do ponto de ônibus' },
       autor: { nome: 'Motorista que viu' },
-      ocorridoEm: horasAtras(50),
+      ocorridoEm: horasAtras(7),
       relato: 'Vi andando sozinho perto do ponto de ônibus. Consegui segurar e está no quintal.',
       perguntas: perguntas(PERGUNTAS_ENCONTRADO, ['Manca um pouco da pata de trás', 'Não reagiu a nenhum nome', 'Não deu para ver']),
     },
