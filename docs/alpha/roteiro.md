@@ -13,10 +13,10 @@ mostrar, na hora, quem pode ser o mesmo bicho.
   achado mais de um dia antes do sumiço não bate no tempo. Para refazer, apagar os
   casos e rodar `API_URL=$API_URL_PRODUCAO pnpm --filter @achei/api semear:demo`
   (chaves em `.env.contas`).
-- [ ] APK 0.1.5 instalado no celular da demonstração. As versões anteriores mostram
+- [x] APK 0.1.5 instalado no celular da demonstração (o do Rafael, conferido em 15/10). As versões anteriores mostram
   o mapa bloqueado, não enviam foto, não mostram a sua foto nas pistas, não abrem
   a área no Google Maps ou abrem o mural no centro da cidade por demora do GPS.
-- [ ] Na galeria do celular, a foto do cachorro caramelo que vai no caso ao vivo
+- [x] Na galeria do celular, a foto do cachorro caramelo que vai no caso ao vivo
   (pasta *AcheiTeste*). É o mesmo cachorro da pista forte, fotografado de outro
   ângulo: na tela de pistas, as duas fotos lado a lado convencem mais que a lista.
 
