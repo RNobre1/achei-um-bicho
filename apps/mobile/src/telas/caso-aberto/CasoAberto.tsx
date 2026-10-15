@@ -90,7 +90,7 @@ export function CasoAberto() {
                 ))}
               </ScrollView>
             ) : (
-              <Placa rotulo="foto enviada por quem publicou" silte={caso.tipo === 'encontrado'} estilo={estilos.foto} />
+              <Placa rotulo="sem foto" silte={caso.tipo === 'encontrado'} estilo={estilos.foto} />
             )}
             {caso.area.bairro ? <Text style={estilos.carimbo}>{caso.area.bairro.toUpperCase()} · PA</Text> : null}
           </View>
