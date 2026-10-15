@@ -2,7 +2,10 @@
 """Gera o deck da apresentação do alpha do Achei um Bicho (16/10/2026).
 
 Reaproveita o estilo do deck do kickoff (docs/gerar-slides.py): mesmas cores,
-fontes e peças. As telas são capturas da versão no ar, em docs/alpha/telas/.
+fontes e peças. As telas, em docs/alpha/telas/, são prints do APK num celular Android
+e da versão web (o mesmo aplicativo), com os casos de demonstração no ar. Aviso,
+pistas e meus casos vêm da web porque precisam do GPS no campus, e o simulador de
+posição do Android não alcança a localização do Google Play Services.
 
     .venv-slides/bin/python docs/gerar-slides-alpha.py
 
@@ -28,15 +31,17 @@ k = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(k)
 
 LINK_WEB = "https://achei-um-bicho.onrender.com"
-# release no GitHub: link permanente e público, ao contrário do artefato do Expo, que expira
-LINK_APK = "https://github.com/RNobre1/achei-um-bicho/releases/download/alpha-0.1.0/achei-um-bicho-alpha.apk"
+# release no GitHub: link permanente e público, ao contrário do artefato do Expo, que
+# expira. "latest" aponta sempre para a release mais nova: versão nova não muda o QR
+LINK_APK = "https://github.com/RNobre1/achei-um-bicho/releases/latest/download/achei-um-bicho-alpha.apk"
 
-# Contagem da suíte completa (pnpm test) no fechamento do alpha, por camada.
+# Contagem da suíte completa no fechamento do alpha, por camada, tirada da integração
+# contínua de 15/10 (execução 38793071095, commit 9aa4eb7). Conferir de novo a cada deck.
 TESTES = [
     ("Contratos e vocabulário", 47),
-    ("API, unidade", 55),
+    ("API, unidade", 75),
     ("API, integração com Postgres real", 95),
-    ("Aplicativo, regras de tela", 89),
+    ("Aplicativo, regras de tela", 97),
 ]
 
 STATUS = [
