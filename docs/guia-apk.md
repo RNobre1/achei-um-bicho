@@ -18,13 +18,16 @@ preciso Android Studio nem Android SDK na máquina de ninguém.
   o Android recusa instalar por cima da versão anterior.
 - Perfil `alpha` no `eas.json`, apontando para a API publicada
   (`EXPO_PUBLIC_API_URL`). O endereço é gravado dentro do APK na hora do build.
-- Primeiro APK do alpha (versão 0.1.0), publicado como release do GitHub, que não
-  expira nem pede login: <https://github.com/RNobre1/achei-um-bicho/releases/tag/alpha-0.1.0>
+- APK do alpha publicado como release do GitHub, que não expira nem pede login. A
+  versão atual é a 0.1.3: mapa e envio de foto funcionando no aparelho, a sua foto
+  ao lado da outra nas pistas e o prazo do GPS contado depois da permissão (as
+  anteriores não servem mais):
+  <https://github.com/RNobre1/achei-um-bicho/releases/latest>
 
 ### Instalar no celular
 
 No celular Android, abrir
-<https://github.com/RNobre1/achei-um-bicho/releases/download/alpha-0.1.0/achei-um-bicho-alpha.apk>
+<https://github.com/RNobre1/achei-um-bicho/releases/latest/download/achei-um-bicho-alpha.apk>
 (ou ler o QR code do último slide do alpha), baixar e permitir *instalar apps
 desconhecidos* para o navegador quando o Android pedir. O Play Protect pode
 avisar que o app não é da loja; é esperado. O arquivo tem cerca de 100 MB:
@@ -39,9 +42,13 @@ cd apps/mobile
 npx eas build --profile alpha --platform android --non-interactive
 ```
 
-O build leva uns 20 minutos no plano gratuito. No fim sai um link do Expo, que
-expira em algumas semanas: baixe o APK e publique como release nova do GitHub. O
-APK instala por cima do anterior e mantém os casos guardados no aparelho. O `eas-cli`
+O build leva uns 20 minutos no plano gratuito, fora a fila, que pode passar de
+meia hora. Antes de pedir, subir `version` e `android.versionCode` no `app.json`.
+No fim sai um link do Expo, que expira em algumas semanas: baixe o APK e publique
+como release nova do GitHub, com o arquivo sempre chamado
+`achei-um-bicho-alpha.apk`. Assim o link `releases/latest/download/...` e o QR code
+dos slides continuam valendo. O APK instala por cima do anterior e mantém os casos
+guardados no aparelho. O `eas-cli`
 já está nas dependências de desenvolvimento do aplicativo.
 
 ### Build local, se o EAS estiver indisponível
