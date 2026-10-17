@@ -25,11 +25,14 @@ erDiagram
     CASO ||--o| DESFECHO : "termina com"
     CASO ||--o{ PAREAMENTO : "lado perdido"
     CASO ||--o{ PAREAMENTO : "lado encontrado"
+    CASO ||--o{ DENUNCIA : "recebe"
+    CASO |o--o{ TENTATIVA_VERIFICACAO : "é o caso próprio de quem reivindica"
 
     ANIMAL ||--o{ FOTO : "tem"
     LOCAL ||--o{ AVISTAMENTO : "localiza"
 
     TENTATIVA_VERIFICACAO ||--|{ RESPOSTA_VERIFICACAO : "contém"
+    TENTATIVA_VERIFICACAO |o--o{ DENUNCIA : "motiva"
     PERGUNTA_VERIFICACAO ||--o{ RESPOSTA_VERIFICACAO : "é respondida por"
 
     PESSOA {
@@ -49,10 +52,12 @@ erDiagram
         uuid animal_id FK "um caso por animal"
         uuid local_id FK "um caso por local"
         text codigo_edicao "hash do código, para autor sem conta"
+        uuid id_cliente UK "gerado no aparelho, para a fila sem conexão"
         text relato
         timestamptz ocorrido_em
         timestamptz publicado_em
-        timestamptz ultima_interacao_em
+        timestamptz ultima_interacao_em "última ação do autor"
+        timestamptz cobrado_em "pedido de confirmação pendente"
     }
 
     ANIMAL {
@@ -97,7 +102,7 @@ erDiagram
         uuid caso_id FK
         smallint ordem "1 | 2 | 3"
         text enunciado
-        text resposta_esperada "nunca sai da API"
+        text resposta_esperada "só o autor vê, na lista de reivindicações"
     }
 
     TENTATIVA_VERIFICACAO {
@@ -105,8 +110,12 @@ erDiagram
         uuid caso_id FK
         uuid pessoa_id FK
         text veredito "pendente | aceita | recusada"
+        text codigo_acompanhamento UK "hash do código de quem reivindicou"
+        text referencia "onde está o animal, quando quem reivindica está com ele"
+        uuid caso_proprio_id FK "caso do outro lado, quando veio de uma pista"
         timestamptz criado_em
         timestamptz decidido_em
+        timestamptz contato_visto_em "primeira vez que o contato liberado foi lido"
     }
 
     RESPOSTA_VERIFICACAO {
@@ -136,6 +145,15 @@ erDiagram
         timestamptz ocorrido_em
         timestamptz registrado_em
     }
+
+    DENUNCIA {
+        uuid id PK
+        uuid caso_id FK
+        uuid tentativa_id FK "nula quando a denúncia é do caso"
+        text motivo "pediu_dinheiro | respostas_suspeitas | outro"
+        text texto
+        timestamptz criado_em
+    }
 ```
 
 ---
@@ -149,8 +167,13 @@ banco guarda só o hash, em `caso.codigo_edicao`. O telefone só é revelado dep
 
 ### `caso`
 A publicação. `tipo` define o lado: quem perdeu ou quem achou. `estado` guarda o
-ciclo de vida. `ultima_interacao_em` é a coluna que as tarefas agendadas de
-cobrança e expiração leem; sem ela, o mural acumula anúncio morto. Cada caso tem
+ciclo de vida. `ultima_interacao_em` guarda a última ação de quem publicou
+(confirmar, editar, decidir uma pista ou reivindicação, informar o desfecho) e é a
+coluna que a tarefa diária de cobrança lê; aviso de terceiros não renova o caso,
+senão um anúncio abandonado ficaria vivo para sempre. `cobrado_em` marca o pedido
+de confirmação: o caso só expira depois dele. `id_cliente` é gerado no aparelho
+quando a publicação passa pela fila sem conexão, para um reenvio não criar caso
+repetido. Cada caso tem
 o seu animal e o seu local, e nenhum dos dois é compartilhado: por isso
 `animal_id` e `local_id` são únicos. O avistamento grava o próprio local.
 
@@ -174,12 +197,19 @@ não exige conta. É o registro que alimenta a linha "3 pessoas disseram ter vis
 
 ### `pergunta_verificacao`
 Exatamente três por caso, criadas na publicação. `resposta_esperada` é a coluna
-mais sensível do banco: **nunca é serializada em nenhuma resposta da API**, nem
-para o autor do caso na listagem pública.
+mais sensível do banco: **nunca é serializada em resposta pública**. A única
+exceção é a lista de reivindicações do próprio caso, que exige o código de edição:
+ali o autor vê a resposta que ele mesmo cadastrou ao lado da que recebeu, para
+comparar.
 
 ### `tentativa_verificacao`
-Uma reivindicação: alguém disse "esse animal é meu" e respondeu as perguntas.
-`veredito` guarda a decisão humana do autor do caso. O sistema não decide.
+Uma reivindicação: alguém disse "esse animal é meu" (caso encontrado) ou "acho que
+achei o seu" (caso perdido) e respondeu as perguntas. `veredito` guarda a decisão
+humana do autor do caso. O sistema não decide. Sem conta, quem reivindica volta
+para ver a decisão com o código de acompanhamento, guardado só como hash.
+`referencia` é preenchida quando quem reivindica é quem está com o animal.
+`contato_visto_em` registra a primeira leitura do contato liberado, para
+auditoria.
 
 ### `resposta_verificacao`
 O que a pessoa respondeu. Visível apenas para o autor do caso.
@@ -192,6 +222,12 @@ quando apresenta uma pista. O `veredito` é sempre de uma pessoa.
 ### `desfecho`
 Como o caso terminou. Um por caso, obrigatório no encerramento. É o dado que
 sustenta o artigo: sem desfecho registrado, não há o que medir.
+
+### `denuncia`
+Alguém apontou comportamento suspeito num caso ou numa reivindicação: pedido de
+dinheiro, respostas chutadas ou outro motivo. Não esconde nada sozinha, porque
+isso viraria arma contra quem é denunciado; o autor do caso vê, antes de aceitar
+uma reivindicação, quantas denúncias o telefone dela já recebeu.
 
 ---
 
@@ -247,11 +283,13 @@ CREATE TABLE caso (
     autor_id             uuid NOT NULL REFERENCES pessoa(id) ON DELETE RESTRICT,
     animal_id            uuid NOT NULL UNIQUE REFERENCES animal(id) ON DELETE CASCADE,
     local_id             uuid NOT NULL UNIQUE REFERENCES local(id) ON DELETE RESTRICT,
-    codigo_edicao        text UNIQUE,  -- SHA-256 do código; o código em claro não é guardado
+    codigo_edicao        text UNIQUE,  -- HMAC-SHA-256 do código; o código em claro não é guardado
+    id_cliente           uuid UNIQUE,  -- gerado no aparelho pela fila sem conexão
     relato               text,
     ocorrido_em          timestamptz NOT NULL,
     publicado_em         timestamptz NOT NULL DEFAULT now(),
-    ultima_interacao_em  timestamptz NOT NULL DEFAULT now()
+    ultima_interacao_em  timestamptz NOT NULL DEFAULT now(),
+    cobrado_em           timestamptz
 );
 
 CREATE TABLE foto (
@@ -288,8 +326,12 @@ CREATE TABLE tentativa_verificacao (
     pessoa_id    uuid NOT NULL REFERENCES pessoa(id) ON DELETE RESTRICT,
     veredito     text NOT NULL DEFAULT 'pendente'
                  CHECK (veredito IN ('pendente','aceita','recusada')),
+    codigo_acompanhamento text NOT NULL UNIQUE,  -- HMAC-SHA-256 do código de quem reivindicou
+    referencia   text,
+    caso_proprio_id uuid REFERENCES caso(id) ON DELETE SET NULL,
     criado_em    timestamptz NOT NULL DEFAULT now(),
-    decidido_em  timestamptz
+    decidido_em  timestamptz,
+    contato_visto_em timestamptz
 );
 
 CREATE TABLE resposta_verificacao (
@@ -323,6 +365,15 @@ CREATE TABLE desfecho (
     ocorrido_em    timestamptz NOT NULL,
     registrado_em  timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE denuncia (
+    id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    caso_id       uuid NOT NULL REFERENCES caso(id) ON DELETE CASCADE,
+    tentativa_id  uuid REFERENCES tentativa_verificacao(id) ON DELETE SET NULL,
+    motivo        text NOT NULL CHECK (motivo IN ('pediu_dinheiro','respostas_suspeitas','outro')),
+    texto         text,
+    criado_em     timestamptz NOT NULL DEFAULT now()
+);
 ```
 
 ## 4. Índices
@@ -334,7 +385,7 @@ CREATE INDEX idx_local_ponto ON local USING GIST (ponto);
 
 CREATE INDEX idx_caso_estado_tipo    ON caso (estado, tipo);
 CREATE INDEX idx_caso_ultima_inter   ON caso (ultima_interacao_em)
-    WHERE estado IN ('procurando','abrigado_temporariamente');
+    WHERE estado IN ('procurando','abrigado_temporariamente','em_contato');
 CREATE INDEX idx_pareamento_perdido  ON pareamento (caso_perdido_id, veredito);
 CREATE INDEX idx_avistamento_caso    ON avistamento (caso_id, criado_em DESC);
 ```
@@ -370,7 +421,8 @@ Separação deliberada: o que estiver na coluna errada vira defeito silencioso.
 | Um desfecho por caso, por `UNIQUE` | Transição válida entre estados do caso |
 | Um animal e um local por caso, por `UNIQUE` | Que o código de edição só exista em claro na resposta da publicação |
 | Par de casos único, por `UNIQUE` | Que o pareamento só ligue lados opostos |
-| Uma resposta por pergunta em cada tentativa | Que `resposta_esperada` nunca seja serializada |
+| Uma resposta por pergunta em cada tentativa | Que `resposta_esperada` só saia para o autor, na lista de reivindicações |
+| Código de acompanhamento único, por `UNIQUE` | Teto de reivindicações pendentes e nenhuma repetição de telefone recusado |
 | Integridade referencial | Deslocamento do ponto antes de publicar |
 
 **Ponto de atenção para a revisão:** o banco não impede pareamento entre dois
@@ -381,9 +433,11 @@ com teste.
 
 | Coluna | Por que é sensível | Proteção |
 |---|---|---|
-| `pergunta_verificacao.resposta_esperada` | É a prova; vazou, acabou a verificação | Nunca sai da API. Teste automatizado sobre o corpo da resposta |
-| `pessoa.telefone` | Contato pessoal | Só após liberação (F7) |
-| `caso.codigo_edicao` | Dá poder de editar e encerrar o caso | Guardado só como hash; o código aparece uma vez, para quem publicou |
+| `pergunta_verificacao.resposta_esperada` | É a prova; vazou, acabou a verificação | Só sai para o autor, com o código de edição, na lista de reivindicações. Teste automatizado sobre o corpo de toda resposta pública |
+| `pessoa.telefone` | Contato pessoal | Só após liberação (F7); apagado 30 dias depois do encerramento (LGPD) |
+| `caso.codigo_edicao` | Dá poder de editar e encerrar o caso | Guardado só como HMAC com segredo do servidor; o código aparece uma vez, para quem publicou |
+| `tentativa_verificacao.codigo_acompanhamento` | Dá acesso ao contato liberado | Mesmo tratamento do código de edição |
+| `tentativa_verificacao.referencia` | Pode ser a casa de quem está com o animal | Só depois do aceite, só para o outro lado |
 | `local.ponto` | Pode revelar residência | Publicado como área aproximada |
 | `local.ponto` de um avistamento | Pode ser a casa de quem avisou | Quem publicou vê só a distância e o bairro |
 | `resposta_verificacao.texto` | Contém detalhe íntimo do animal | Visível só ao autor do caso |
