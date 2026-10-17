@@ -4,7 +4,7 @@ import { limparBanco } from '../../test/limpar-banco'
 
 const TABELAS = [
   'pessoa', 'animal', 'foto', 'local', 'caso', 'avistamento', 'pergunta_verificacao',
-  'tentativa_verificacao', 'resposta_verificacao', 'pareamento', 'desfecho',
+  'tentativa_verificacao', 'resposta_verificacao', 'pareamento', 'desfecho', 'denuncia',
 ]
 
 /**
@@ -82,10 +82,56 @@ describe('o banco segue o modelo ER documentado', () => {
       VALUES (${casoId}::uuid, ${casoId}::uuid, 0, 0)`).rejects.toThrow(/lados_diferentes/)
   })
 
-  it('tem o índice parcial dos casos abertos por última interação', async () => {
+  it('tem o índice parcial dos casos vigiados por última interação', async () => {
     const [indice] = await prisma.$queryRaw<{ indexdef: string }[]>`
       SELECT indexdef FROM pg_indexes WHERE indexname = 'idx_caso_ultima_inter'`
     expect(indice?.indexdef).toMatch(/\(ultima_interacao_em\)/)
-    expect(indice?.indexdef).toMatch(/WHERE .*procurando.*abrigado_temporariamente/)
+    expect(indice?.indexdef).toMatch(/WHERE .*procurando.*abrigado_temporariamente.*em_contato/)
+  })
+
+  async function criarTentativa(casoId: string, codigo: string): Promise<string> {
+    const [pessoa] = await prisma.$queryRaw<{ id: string }[]>`
+      INSERT INTO pessoa (nome, telefone) VALUES ('Quem reivindica', '93991112222') RETURNING id`
+    const [tentativa] = await prisma.$queryRaw<{ id: string }[]>`
+      INSERT INTO tentativa_verificacao (caso_id, pessoa_id, codigo_acompanhamento)
+      VALUES (${casoId}::uuid, ${pessoa!.id}::uuid, ${codigo}) RETURNING id`
+    return tentativa!.id
+  }
+
+  it('cria o caso sem cobrança pendente e sem id do aparelho', async () => {
+    const id = await criarCaso()
+    const [caso] = await prisma.$queryRaw<{ cobrado_em: Date | null; id_cliente: string | null }[]>`
+      SELECT cobrado_em, id_cliente FROM caso WHERE id = ${id}::uuid`
+    expect(caso).toEqual({ cobrado_em: null, id_cliente: null })
+  })
+
+  it('recusa dois casos com o mesmo id gerado no aparelho (fila sem conexão)', async () => {
+    const idCliente = '0b7f8d4e-1d2c-4f7a-9c3b-5a6e7d8f9a0b'
+    const primeiro = await criarCaso()
+    const segundo = await criarCaso()
+    await prisma.$executeRaw`UPDATE caso SET id_cliente = ${idCliente}::uuid WHERE id = ${primeiro}::uuid`
+    await expect(
+      prisma.$executeRaw`UPDATE caso SET id_cliente = ${idCliente}::uuid WHERE id = ${segundo}::uuid`,
+    ).rejects.toThrow(/id_cliente/)
+  })
+
+  it('recusa duas reivindicações com o mesmo código de acompanhamento', async () => {
+    const casoId = await criarCaso()
+    await criarTentativa(casoId, 'hash-repetido')
+    await expect(criarTentativa(casoId, 'hash-repetido')).rejects.toThrow(/codigo_acompanhamento/)
+  })
+
+  it('apaga a denúncia junto com o caso e solta a reivindicação apagada', async () => {
+    const casoId = await criarCaso()
+    const tentativaId = await criarTentativa(casoId, 'hash-da-denuncia')
+    await prisma.$executeRaw`
+      INSERT INTO denuncia (caso_id, tentativa_id, motivo, texto)
+      VALUES (${casoId}::uuid, ${tentativaId}::uuid, 'pediu_dinheiro', 'Pediu pix para devolver')`
+    await prisma.$executeRaw`DELETE FROM tentativa_verificacao WHERE id = ${tentativaId}::uuid`
+    const [denuncia] = await prisma.$queryRaw<{ tentativa_id: string | null }[]>`SELECT tentativa_id FROM denuncia`
+    expect(denuncia?.tentativa_id).toBeNull()
+    await prisma.$executeRaw`DELETE FROM caso WHERE id = ${casoId}::uuid`
+    const restantes = await prisma.$queryRaw<unknown[]>`SELECT 1 FROM denuncia`
+    expect(restantes).toHaveLength(0)
   })
 })

@@ -65,7 +65,7 @@ describe('vocabulário fechado no banco', () => {
 
   it('gera o índice parcial dos casos abertos a partir do manifesto', () => {
     expect(gerarSqlVocabulario()).toContain(
-      `CREATE INDEX "idx_caso_ultima_inter" ON "caso" ("ultima_interacao_em") WHERE "estado" IN ('procurando', 'abrigado_temporariamente');`,
+      `CREATE INDEX "idx_caso_ultima_inter" ON "caso" ("ultima_interacao_em") WHERE "estado" IN ('procurando', 'abrigado_temporariamente', 'em_contato');`,
     )
   })
 
