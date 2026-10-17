@@ -77,8 +77,13 @@ describe('transições do ciclo de vida do caso', () => {
     }
   })
 
-  it('resolvido e expirado são os únicos estados finais', () => {
-    expect(finais.sort()).toEqual(['expirado', 'resolvido'])
+  it('resolvido é o único estado final', () => {
+    expect(finais).toEqual(['resolvido'])
+  })
+
+  it('expirado só sai para resolvido, quando o autor informa o desfecho depois do prazo', () => {
+    const saidas = TRANSICOES_DO_CASO.filter((t) => t.de === 'expirado').map((t) => t.para)
+    expect(saidas).toEqual(['resolvido'])
   })
 
   it('todo estado é alcançável a partir de um estado inicial', () => {

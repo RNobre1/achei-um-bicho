@@ -177,6 +177,21 @@ export const VEREDITO_PAREAMENTO = conjunto('Decisão sobre uma pista', {
   },
 })
 
+export const MOTIVO_DENUNCIA = conjunto('Por que alguém denunciou um caso ou uma reivindicação', {
+  pediu_dinheiro: {
+    rotulo: 'Pediu dinheiro',
+    porque: 'É o golpe mais comum em grupo de bicho perdido: cobrar para devolver um animal que não está com a pessoa.',
+  },
+  respostas_suspeitas: {
+    rotulo: 'Respostas suspeitas',
+    porque: 'Quem chuta as perguntas de verificação pode estar tentando levar o animal de outra pessoa.',
+  },
+  outro: {
+    rotulo: 'Outro motivo',
+    porque: 'A lista não cobre tudo; o texto livre da denúncia explica o resto.',
+  },
+})
+
 export const VOCABULARIO = {
   especie: ESPECIE,
   porte: PORTE,
@@ -187,6 +202,7 @@ export const VOCABULARIO = {
   tipoDesfecho: TIPO_DESFECHO,
   vereditoVerificacao: VEREDITO_VERIFICACAO,
   vereditoPareamento: VEREDITO_PAREAMENTO,
+  motivoDenuncia: MOTIVO_DENUNCIA,
 } as const
 
 export type NomeConjunto = keyof typeof VOCABULARIO
@@ -202,6 +218,7 @@ export type EstadoCaso = ValoresDe<typeof ESTADO_CASO>
 export type TipoDesfecho = ValoresDe<typeof TIPO_DESFECHO>
 export type VereditoVerificacao = ValoresDe<typeof VEREDITO_VERIFICACAO>
 export type VereditoPareamento = ValoresDe<typeof VEREDITO_PAREAMENTO>
+export type MotivoDenuncia = ValoresDe<typeof MOTIVO_DENUNCIA>
 
 /** Em que estado cada lado do caso nasce. */
 export const ESTADO_INICIAL: Record<TipoCaso, EstadoCaso> = {
@@ -211,8 +228,8 @@ export const ESTADO_INICIAL: Record<TipoCaso, EstadoCaso> = {
 
 /**
  * Casos abertos: os que ainda estão no estado em que nasceram. São os que aparecem
- * no mural e os que as tarefas de cobrança e expiração vigiam. Derivado de
- * ESTADO_INICIAL para as duas listas nunca discordarem.
+ * no mural e os que se pode editar. Derivado de ESTADO_INICIAL para as duas listas
+ * nunca discordarem.
  */
 export const ESTADOS_ABERTOS: readonly EstadoCaso[] = [...new Set(Object.values(ESTADO_INICIAL))]
 
@@ -234,9 +251,20 @@ export const TRANSICOES_DO_CASO: readonly TransicaoDoCaso[] = [
   { de: 'procurando', para: 'resolvido', quando: 'autor informa o desfecho' },
   { de: 'abrigado_temporariamente', para: 'resolvido', quando: 'autor informa o desfecho' },
   { de: 'em_contato', para: 'resolvido', quando: 'autor informa o desfecho' },
-  { de: 'procurando', para: 'expirado', quando: '15 dias sem interação' },
-  { de: 'abrigado_temporariamente', para: 'expirado', quando: '15 dias sem interação' },
+  { de: 'procurando', para: 'expirado', quando: 'cobrança sem resposta do autor' },
+  { de: 'abrigado_temporariamente', para: 'expirado', quando: 'cobrança sem resposta do autor' },
+  { de: 'em_contato', para: 'expirado', quando: 'cobrança sem resposta do autor' },
+  { de: 'em_contato', para: 'procurando', quando: 'contato não deu certo (caso perdido)' },
+  { de: 'em_contato', para: 'abrigado_temporariamente', quando: 'contato não deu certo (caso encontrado)' },
+  { de: 'expirado', para: 'resolvido', quando: 'autor informa o desfecho depois do prazo' },
 ]
+
+/**
+ * Casos que a tarefa de cobrança e expiração vigia: os abertos e os que estão em
+ * contato. Em contato o caso sai do mural, mas não pode ficar parado para sempre com
+ * o telefone liberado e sem desfecho.
+ */
+export const ESTADOS_VIGIADOS: readonly EstadoCaso[] = [...ESTADOS_ABERTOS, 'em_contato']
 
 /** Valor e rótulo na ordem declarada: é o que as telas usam para montar chips. */
 export function opcoes<V extends string>(c: Conjunto<V>): { valor: V; rotulo: string }[] {

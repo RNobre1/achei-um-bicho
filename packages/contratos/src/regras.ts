@@ -38,3 +38,33 @@ export const PAREAMENTO = {
   /** Achado até um mês depois do sumiço bate; depois disso, já não conta a favor. */
   diasDepoisQueBatem: 30,
 } as const
+
+/**
+ * Reivindicação (F6). O teto de pendentes protege o autor de inundação, e o mesmo
+ * telefone não reivindica de novo um caso que já o recusou: recusa repetida viraria
+ * oráculo para chutar as respostas.
+ */
+export const REIVINDICACAO = {
+  maximoPendentesPorCaso: 5,
+} as const
+
+/**
+ * Tarefa diária de cobrança, expiração e anonimização (F8, RN8). O horário mora
+ * aqui: a ação agendada do GitHub, a documentação e o artigo derivam dele, e um
+ * teste compara o cron do arquivo da ação com este valor.
+ */
+export const TAREFA_DIARIA = {
+  /** 11:00 UTC é 08:00 em Santarém (UTC-3, sem horário de verão). */
+  cronUtc: '0 11 * * *',
+  horaLocal: '08:00',
+  fuso: 'America/Santarem',
+  /** Caso encerrado há este tempo perde nome e telefone de quem publicou e reivindicou (LGPD). */
+  diasAteAnonimizar: 30,
+} as const
+
+/**
+ * Telefone, WhatsApp ou link digitado em texto que fica público (relato, observação,
+ * enunciado de pergunta) furaria o contato mediado (RNF4). A API recusa e o
+ * aplicativo avisa antes de enviar, com o mesmo padrão.
+ */
+export const PARECE_CONTATO = /(\d[\s().-]*){8,}|whats|zap\b|wa\.me|https?:\/\/|www\./i

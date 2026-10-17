@@ -79,3 +79,11 @@ para a API, para as restrições do banco e para os chips das telas.
 | `pendente` | Pode ser ele | O sistema aproximou dois casos e ninguém decidiu ainda. |
 | `confirmado` | É o mesmo bicho | Uma pessoa confirmou; o sistema nunca confirma sozinho. |
 | `descartado` | Não é | Descartar evita que a mesma pista errada volte a aparecer. |
+
+## Por que alguém denunciou um caso ou uma reivindicação (`motivoDenuncia`)
+
+| Valor | Rótulo | Por quê |
+|---|---|---|
+| `pediu_dinheiro` | Pediu dinheiro | É o golpe mais comum em grupo de bicho perdido: cobrar para devolver um animal que não está com a pessoa. |
+| `respostas_suspeitas` | Respostas suspeitas | Quem chuta as perguntas de verificação pode estar tentando levar o animal de outra pessoa. |
+| `outro` | Outro motivo | A lista não cobre tudo; o texto livre da denúncia explica o resto. |
