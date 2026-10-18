@@ -28,8 +28,15 @@ const FIM = { x: 1100, y: 326 }
 // desvios para as setas longas não atravessarem outra caixa
 const DESVIOS: Partial<Record<`${EstadoCaso}>${EstadoCaso}`, { pontos: [number, number][]; estilo?: string }>> = {
   'procurando>resolvido': { pontos: [[920, 110]], estilo: 'exitX=1;exitY=0.5;entryX=0.5;entryY=0;' },
-  'abrigado_temporariamente>resolvido': { pontos: [[920, 350]], estilo: 'exitX=1;exitY=0.5;entryX=0.5;entryY=1;' },
+  'abrigado_temporariamente>resolvido': { pontos: [[920, 335]], estilo: 'exitX=1;exitY=0.25;entryX=0.5;entryY=1;' },
   'procurando>expirado': { pontos: [[16, 110], [16, 505]], estilo: 'exitX=0;exitY=0.5;entryX=0;entryY=0.75;' },
+  // ida e volta entre o estado inicial e em_contato seguem caminhos separados
+  'procurando>em_contato': { pontos: [[420, 131], [420, 212]], estilo: 'exitX=1;exitY=0.85;entryX=0;entryY=0.2;' },
+  'em_contato>procurando': { pontos: [[540, 101]], estilo: 'exitX=0.3;exitY=0;entryX=1;entryY=0.35;' },
+  'abrigado_temporariamente>em_contato': { pontos: [[420, 329], [420, 248]], estilo: 'exitX=1;exitY=0.15;entryX=0;entryY=0.8;' },
+  'em_contato>abrigado_temporariamente': { pontos: [[540, 372]], estilo: 'exitX=0.3;exitY=1;entryX=1;entryY=0.87;' },
+  'em_contato>expirado': { estilo: 'exitX=0.85;exitY=1;entryX=0.85;entryY=0;', pontos: [] },
+  'expirado>resolvido': { pontos: [[960, 490]], estilo: 'exitX=1;exitY=0.5;entryX=0.7;entryY=1;' },
 }
 
 const escapar = (texto: string) =>
@@ -77,7 +84,7 @@ export function gerarDiagramaEstados(): string {
   for (const estado of finais) celulas.push(seta(`fim-${estado}`, `estado-${estado}`, 'fim', ''))
 
   celulas.push(
-    `<mxCell id="nota" value="${escapar('Caso aberto há 9 dias sem interação recebe pedido de confirmação; sem resposta, aos 15 dias expira e sai do mural.')}" ` +
+    `<mxCell id="nota" value="${escapar('Caso aberto ou em contato há 9 dias sem ação do autor recebe pedido de confirmação; sem resposta até o 15º dia, expira e sai do mural.')}" ` +
       `style="shape=note;whiteSpace=wrap;html=1;size=14;align=left;spacingLeft=8;fillColor=#FFFFFF;strokeColor=${TINTA};fontColor=${TINTA};fontSize=11;" ` +
       `vertex="1" parent="1"><mxGeometry x="830" y="540" width="260" height="70" as="geometry"/></mxCell>`,
   )

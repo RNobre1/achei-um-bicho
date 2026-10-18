@@ -27,9 +27,10 @@ describe('diagrama de estados gerado do ciclo de vida declarado em contratos', (
     }
   })
 
-  it('leva os estados sem saída ao estado final', () => {
+  it('leva só o estado sem saída ao estado final', () => {
     expect(xml).toContain('source="estado-resolvido" target="fim"')
-    expect(xml).toContain('source="estado-expirado" target="fim"')
+    // expirado ainda recebe o desfecho atrasado, então não termina o diagrama
+    expect(xml).not.toContain('source="estado-expirado" target="fim"')
   })
 
   it('todo estado tem lugar declarado no desenho', () => {

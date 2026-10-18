@@ -1,4 +1,4 @@
-import { ESTADOS_ABERTOS, VOCABULARIO, type NomeConjunto } from '@achei/contratos'
+import { ESTADOS_VIGIADOS, VOCABULARIO, type NomeConjunto } from '@achei/contratos'
 
 /** Primeira linha de toda migração gerada; é por ela que a guarda as reconhece. */
 export const MARCA_MIGRACAO_GERADA = '-- Gerado a partir de packages/contratos/src/vocabulario.ts'
@@ -23,6 +23,7 @@ export const COLUNAS_COM_VOCABULARIO: readonly ColunaComVocabulario[] = [
   { tabela: 'desfecho', coluna: 'tipo', conjunto: 'tipoDesfecho' },
   { tabela: 'tentativa_verificacao', coluna: 'veredito', conjunto: 'vereditoVerificacao' },
   { tabela: 'pareamento', coluna: 'veredito', conjunto: 'vereditoPareamento' },
+  { tabela: 'denuncia', coluna: 'motivo', conjunto: 'motivoDenuncia' },
 ]
 
 function literal(valor: string): string {
@@ -42,11 +43,11 @@ export function gerarSqlVocabulario(): string {
       `ALTER TABLE "${tabela}" ADD CONSTRAINT "${restricao}" CHECK ("${coluna}" IN (${valores}));`,
     ]
   })
-  // índice parcial do modelo ER: só os casos abertos, que é o que as tarefas de
-  // cobrança e expiração consultam por última interação
+  // índice parcial do modelo ER: só os casos vigiados, que é o que a tarefa diária
+  // de cobrança e expiração consulta por última interação
   const indiceCasosAbertos = [
     'DROP INDEX IF EXISTS "idx_caso_ultima_inter";',
-    `CREATE INDEX "idx_caso_ultima_inter" ON "caso" ("ultima_interacao_em") WHERE "estado" IN (${ESTADOS_ABERTOS.map(literal).join(', ')});`,
+    `CREATE INDEX "idx_caso_ultima_inter" ON "caso" ("ultima_interacao_em") WHERE "estado" IN (${ESTADOS_VIGIADOS.map(literal).join(', ')});`,
   ]
   return [
     MARCA_MIGRACAO_GERADA,

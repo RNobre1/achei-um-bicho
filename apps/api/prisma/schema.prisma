@@ -91,12 +91,18 @@ model Caso {
   ocorridoEm        DateTime               @map("ocorrido_em") @db.Timestamptz(6)
   publicadoEm       DateTime               @default(now()) @map("publicado_em") @db.Timestamptz(6)
   ultimaInteracaoEm DateTime               @default(now()) @map("ultima_interacao_em") @db.Timestamptz(6)
+  // pedido de confirmação ao autor (RN8); o caso só expira depois dele
+  cobradoEm         DateTime?              @map("cobrado_em") @db.Timestamptz(6)
+  // gerado no aparelho pela fila sem conexão (F9), para um reenvio não duplicar o caso
+  idCliente         String?                @unique @map("id_cliente") @db.Uuid
   autor             Pessoa                 @relation(fields: [autorId], references: [id], onDelete: Restrict)
   animal            Animal                 @relation(fields: [animalId], references: [id], onDelete: Cascade)
   local             Local                  @relation(fields: [localId], references: [id], onDelete: Restrict)
   avistamentos      Avistamento[]
   perguntas         PerguntaVerificacao[]
-  tentativas        TentativaVerificacao[]
+  tentativas        TentativaVerificacao[] @relation("tentativas_do_caso")
+  comoCasoProprio   TentativaVerificacao[] @relation("caso_proprio")
+  denuncias         Denuncia[]
   desfecho          Desfecho?
   comoPerdido       Pareamento[]           @relation("lado_perdido")
   comoEncontrado    Pareamento[]           @relation("lado_encontrado")
@@ -126,7 +132,8 @@ model PerguntaVerificacao {
   casoId           String                @map("caso_id") @db.Uuid
   ordem            Int                   @db.SmallInt
   enunciado        String
-  // a coluna mais sensível do banco: nunca é serializada em resposta da API
+  // a coluna mais sensível do banco: nunca sai em resposta pública; só o autor a vê,
+  // com o código de edição, ao lado das respostas de cada reivindicação
   respostaEsperada String                @map("resposta_esperada")
   caso             Caso                  @relation(fields: [casoId], references: [id], onDelete: Cascade)
   respostas        RespostaVerificacao[]
@@ -136,15 +143,24 @@ model PerguntaVerificacao {
 }
 
 model TentativaVerificacao {
-  id         String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  casoId     String                @map("caso_id") @db.Uuid
-  pessoaId   String                @map("pessoa_id") @db.Uuid
-  veredito   String                @default("pendente")
-  criadoEm   DateTime              @default(now()) @map("criado_em") @db.Timestamptz(6)
-  decididoEm DateTime?             @map("decidido_em") @db.Timestamptz(6)
-  caso       Caso                  @relation(fields: [casoId], references: [id], onDelete: Cascade)
-  pessoa     Pessoa                @relation(fields: [pessoaId], references: [id], onDelete: Restrict)
-  respostas  RespostaVerificacao[]
+  id                   String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  casoId               String                @map("caso_id") @db.Uuid
+  pessoaId             String                @map("pessoa_id") @db.Uuid
+  veredito             String                @default("pendente")
+  // hash do código que quem reivindicou usa para voltar e ver a decisão, sem conta
+  codigoAcompanhamento String                @unique @map("codigo_acompanhamento")
+  // onde está o animal, quando quem reivindica é quem está com ele
+  referencia           String?
+  casoProprioId        String?               @map("caso_proprio_id") @db.Uuid
+  criadoEm             DateTime              @default(now()) @map("criado_em") @db.Timestamptz(6)
+  decididoEm           DateTime?             @map("decidido_em") @db.Timestamptz(6)
+  // primeira leitura do contato liberado, para auditoria
+  contatoVistoEm       DateTime?             @map("contato_visto_em") @db.Timestamptz(6)
+  caso                 Caso                  @relation("tentativas_do_caso", fields: [casoId], references: [id], onDelete: Cascade)
+  casoProprio          Caso?                 @relation("caso_proprio", fields: [casoProprioId], references: [id], onDelete: SetNull)
+  pessoa               Pessoa                @relation(fields: [pessoaId], references: [id], onDelete: Restrict)
+  respostas            RespostaVerificacao[]
+  denuncias            Denuncia[]
 
   @@map("tentativa_verificacao")
 }
@@ -178,6 +194,21 @@ model Pareamento {
   @@unique([casoPerdidoId, casoEncontradoId])
   @@index([casoPerdidoId, veredito], map: "idx_pareamento_perdido")
   @@map("pareamento")
+}
+
+/// Denúncia de comportamento suspeito num caso ou numa reivindicação (F7).
+model Denuncia {
+  id          String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  casoId      String                @map("caso_id") @db.Uuid
+  tentativaId String?               @map("tentativa_id") @db.Uuid
+  motivo      String
+  texto       String?
+  criadoEm    DateTime              @default(now()) @map("criado_em") @db.Timestamptz(6)
+  caso        Caso                  @relation(fields: [casoId], references: [id], onDelete: Cascade)
+  tentativa   TentativaVerificacao? @relation(fields: [tentativaId], references: [id], onDelete: SetNull)
+
+  @@index([casoId], map: "idx_denuncia_caso")
+  @@map("denuncia")
 }
 
 model Desfecho {
