@@ -4,7 +4,18 @@ import { CasosModule } from './casos/casos.module'
 import { ConfiguracaoModule } from './configuracao.module'
 import { FotosModule } from './fotos/fotos.module'
 import { PrismaModule } from './prisma/prisma.module'
+import { ReivindicacoesModule } from './reivindicacoes/reivindicacoes.module'
 import { SaudeModule } from './saude/saude.module'
 
-@Module({ imports: [ConfiguracaoModule, PrismaModule, SaudeModule, CasosModule, AvistamentosModule, FotosModule] })
+@Module({
+  imports: [
+    ConfiguracaoModule,
+    PrismaModule,
+    SaudeModule,
+    CasosModule,
+    AvistamentosModule,
+    FotosModule,
+    ReivindicacoesModule,
+  ],
+})
 export class AppModule {}
