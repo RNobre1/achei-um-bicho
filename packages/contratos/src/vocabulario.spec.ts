@@ -8,6 +8,7 @@ import {
   TRANSICOES_DO_CASO,
   VOCABULARIO,
   opcoes,
+  transicaoPermitida,
 } from './vocabulario'
 
 const conjuntos = Object.entries(VOCABULARIO)
@@ -107,3 +108,18 @@ describe('transições do ciclo de vida do caso', () => {
   })
 })
 
+
+describe('transicaoPermitida', () => {
+  it('aceita só o que está em TRANSICOES_DO_CASO', () => {
+    expect(transicaoPermitida('procurando', 'em_contato', 'perdido')).toBe(true)
+    expect(transicaoPermitida('resolvido', 'procurando', 'perdido')).toBe(false)
+    expect(transicaoPermitida('em_contato', 'em_contato', 'perdido')).toBe(false)
+  })
+
+  it('em contato só volta ao estado em que o próprio tipo de caso nasce', () => {
+    expect(transicaoPermitida('em_contato', 'procurando', 'perdido')).toBe(true)
+    expect(transicaoPermitida('em_contato', 'procurando', 'encontrado')).toBe(false)
+    expect(transicaoPermitida('em_contato', 'abrigado_temporariamente', 'encontrado')).toBe(true)
+    expect(transicaoPermitida('em_contato', 'abrigado_temporariamente', 'perdido')).toBe(false)
+  })
+})
