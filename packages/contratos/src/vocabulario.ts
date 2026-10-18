@@ -270,3 +270,14 @@ export const ESTADOS_VIGIADOS: readonly EstadoCaso[] = [...ESTADOS_ABERTOS, 'em_
 export function opcoes<V extends string>(c: Conjunto<V>): { valor: V; rotulo: string }[] {
   return c.valores.map((valor) => ({ valor, rotulo: c.entradas[valor].rotulo }))
 }
+
+/**
+ * Se o caso pode ir de um estado a outro. A lista é a fonte; o tipo entra só na
+ * volta de em_contato, que retorna ao estado em que aquele lado do caso nasce.
+ */
+export function transicaoPermitida(de: EstadoCaso, para: EstadoCaso, tipo: TipoCaso): boolean {
+  const declarada = TRANSICOES_DO_CASO.some((t) => t.de === de && t.para === para)
+  if (!declarada) return false
+  if (de === 'em_contato' && ESTADOS_ABERTOS.includes(para)) return para === ESTADO_INICIAL[tipo]
+  return true
+}
