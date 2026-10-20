@@ -3,7 +3,9 @@ import {
   REIVINDICACAO,
   type EstadoCaso,
   type PerguntaPublica,
+  type ReivindicacaoParaAutor,
   type ReivindicacaoRegistrada,
+  type TipoCaso,
 } from '@achei/contratos'
 import {
   BadRequestException,
@@ -19,6 +21,15 @@ import { ReivindicacoesRepositorio } from './reivindicacoes.repositorio'
 @Injectable()
 export class ReivindicacoesService {
   constructor(private readonly repositorio: ReivindicacoesRepositorio) {}
+
+  private async conferirAutoria(casoId: string, codigo: string | undefined) {
+    const caso = await this.repositorio.buscarCasoComAutoria(casoId)
+    if (!caso) throw new NotFoundException('caso não encontrado')
+    if (!conferirCodigoEdicao(codigo, caso.codigoEdicao)) {
+      throw new ForbiddenException('código de edição não confere com este caso')
+    }
+    return caso
+  }
 
   async listarPerguntas(casoId: string): Promise<PerguntaPublica[]> {
     const perguntas = await this.repositorio.perguntasDoCaso(casoId)
@@ -82,5 +93,10 @@ export class ReivindicacoesService {
       veredito: criada.veredito,
       codigoAcompanhamento,
     }
+  }
+
+  async listarParaAutor(casoId: string, codigo: string | undefined): Promise<ReivindicacaoParaAutor[]> {
+    const caso = await this.conferirAutoria(casoId, codigo)
+    return this.repositorio.listarParaAutor(casoId, caso.tipo as TipoCaso)
   }
 }

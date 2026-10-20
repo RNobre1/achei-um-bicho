@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import type { PerguntaPublica, VereditoVerificacao } from '@achei/contratos'
+import type { PerguntaPublica, ReivindicacaoParaAutor, TipoCaso, VereditoVerificacao } from '@achei/contratos'
 import { PrismaService } from '../prisma/prisma.service'
 import type { NovaReivindicacaoDto } from './dto/nova-reivindicacao.dto'
 
@@ -47,6 +47,21 @@ export class ReivindicacoesRepositorio {
         id: true,
         tipo: true,
         codigoEdicao: true,
+      },
+    })
+  }
+
+  async buscarCasoComAutoria(casoId: string) {
+    return this.prisma.caso.findUnique({
+      where: { id: casoId },
+      select: {
+        id: true,
+        tipo: true,
+        estado: true,
+        codigoEdicao: true,
+        autor: {
+          select: { id: true, telefone: true },
+        },
       },
     })
   }
@@ -124,5 +139,59 @@ export class ReivindicacoesRepositorio {
         veredito: tentativa.veredito as VereditoVerificacao,
       }
     })
+  }
+
+  async listarParaAutor(casoId: string, tipo: TipoCaso): Promise<ReivindicacaoParaAutor[]> {
+    const tentativas = await this.prisma.tentativaVerificacao.findMany({
+      where: { casoId },
+      orderBy: { criadoEm: 'desc' },
+      include: {
+        pessoa: true,
+        respostas: {
+          include: { pergunta: true },
+          orderBy: { pergunta: { ordem: 'asc' } },
+        },
+      },
+    })
+
+    const itens: ReivindicacaoParaAutor[] = []
+
+    for (const t of tentativas) {
+      const denunciasDoTelefone = await this.prisma.denuncia.count({
+        where: {
+          tentativa: {
+            pessoa: {
+              telefone: t.pessoa.telefone,
+            },
+          },
+        },
+      })
+
+      const contato =
+        t.veredito === 'aceita'
+          ? {
+              nome: t.pessoa.nome,
+              telefone: t.pessoa.telefone,
+              referencia: tipo === 'perdido' ? t.referencia : null,
+            }
+          : null
+
+      itens.push({
+        id: t.id,
+        veredito: t.veredito as VereditoVerificacao,
+        criadoEm: t.criadoEm.toISOString(),
+        decididoEm: t.decididoEm ? t.decididoEm.toISOString() : null,
+        respostas: t.respostas.map((r) => ({
+          ordem: r.pergunta.ordem,
+          enunciado: r.pergunta.enunciado,
+          respostaEsperada: r.pergunta.respostaEsperada,
+          respostaDada: r.texto,
+        })),
+        denunciasDoTelefone,
+        contato,
+      })
+    }
+
+    return itens
   }
 }
