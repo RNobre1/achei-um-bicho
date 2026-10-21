@@ -3,9 +3,11 @@ import {
   type PerguntaPublica,
   type ReivindicacaoParaAutor,
   type ReivindicacaoRegistrada,
+  type VereditoVerificacao,
 } from '@achei/contratos'
-import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Post } from '@nestjs/common'
+import { Body, Controller, Get, Headers, HttpCode, Param, ParseUUIDPipe, Post } from '@nestjs/common'
 import { NovaReivindicacaoDto } from './dto/nova-reivindicacao.dto'
+import { NovoVereditoDaReivindicacaoDto } from './dto/novo-veredito-da-reivindicacao.dto'
 import { ReivindicacoesService } from './reivindicacoes.service'
 
 @Controller('casos/:id')
@@ -31,5 +33,16 @@ export class ReivindicacoesController {
     @Headers(CABECALHO_CODIGO_EDICAO) codigo: string | undefined,
   ): Promise<ReivindicacaoParaAutor[]> {
     return this.service.listarParaAutor(id, codigo)
+  }
+
+  @Post('reivindicacoes/:rid/veredito')
+  @HttpCode(200)
+  decidir(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('rid', new ParseUUIDPipe()) rid: string,
+    @Headers(CABECALHO_CODIGO_EDICAO) codigo: string | undefined,
+    @Body() corpo: NovoVereditoDaReivindicacaoDto,
+  ): Promise<{ id: string; veredito: VereditoVerificacao }> {
+    return this.service.decidir(id, rid, codigo, corpo)
   }
 }

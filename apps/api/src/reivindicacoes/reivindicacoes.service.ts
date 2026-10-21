@@ -1,11 +1,13 @@
 import {
   ESTADOS_ABERTOS,
   REIVINDICACAO,
+  transicaoPermitida,
   type EstadoCaso,
   type PerguntaPublica,
   type ReivindicacaoParaAutor,
   type ReivindicacaoRegistrada,
   type TipoCaso,
+  type VereditoVerificacao,
 } from '@achei/contratos'
 import {
   BadRequestException,
@@ -13,9 +15,11 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common'
 import { conferirCodigoEdicao, gerarCodigoEdicao, hashCodigoEdicao } from '../casos/codigo-edicao'
 import type { NovaReivindicacaoDto } from './dto/nova-reivindicacao.dto'
+import type { NovoVereditoDaReivindicacaoDto } from './dto/novo-veredito-da-reivindicacao.dto'
 import { ReivindicacoesRepositorio } from './reivindicacoes.repositorio'
 
 @Injectable()
@@ -98,5 +102,56 @@ export class ReivindicacoesService {
   async listarParaAutor(casoId: string, codigo: string | undefined): Promise<ReivindicacaoParaAutor[]> {
     const caso = await this.conferirAutoria(casoId, codigo)
     return this.repositorio.listarParaAutor(casoId, caso.tipo as TipoCaso)
+  }
+
+  async decidir(
+    casoId: string,
+    tentativaId: string,
+    codigo: string | undefined,
+    corpo: NovoVereditoDaReivindicacaoDto,
+  ): Promise<{ id: string; veredito: VereditoVerificacao }> {
+    await this.conferirAutoria(casoId, codigo)
+
+    const tentativa = await this.repositorio.buscarTentativaParaDecidir(tentativaId, casoId)
+    if (!tentativa) {
+      throw new NotFoundException('reivindicação não encontrada neste caso')
+    }
+
+    if (corpo.veredito === 'aceita') {
+      const transicaoOk = transicaoPermitida(
+        tentativa.caso.estado as EstadoCaso,
+        'em_contato',
+        tentativa.caso.tipo as TipoCaso,
+      )
+      if (!transicaoOk) {
+        throw new ConflictException('o caso não pode transicionar para em_contato neste estado')
+      }
+
+      if (!tentativa.caso.autor.telefone && !corpo.telefone) {
+        throw new UnprocessableEntityException('o autor precisa fornecer um telefone para contato ao aceitar')
+      }
+
+      if (tentativa.casoProprio) {
+        const transicaoProprioOk = transicaoPermitida(
+          tentativa.casoProprio.estado as EstadoCaso,
+          'em_contato',
+          tentativa.casoProprio.tipo as TipoCaso,
+        )
+        if (!transicaoProprioOk) {
+          throw new ConflictException('o caso próprio não pode transicionar para em_contato')
+        }
+      }
+    }
+
+    await this.repositorio.gravarVeredito({
+      tentativaId,
+      casoId,
+      veredito: corpo.veredito,
+      novoTelefoneAutor: corpo.telefone,
+      casoProprioId: tentativa.casoProprioId,
+      autorId: tentativa.caso.autor.id,
+    })
+
+    return { id: tentativaId, veredito: corpo.veredito }
   }
 }

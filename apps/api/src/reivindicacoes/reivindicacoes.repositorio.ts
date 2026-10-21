@@ -14,6 +14,15 @@ export interface ReivindicacaoCriada {
   veredito: VereditoVerificacao
 }
 
+export interface GravarVereditoParams {
+  tentativaId: string
+  casoId: string
+  veredito: 'aceita' | 'recusada'
+  novoTelefoneAutor?: string
+  casoProprioId?: string | null
+  autorId?: string
+}
+
 @Injectable()
 export class ReivindicacoesRepositorio {
   constructor(private readonly prisma: PrismaService) {}
@@ -193,5 +202,94 @@ export class ReivindicacoesRepositorio {
     }
 
     return itens
+  }
+
+  async buscarTentativaParaDecidir(tentativaId: string, casoId: string) {
+    return this.prisma.tentativaVerificacao.findFirst({
+      where: { id: tentativaId, casoId },
+      include: {
+        caso: {
+          include: {
+            autor: {
+              select: { id: true, telefone: true },
+            },
+          },
+        },
+        casoProprio: {
+          select: { id: true, tipo: true, estado: true },
+        },
+      },
+    })
+  }
+
+  async gravarVeredito({
+    tentativaId,
+    casoId,
+    veredito,
+    novoTelefoneAutor,
+    casoProprioId,
+    autorId,
+  }: GravarVereditoParams): Promise<void> {
+    const agora = new Date()
+
+    await this.prisma.$transaction(async (tx) => {
+      if (veredito === 'aceita') {
+        if (novoTelefoneAutor && autorId) {
+          await tx.pessoa.update({
+            where: { id: autorId },
+            data: { telefone: novoTelefoneAutor },
+          })
+        }
+
+        await tx.caso.update({
+          where: { id: casoId },
+          data: {
+            estado: 'em_contato',
+            ultimaInteracaoEm: agora,
+            cobradoEm: null,
+          },
+        })
+
+        if (casoProprioId) {
+          await tx.caso.update({
+            where: { id: casoProprioId },
+            data: {
+              estado: 'em_contato',
+              ultimaInteracaoEm: agora,
+              cobradoEm: null,
+            },
+          })
+
+          await tx.pareamento.updateMany({
+            where: {
+              OR: [
+                { casoPerdidoId: casoId, casoEncontradoId: casoProprioId },
+                { casoPerdidoId: casoProprioId, casoEncontradoId: casoId },
+              ],
+            },
+            data: {
+              veredito: 'confirmado',
+              decididoEm: agora,
+            },
+          })
+        }
+      } else {
+        await tx.caso.update({
+          where: { id: casoId },
+          data: {
+            ultimaInteracaoEm: agora,
+            cobradoEm: null,
+          },
+        })
+      }
+
+      await tx.tentativaVerificacao.update({
+        where: { id: tentativaId },
+        data: {
+          veredito,
+          decididoEm: agora,
+        },
+      })
+    })
   }
 }
