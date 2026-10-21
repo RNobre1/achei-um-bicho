@@ -292,4 +292,29 @@ export class ReivindicacoesRepositorio {
       })
     })
   }
+
+  async buscarPorIdParaReivindicante(id: string) {
+    return this.prisma.tentativaVerificacao.findUnique({
+      where: { id },
+      include: {
+        caso: {
+          include: {
+            autor: {
+              select: { nome: true, telefone: true },
+            },
+            local: {
+              select: { referencia: true },
+            },
+          },
+        },
+      },
+    })
+  }
+
+  async marcarContatoVisto(id: string): Promise<void> {
+    await this.prisma.tentativaVerificacao.update({
+      where: { id },
+      data: { contatoVistoEm: new Date() },
+    })
+  }
 }

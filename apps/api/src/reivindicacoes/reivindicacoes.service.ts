@@ -6,6 +6,7 @@ import {
   type PerguntaPublica,
   type ReivindicacaoParaAutor,
   type ReivindicacaoRegistrada,
+  type SituacaoDaReivindicacao,
   type TipoCaso,
   type VereditoVerificacao,
 } from '@achei/contratos'
@@ -153,5 +154,41 @@ export class ReivindicacoesService {
     })
 
     return { id: tentativaId, veredito: corpo.veredito }
+  }
+
+  async consultarSituacao(id: string, codigoAcompanhamento: string | undefined): Promise<SituacaoDaReivindicacao> {
+    const tentativa = await this.repositorio.buscarPorIdParaReivindicante(id)
+    if (!tentativa) {
+      throw new NotFoundException('reivindicação não encontrada')
+    }
+
+    if (!conferirCodigoEdicao(codigoAcompanhamento, tentativa.codigoAcompanhamento)) {
+      throw new ForbiddenException('código de acompanhamento não confere com esta reivindicação')
+    }
+
+    let contato = null
+
+    if (tentativa.veredito === 'aceita') {
+      if (!tentativa.contatoVistoEm) {
+        await this.repositorio.marcarContatoVisto(id)
+      }
+
+      contato = {
+        nome: tentativa.caso.autor.nome,
+        telefone: tentativa.caso.autor.telefone,
+        referencia: tentativa.caso.tipo === 'encontrado' ? tentativa.caso.local.referencia : null,
+      }
+    }
+
+    return {
+      id: tentativa.id,
+      veredito: tentativa.veredito as VereditoVerificacao,
+      caso: {
+        id: tentativa.caso.id,
+        tipo: tentativa.caso.tipo as TipoCaso,
+        estado: tentativa.caso.estado as EstadoCaso,
+      },
+      contato,
+    }
   }
 }
