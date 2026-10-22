@@ -1,11 +1,13 @@
 import {
   CABECALHO_CODIGO_EDICAO,
+  type DenunciaRegistrada,
   type PerguntaPublica,
   type ReivindicacaoParaAutor,
   type ReivindicacaoRegistrada,
   type VereditoVerificacao,
 } from '@achei/contratos'
 import { Body, Controller, Get, Headers, HttpCode, Param, ParseUUIDPipe, Post } from '@nestjs/common'
+import { NovaDenunciaDto } from './dto/nova-denuncia.dto'
 import { NovaReivindicacaoDto } from './dto/nova-reivindicacao.dto'
 import { NovoVereditoDaReivindicacaoDto } from './dto/novo-veredito-da-reivindicacao.dto'
 import { ReivindicacoesService } from './reivindicacoes.service'
@@ -44,5 +46,14 @@ export class ReivindicacoesController {
     @Body() corpo: NovoVereditoDaReivindicacaoDto,
   ): Promise<{ id: string; veredito: VereditoVerificacao }> {
     return this.service.decidir(id, rid, codigo, corpo)
+  }
+
+  @Post('denuncias')
+  @HttpCode(201)
+  denunciar(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() corpo: NovaDenunciaDto,
+  ): Promise<DenunciaRegistrada> {
+    return this.service.denunciar(id, corpo)
   }
 }

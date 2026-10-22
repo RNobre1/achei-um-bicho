@@ -19,6 +19,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common'
 import { conferirCodigoEdicao, gerarCodigoEdicao, hashCodigoEdicao } from '../casos/codigo-edicao'
+import type { NovaDenunciaDto } from './dto/nova-denuncia.dto'
 import type { NovaReivindicacaoDto } from './dto/nova-reivindicacao.dto'
 import type { NovoVereditoDaReivindicacaoDto } from './dto/novo-veredito-da-reivindicacao.dto'
 import { ReivindicacoesRepositorio } from './reivindicacoes.repositorio'
@@ -190,5 +191,21 @@ export class ReivindicacoesService {
       },
       contato,
     }
+  }
+
+  async denunciar(casoId: string, dados: NovaDenunciaDto): Promise<{ id: string }> {
+    const existe = await this.repositorio.casoExiste(casoId)
+    if (!existe) {
+      throw new NotFoundException('caso não encontrado')
+    }
+
+    if (dados.reivindicacaoId) {
+      const tentativa = await this.repositorio.buscarReivindicacao(dados.reivindicacaoId)
+      if (!tentativa || tentativa.casoId !== casoId) {
+        throw new BadRequestException('reivindicação não pertence a este caso')
+      }
+    }
+
+    return this.repositorio.criarDenuncia(casoId, dados)
   }
 }

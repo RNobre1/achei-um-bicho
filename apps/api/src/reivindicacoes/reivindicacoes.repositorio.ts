@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import type { PerguntaPublica, ReivindicacaoParaAutor, TipoCaso, VereditoVerificacao } from '@achei/contratos'
 import { PrismaService } from '../prisma/prisma.service'
+import type { NovaDenunciaDto } from './dto/nova-denuncia.dto'
 import type { NovaReivindicacaoDto } from './dto/nova-reivindicacao.dto'
 
 export interface DadosParaReivindicar {
@@ -316,5 +317,25 @@ export class ReivindicacoesRepositorio {
       where: { id },
       data: { contatoVistoEm: new Date() },
     })
+  }
+
+  async buscarReivindicacao(id: string) {
+    return this.prisma.tentativaVerificacao.findUnique({
+      where: { id },
+      select: { id: true, casoId: true },
+    })
+  }
+
+  async criarDenuncia(casoId: string, dados: NovaDenunciaDto): Promise<{ id: string }> {
+    const denuncia = await this.prisma.denuncia.create({
+      data: {
+        casoId,
+        motivo: dados.motivo,
+        texto: dados.texto ?? null,
+        tentativaId: dados.reivindicacaoId ?? null,
+      },
+      select: { id: true },
+    })
+    return denuncia
   }
 }
