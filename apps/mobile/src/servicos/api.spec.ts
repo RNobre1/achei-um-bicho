@@ -1,4 +1,4 @@
-import type { NovaPublicacao } from '@achei/contratos'
+import type { NovaDenuncia, NovaPublicacao, NovaReivindicacao } from '@achei/contratos'
 import { describe, expect, it, vi } from 'vitest'
 import { criarClienteApi, ErroApi } from './api'
 
@@ -131,5 +131,83 @@ describe('cliente da API', () => {
     expect(headers).toEqual({ 'Content-Type': 'application/json', 'x-codigo-edicao': 'ABCD-EFGH' })
     expect(JSON.parse(body as string)).toEqual({ veredito: 'descartado' })
   })
-})
 
+  it('busca as perguntas públicas do caso', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson([{ id: 'p1', ordem: 1, enunciado: 'Qual a cor?' }]))
+    const res = await criarClienteApi('http://api.teste', buscar).perguntas('abc')
+    expect(res).toEqual([{ id: 'p1', ordem: 1, enunciado: 'Qual a cor?' }])
+    expect(buscar.mock.calls[0]![0]).toBe('http://api.teste/casos/abc/perguntas')
+  })
+
+  it('reivindica respondendo às perguntas e devolvendo o código de acompanhamento', async () => {
+    const resposta = { id: 'r1', veredito: 'pendente', codigoAcompanhamento: 'ABCD-EFGH' }
+    const buscar = vi.fn().mockResolvedValue(respostaJson(resposta, 201))
+    const dados: NovaReivindicacao = {
+      respostas: [{ perguntaId: 'p1', texto: 'Caramelo' }],
+      pessoa: { nome: 'Maria', telefone: '93991112233' },
+    }
+
+    const res = await criarClienteApi('http://api.teste', buscar).reivindicar('abc', dados)
+
+    expect(res).toEqual(resposta)
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/reivindicacoes')
+    expect(opcoes).toMatchObject({ method: 'POST', headers: { 'Content-Type': 'application/json' } })
+    expect(JSON.parse((opcoes as RequestInit).body as string)).toEqual(dados)
+  })
+
+  it('lê as reivindicações do caso para o autor com x-codigo-edicao', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson([]))
+    const res = await criarClienteApi('http://api.teste', buscar).reivindicacoesDoMeuCaso('abc', 'ABCD-EFGH')
+    expect(res).toEqual([])
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/reivindicacoes')
+    expect((opcoes as RequestInit).headers).toEqual({ 'x-codigo-edicao': 'ABCD-EFGH' })
+  })
+
+  it('decide reivindicação com aceite ou recusa e telefone opcional', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson({ id: 'r1', veredito: 'aceita' }))
+    const res = await criarClienteApi('http://api.teste', buscar).decidirReivindicacao(
+      'abc',
+      'r1',
+      'ABCD-EFGH',
+      'aceita',
+      '93991234567',
+    )
+
+    expect(res).toEqual({ id: 'r1', veredito: 'aceita' })
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/reivindicacoes/r1/veredito')
+    expect(opcoes).toMatchObject({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-codigo-edicao': 'ABCD-EFGH' },
+    })
+    expect(JSON.parse((opcoes as RequestInit).body as string)).toEqual({
+      veredito: 'aceita',
+      telefone: '93991234567',
+    })
+  })
+
+  it('consulta a situação da reivindicação com x-codigo-acompanhamento', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson({ id: 'r1', veredito: 'pendente' }))
+    const res = await criarClienteApi('http://api.teste', buscar).situacaoDaReivindicacao('r1', 'ACOM-1234')
+    expect(res).toEqual({ id: 'r1', veredito: 'pendente' })
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/reivindicacoes/r1')
+    expect((opcoes as RequestInit).headers).toEqual({ 'x-codigo-acompanhamento': 'ACOM-1234' })
+  })
+
+  it('registra denúncia por POST em /casos/:id/denuncias', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson({ id: 'd1' }, 201))
+    const denuncia: NovaDenuncia = { motivo: 'pediu_dinheiro', texto: 'Golpe' }
+    const res = await criarClienteApi('http://api.teste', buscar).denunciar('abc', denuncia)
+    expect(res).toEqual({ id: 'd1' })
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/denuncias')
+    expect(opcoes).toMatchObject({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    expect(JSON.parse((opcoes as RequestInit).body as string)).toEqual(denuncia)
+  })
+})
