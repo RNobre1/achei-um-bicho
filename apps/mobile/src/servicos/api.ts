@@ -1,16 +1,25 @@
 import {
+  CABECALHO_CODIGO_ACOMPANHAMENTO,
   CABECALHO_CODIGO_EDICAO,
   CAMPO_FOTO,
-  type FotoEnviada,
   type AvistamentoParaAutor,
   type AvistamentoRegistrado,
   type CasoAberto,
   type CasoPublicado,
   type ConsultaMural,
+  type DenunciaRegistrada,
+  type FotoEnviada,
   type Mural,
+  type NovaDenuncia,
   type NovaPublicacao,
+  type NovaReivindicacao,
   type NovoAvistamento,
+  type PerguntaPublica,
   type Pista,
+  type ReivindicacaoParaAutor,
+  type ReivindicacaoRegistrada,
+  type SituacaoDaReivindicacao,
+  type VereditoVerificacao,
 } from '@achei/contratos'
 
 const SEM_CONEXAO = 'Sem conexão com o servidor. Confira a internet e tente de novo.'
@@ -36,6 +45,18 @@ export interface ClienteApi {
   urlDaFoto(caminho: string): string
   pistasDoMeuCaso(casoId: string, codigoEdicao: string): Promise<Pista[]>
   descartarPista(casoId: string, pistaId: string, codigoEdicao: string): Promise<void>
+  perguntas(casoId: string): Promise<PerguntaPublica[]>
+  reivindicar(casoId: string, dados: NovaReivindicacao): Promise<ReivindicacaoRegistrada>
+  reivindicacoesDoMeuCaso(casoId: string, codigoEdicao: string): Promise<ReivindicacaoParaAutor[]>
+  decidirReivindicacao(
+    casoId: string,
+    reivindicacaoId: string,
+    codigoEdicao: string,
+    veredito: 'aceita' | 'recusada',
+    telefone?: string,
+  ): Promise<{ id: string; veredito: VereditoVerificacao }>
+  situacaoDaReivindicacao(id: string, codigoAcompanhamento: string): Promise<SituacaoDaReivindicacao>
+  denunciar(casoId: string, dados: NovaDenuncia): Promise<DenunciaRegistrada>
 }
 
 /** Blob na web; no celular, o File do expo-file-system, que se comporta como Blob. */
@@ -121,6 +142,43 @@ export function criarClienteApi(urlBase: string, buscar: Buscar = fetch): Client
     avistamentosDoMeuCaso(casoId, codigoEdicao) {
       return pedir<AvistamentoParaAutor[]>(`/casos/${encodeURIComponent(casoId)}/avistamentos`, {
         headers: { [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
+      })
+    },
+    perguntas(casoId) {
+      return pedir<PerguntaPublica[]>(`/casos/${encodeURIComponent(casoId)}/perguntas`)
+    },
+    reivindicar(casoId, dados) {
+      return pedir<ReivindicacaoRegistrada>(`/casos/${encodeURIComponent(casoId)}/reivindicacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados),
+      })
+    },
+    reivindicacoesDoMeuCaso(casoId, codigoEdicao) {
+      return pedir<ReivindicacaoParaAutor[]>(`/casos/${encodeURIComponent(casoId)}/reivindicacoes`, {
+        headers: { [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
+      })
+    },
+    decidirReivindicacao(casoId, reivindicacaoId, codigoEdicao, veredito, telefone) {
+      return pedir<{ id: string; veredito: VereditoVerificacao }>(
+        `/casos/${encodeURIComponent(casoId)}/reivindicacoes/${encodeURIComponent(reivindicacaoId)}/veredito`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
+          body: JSON.stringify({ veredito, ...(telefone && { telefone }) }),
+        },
+      )
+    },
+    situacaoDaReivindicacao(id, codigoAcompanhamento) {
+      return pedir<SituacaoDaReivindicacao>(`/reivindicacoes/${encodeURIComponent(id)}`, {
+        headers: { [CABECALHO_CODIGO_ACOMPANHAMENTO]: codigoAcompanhamento },
+      })
+    },
+    denunciar(casoId, dados) {
+      return pedir<DenunciaRegistrada>(`/casos/${encodeURIComponent(casoId)}/denuncias`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados),
       })
     },
   }
