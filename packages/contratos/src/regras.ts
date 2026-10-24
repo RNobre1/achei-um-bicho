@@ -49,6 +49,27 @@ export const REIVINDICACAO = {
 } as const
 
 /**
+ * Normalização e conferência de telefone brasileiro (DDD com 2 dígitos + 8 ou 9 dígitos).
+ */
+export function normalizarTelefone(telefone: string): string {
+  return telefone.replace(/\D/g, '')
+}
+
+export function chaveDoTelefone(telefone: string): string {
+  const digitos = normalizarTelefone(telefone)
+  if (digitos.length < 10) return digitos
+  const ddd = digitos.slice(0, 2)
+  const ultimos8 = digitos.slice(-8)
+  return `${ddd}${ultimos8}`
+}
+
+export const TELEFONE = {
+  expressao: /^\d{10,11}$/,
+  normalizar: normalizarTelefone,
+  chave: chaveDoTelefone,
+} as const
+
+/**
  * Tarefa diária de cobrança, expiração e anonimização (F8, RN8). O horário mora
  * aqui: a ação agendada do GitHub, a documentação e o artigo derivam dele, e um
  * teste compara o cron do arquivo da ação com este valor.
