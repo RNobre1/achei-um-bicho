@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { FOTO, PAREAMENTO, RAIO } from './regras'
+import {
+  chaveDoTelefone,
+  FOTO,
+  normalizarTelefone,
+  PAREAMENTO,
+  RAIO,
+  TELEFONE,
+} from './regras'
 
 describe('regras do raio do mural', () => {
   it('parte de 1,6 km, a distância em que 7 de cada 10 cães recuperados apareceram', () => {
@@ -48,3 +55,24 @@ describe('regras do pareamento', () => {
   })
 })
 
+describe('regras de telefone', () => {
+  it('valida telefone com 10 ou 11 dígitos', () => {
+    expect(TELEFONE.expressao.test('93991234567')).toBe(true)
+    expect(TELEFONE.expressao.test('9335221234')).toBe(true)
+    expect(TELEFONE.expressao.test('123')).toBe(false)
+    expect(TELEFONE.expressao.test('9399123456789')).toBe(false)
+  })
+
+  it('normaliza retirando qualquer caractere não numérico', () => {
+    expect(normalizarTelefone('(93) 99123-4567')).toBe('93991234567')
+    expect(TELEFONE.normalizar(' 93 3522-1234 ')).toBe('9335221234')
+  })
+
+  it('extrai a chave do telefone com DDD e os 8 últimos dígitos para casar número com e sem 9', () => {
+    const comNove = '93991234567'
+    const semNove = '9391234567'
+    expect(chaveDoTelefone(comNove)).toBe('9391234567')
+    expect(chaveDoTelefone(semNove)).toBe('9391234567')
+    expect(chaveDoTelefone('(93) 99123-4567')).toBe(chaveDoTelefone('93 9123-4567'))
+  })
+})
