@@ -119,7 +119,7 @@ export function Pistas() {
                   meuNome={grupo.caso.nome}
                   minhaFoto={grupo.minhaFoto}
                   descartando={descartando === pista.id}
-                  aoAbrir={() => router.push(`/caso/${pista.outro.id}`)}
+                  aoAbrir={() => router.push(`/caso/${pista.outro.id}?casoProprio=${grupo.caso.id}`)}
                   aoDescartar={() => void descartar(grupo, pista)}
                 />
               ))}

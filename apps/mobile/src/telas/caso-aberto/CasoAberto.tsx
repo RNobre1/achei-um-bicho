@@ -3,7 +3,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
 import { Etiqueta } from '../../componentes/Etiqueta'
 import { MapaArea } from '../../componentes/MapaArea'
@@ -12,21 +11,23 @@ import { Voltar } from '../../componentes/Voltar'
 import { atributosDoCaso, descreverQuando, fraseDoLocal, TITULO_DO_LOCAL } from '../../dominio/caso-aberto'
 import { formatarTempoDesde } from '../../dominio/formatar'
 import { enderecoNoGoogleMaps } from '../../dominio/mapa'
+import type { MeuCaso } from '../../dominio/meus-casos'
 import { nomeDoAnimal } from '../../dominio/mural'
+import { rotuloBotaoReivindicar } from '../../dominio/reivindicacao'
 import { api, ErroApi } from '../../servicos/api'
 import { meuCaso } from '../../servicos/meus-casos'
 import { cores, fontes } from '../../tema'
 import { AvisosDoAutor } from './AvisosDoAutor'
+import { ReivindicacoesDoAutor } from './ReivindicacoesDoAutor'
 
 export function CasoAberto() {
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const { id, casoProprio } = useLocalSearchParams<{ id: string; casoProprio?: string }>()
   const router = useRouter()
   const margens = useSafeAreaInsets()
   const { width: larguraDaTela } = useWindowDimensions()
   const [caso, setCaso] = useState<Caso>()
   const [erro, setErro] = useState<string>()
-  const [explicarReivindicacao, setExplicarReivindicacao] = useState(false)
-  const [souAutor, setSouAutor] = useState(false)
+  const [meu, setMeu] = useState<MeuCaso>()
   const [avisos, setAvisos] = useState<AvistamentoParaAutor[]>()
   const [erroAvisos, setErroAvisos] = useState<string>()
 
@@ -47,11 +48,11 @@ export function CasoAberto() {
 
   const carregarAvisos = useCallback(async () => {
     // o código de edição guardado na publicação é o que prova que o caso é deste aparelho
-    const meu = await meuCaso(id)
-    setSouAutor(Boolean(meu))
-    if (!meu) return
+    const casoSalvo = await meuCaso(id)
+    setMeu(casoSalvo)
+    if (!casoSalvo) return
     try {
-      setAvisos(await api.avistamentosDoMeuCaso(id, meu.codigoEdicao))
+      setAvisos(await api.avistamentosDoMeuCaso(id, casoSalvo.codigoEdicao))
     } catch (e) {
       setErroAvisos(e instanceof ErroApi ? e.message : 'Não deu para carregar os avisos.')
     }
@@ -128,9 +129,10 @@ export function CasoAberto() {
             </Text>
           </View>
 
-          {souAutor ? (
+          {meu ? (
             <View style={[estilos.bloco, estilos.divisa, estilos.acoes]}>
               <AvisosDoAutor tipo={caso.tipo} avisos={avisos} erro={erroAvisos} />
+              <ReivindicacoesDoAutor casoId={caso.id} codigoEdicao={meu.codigoEdicao} tipo={caso.tipo} />
             </View>
           ) : (
             <View style={[estilos.bloco, estilos.divisa, estilos.acoes]}>
@@ -140,16 +142,16 @@ export function CasoAberto() {
                 aoTocar={() => router.push(`/caso/${caso.id}/avistamento`)}
               />
               <Botao
-                rotulo="Acho que esse bicho é meu"
+                rotulo={rotuloBotaoReivindicar(caso.tipo)}
                 variante="fraco"
-                aoTocar={() => setExplicarReivindicacao((v) => !v)}
+                aoTocar={() =>
+                  router.push(
+                    casoProprio
+                      ? `/caso/${caso.id}/reivindicar?casoProprio=${encodeURIComponent(casoProprio)}`
+                      : `/caso/${caso.id}/reivindicar`,
+                  )
+                }
               />
-              {explicarReivindicacao ? (
-                <Aviso
-                  titulo="Quem publicou confere antes de liberar o contato."
-                  texto="Você vai responder às três perguntas sobre sinais que só o tutor conhece. Essa etapa abre na próxima versão do aplicativo."
-                />
-              ) : null}
             </View>
           )}
         </ScrollView>

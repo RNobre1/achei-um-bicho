@@ -1,7 +1,7 @@
 import { ESTADO_CASO, type CasoAberto } from '@achei/contratos'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Botao } from '../../componentes/Botao'
 import { Etiqueta } from '../../componentes/Etiqueta'
@@ -9,9 +9,11 @@ import { LinhaMarcada } from '../../componentes/LinhaMarcada'
 import { Placa } from '../../componentes/Placa'
 import { formatarTempoDesde } from '../../dominio/formatar'
 import type { MeuCaso } from '../../dominio/meus-casos'
+import type { MinhaReivindicacao } from '../../dominio/minhas-reivindicacoes'
 import { resumoDoMeuCaso } from '../../dominio/pistas'
 import { api } from '../../servicos/api'
 import { listarMeusCasos } from '../../servicos/meus-casos'
+import { listarMinhasReivindicacoes } from '../../servicos/minhas-reivindicacoes'
 import { cores, fontes } from '../../tema'
 
 interface Situacao {
@@ -35,9 +37,11 @@ export function MeusCasos() {
   const router = useRouter()
   const margens = useSafeAreaInsets()
   const [situacoes, setSituacoes] = useState<Situacao[]>()
+  const [minhasReivindicacoes, setMinhasReivindicacoes] = useState<MinhaReivindicacao[]>()
 
   const carregar = useCallback(async () => {
-    const meus = await listarMeusCasos()
+    const [meus, reivs] = await Promise.all([listarMeusCasos(), listarMinhasReivindicacoes()])
+    setMinhasReivindicacoes(reivs)
     setSituacoes(await Promise.all(meus.map(situacaoDe)))
   }, [])
 
@@ -51,6 +55,29 @@ export function MeusCasos() {
     <ScrollView style={estilos.tela} contentContainerStyle={{ paddingTop: margens.top + 16, paddingBottom: 32 }}>
       <Text style={[estilos.titulo, estilos.margem]}>Meus casos</Text>
       <Text style={[estilos.nota, estilos.margem]}>Os casos publicados neste celular, com quem viu e as pistas.</Text>
+
+      {minhasReivindicacoes && minhasReivindicacoes.length > 0 ? (
+        <View style={estilos.blocoReivindicacoes}>
+          <Text style={[estilos.rotuloSecao, estilos.margem]}>REIVINDICAÇÕES QUE FIZ</Text>
+          {minhasReivindicacoes.map((r) => (
+            <Pressable
+              key={r.id}
+              style={estilos.itemReivindicacao}
+              onPress={() => router.push(`/reivindicacao/${r.id}`)}
+              accessibilityRole="button"
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={estilos.nomeReivindicacao}>
+                  {r.nomeAnimal ? `${r.nomeAnimal} · ` : ''}
+                  {r.tipoCaso === 'perdido' ? 'Acho que achei' : 'Acho que é meu'}
+                </Text>
+                <Text style={estilos.dataReivindicacao}>Enviada {formatarTempoDesde(r.criadoEm)}</Text>
+              </View>
+              <Text style={estilos.setaReivindicacao}>Ver situação ›</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       {!situacoes ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={cores.tapajos} />
@@ -104,6 +131,20 @@ const estilos = StyleSheet.create({
   margem: { paddingHorizontal: 22 },
   titulo: { fontFamily: fontes.tituloForte, fontSize: 28, color: cores.tapajos, letterSpacing: -0.8 },
   nota: { fontFamily: fontes.texto, fontSize: 13, color: cores.apagado, marginTop: 4, marginBottom: 8 },
+  blocoReivindicacoes: { marginTop: 12, marginBottom: 16, borderBottomWidth: 1, borderBottomColor: cores.traco, paddingBottom: 12 },
+  rotuloSecao: { fontFamily: fontes.dadoMedio, fontSize: 10, letterSpacing: 1.1, color: cores.perdi, marginBottom: 8 },
+  itemReivindicacao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    backgroundColor: cores.branco,
+    borderTopWidth: 1,
+    borderTopColor: cores.traco,
+  },
+  nomeReivindicacao: { fontFamily: fontes.textoForte, fontSize: 14, color: cores.tapajos },
+  dataReivindicacao: { fontFamily: fontes.dado, fontSize: 11, color: cores.apagado },
+  setaReivindicacao: { fontFamily: fontes.textoMedio, fontSize: 13, color: cores.alter },
   meu: { paddingHorizontal: 22, paddingVertical: 18, gap: 12, borderTopWidth: 1, borderTopColor: cores.traco },
   topo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   foto: { width: 56, height: 56 },
