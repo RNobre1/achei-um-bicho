@@ -31,6 +31,7 @@ describe('POST /casos recusa publicação inválida', () => {
     ['quatro perguntas de verificação', { perguntas: [pergunta, pergunta, pergunta, pergunta] }],
     ['latitude impossível', { local: { ...casoValido().local, latitude: 91 } }],
     ['autor sem nome', { autor: { telefone: '93991234567' } }],
+    ['autor com telefone inválido', { autor: { nome: 'Autor', telefone: '123' } }],
     ['data que não é data', { ocorridoEm: 'sábado passado' }],
     ['data no futuro', { ocorridoEm: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() }],
     ['estado escolhido pelo cliente', { estado: 'resolvido' }],

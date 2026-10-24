@@ -124,6 +124,52 @@ describe('GET /casos/:id/reivindicacoes', () => {
     ])
   })
 
+  it('denunciasDoTelefone conta reivindicações distintas denunciadas casando pela chave do telefone', async () => {
+    const { id, codigoEdicao } = await publicar()
+    const perguntas = await obterPerguntas(id)
+
+    // Reivindicação no caso atual com telefone com o 9: '93991223344'
+    await request(app.getHttpServer())
+      .post(`/casos/${id}/reivindicacoes`)
+      .send({
+        respostas: perguntas.map((p) => ({ perguntaId: p.id, texto: 'r' })),
+        pessoa: { nome: 'Carlos', telefone: '93991223344' },
+      })
+      .expect(201)
+
+    // Simula duas denúncias de motivos diferentes na mesma reivindicação anterior (com mesmo número sem o 9)
+    const outroCaso1 = await publicar()
+    const pessoaAntiga = await prisma.pessoa.create({
+      data: { nome: 'Carlos', telefone: '9391223344' },
+    })
+    const tentativa1 = await prisma.tentativaVerificacao.create({
+      data: { casoId: outroCaso1.id, pessoaId: pessoaAntiga.id, codigoAcompanhamento: 'hash-1' },
+    })
+    await prisma.denuncia.create({
+      data: { casoId: outroCaso1.id, tentativaId: tentativa1.id, motivo: 'pediu_dinheiro' },
+    })
+    await prisma.denuncia.create({
+      data: { casoId: outroCaso1.id, tentativaId: tentativa1.id, motivo: 'respostas_suspeitas' },
+    })
+
+    // Uma segunda reivindicação denunciada da mesma pessoa em outro caso
+    const outroCaso2 = await publicar()
+    const tentativa2 = await prisma.tentativaVerificacao.create({
+      data: { casoId: outroCaso2.id, pessoaId: pessoaAntiga.id, codigoAcompanhamento: 'hash-2' },
+    })
+    await prisma.denuncia.create({
+      data: { casoId: outroCaso2.id, tentativaId: tentativa2.id, motivo: 'outro' },
+    })
+
+    const { body } = await request(app.getHttpServer())
+      .get(`/casos/${id}/reivindicacoes`)
+      .set('x-codigo-edicao', codigoEdicao)
+      .expect(200)
+
+    // Tentativa 1 tem 2 denúncias, tentativa 2 tem 1 denúncia -> Total de reivindicações distintas denunciadas = 2
+    expect(body[0].denunciasDoTelefone).toBe(2)
+  })
+
   it('libera contato após aceite, com referência para caso perdido e sem referência para caso encontrado', async () => {
     // 1. Caso perdido: autor recebe tentativa.referencia
     const perdido = await publicar({ tipo: 'perdido' })

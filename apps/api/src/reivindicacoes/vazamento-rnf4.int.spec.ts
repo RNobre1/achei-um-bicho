@@ -109,4 +109,61 @@ describe('RNF4: proteção contra vazamento de dados pessoais e sensíveis em ro
       expect(serializado).not.toContain(String(CENTRO_SANTAREM.longitude))
     }
   })
+
+  it('no caso encontrado, local.referencia não sai em rota pública nem para quem não teve aceite', async () => {
+    const referenciaSecreta = 'Casa amarela com portão de ferro na Travessa dos Mártires 456'
+
+    const { body: encontrado } = await request(app.getHttpServer())
+      .post('/casos')
+      .send(casoValido({
+        tipo: 'encontrado',
+        animal: { ...casoValido().animal, nome: undefined, castrado: undefined },
+        local: { ...casoValido().local, referencia: referenciaSecreta },
+      }))
+      .expect(201)
+
+    const { body: perguntas } = await request(app.getHttpServer())
+      .get(`/casos/${encontrado.id}/perguntas`)
+      .expect(200)
+
+    const { body: reiv } = await request(app.getHttpServer())
+      .post(`/casos/${encontrado.id}/reivindicacoes`)
+      .send({
+        respostas: perguntas.map((p: { id: string }) => ({ perguntaId: p.id, texto: 'resposta dada' })),
+        pessoa: { nome: 'Reivindicante', telefone: '93991223344' },
+      })
+      .expect(201)
+
+    // Rota pública do mural
+    const { body: mural } = await request(app.getHttpServer())
+      .get(`/casos?latitude=${CENTRO_SANTAREM.latitude}&longitude=${CENTRO_SANTAREM.longitude}`)
+      .expect(200)
+    expect(JSON.stringify(mural)).not.toContain(referenciaSecreta)
+
+    // Rota pública do caso aberto
+    const { body: casoAberto } = await request(app.getHttpServer())
+      .get(`/casos/${encontrado.id}`)
+      .expect(200)
+    expect(JSON.stringify(casoAberto)).not.toContain(referenciaSecreta)
+
+    // Situação da reivindicação pendente (sem aceite)
+    const { body: situacaoPendente } = await request(app.getHttpServer())
+      .get(`/reivindicacoes/${reiv.id}`)
+      .set('x-codigo-acompanhamento', reiv.codigoAcompanhamento)
+      .expect(200)
+    expect(JSON.stringify(situacaoPendente)).not.toContain(referenciaSecreta)
+
+    // Simula recusa
+    await prisma.tentativaVerificacao.update({
+      where: { id: reiv.id },
+      data: { veredito: 'recusada' },
+    })
+
+    // Situação da reivindicação recusada (sem aceite)
+    const { body: situacaoRecusada } = await request(app.getHttpServer())
+      .get(`/reivindicacoes/${reiv.id}`)
+      .set('x-codigo-acompanhamento', reiv.codigoAcompanhamento)
+      .expect(200)
+    expect(JSON.stringify(situacaoRecusada)).not.toContain(referenciaSecreta)
+  })
 })

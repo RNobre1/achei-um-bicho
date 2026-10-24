@@ -156,7 +156,33 @@ describe('POST /casos/:id/reivindicacoes', () => {
       .expect(409)
   })
 
-  it('bloqueia reivindicação de telefone já recusado naquele caso (409)', async () => {
+  it('limite de 5 pendentes é respeitado concorrentemente com 8 requisições simultâneas', async () => {
+    const { id } = await publicar()
+    const perguntas = await obterPerguntas(id)
+
+    const reqs = Array.from({ length: 8 }, (_, i) =>
+      request(app.getHttpServer())
+        .post(`/casos/${id}/reivindicacoes`)
+        .send({
+          respostas: perguntas.map((p) => ({ perguntaId: p.id, texto: `resp ${i}` })),
+          pessoa: { nome: `Pessoa ${i}`, telefone: `9399111000${i}` },
+        }),
+    )
+
+    const resultados = await Promise.all(reqs)
+    const sucessos = resultados.filter((r) => r.status === 201)
+    const conflitos = resultados.filter((r) => r.status === 409)
+
+    expect(sucessos).toHaveLength(5)
+    expect(conflitos).toHaveLength(3)
+
+    const pendentes = await prisma.tentativaVerificacao.count({
+      where: { casoId: id, veredito: 'pendente' },
+    })
+    expect(pendentes).toBe(5)
+  })
+
+  it('bloqueia reivindicação de telefone já recusado naquele caso usando a chave do telefone e mensagem genérica', async () => {
     const { id } = await publicar()
     const perguntas = await obterPerguntas(id)
 
@@ -170,23 +196,27 @@ describe('POST /casos/:id/reivindicacoes', () => {
       .send(payload)
       .expect(201)
 
-    // Simula recusa pelo autor
+    // Recusa pelo autor
     await prisma.tentativaVerificacao.update({
       where: { id: body.id },
       data: { veredito: 'recusada' },
     })
 
-    // Tentar de novo com o mesmo telefone no mesmo caso recebe 409
-    await request(app.getHttpServer())
+    // Tentar de novo com o mesmo número sem o 9 (mesma chave): toma 409 com mensagem genérica
+    const res = await request(app.getHttpServer())
       .post(`/casos/${id}/reivindicacoes`)
-      .send(payload)
+      .send({
+        ...payload,
+        pessoa: { nome: 'Outro Nome', telefone: '9391119999' },
+      })
       .expect(409)
+
+    expect(res.body.message).toBe('Não foi possível registrar a reivindicação neste caso.')
+    expect(JSON.stringify(res.body)).not.toMatch(/telefone|recusa/i)
   })
 
-  it('vincula caso próprio quando código é válido e tipo é oposto', async () => {
-    // Caso 1: perdido
+  it('vincula caso próprio quando código é válido, pareamento existe e caso próprio está aberto', async () => {
     const perdido = await publicar({ tipo: 'perdido' })
-    // Caso 2: encontrado
     const encontrado = await publicar({
       tipo: 'encontrado',
       animal: { ...casoValido().animal, nome: undefined, castrado: undefined },
@@ -229,5 +259,116 @@ describe('POST /casos/:id/reivindicacoes', () => {
       where: { id: body.id },
     })
     expect(tentativa.casoProprioId).toBe(encontrado.id)
+  })
+
+  it('rejeita vínculo de caso próprio se não houver linha de pareamento ativa entre os dois casos (400)', async () => {
+    const perdido = await publicar({ tipo: 'perdido' })
+    const longe = await publicar({
+      tipo: 'encontrado',
+      local: { latitude: 0, longitude: 0 },
+      animal: { ...casoValido().animal, nome: undefined, castrado: undefined },
+    })
+
+    const perguntas = await obterPerguntas(perdido.id)
+    const res = await request(app.getHttpServer())
+      .post(`/casos/${perdido.id}/reivindicacoes`)
+      .send({
+        respostas: perguntas.map((p) => ({ perguntaId: p.id, texto: 'resp' })),
+        pessoa: { nome: 'Maria', telefone: '93991112233' },
+        casoProprio: { id: longe.id, codigoEdicao: longe.codigoEdicao },
+      })
+      .expect(400)
+
+    expect(res.body.message).not.toMatch(/longe|fechado|resolvido/i)
+  })
+
+  it('rejeita vínculo de caso próprio se pareamento tiver sido descartado (400)', async () => {
+    const perdido = await publicar({ tipo: 'perdido' })
+    const encontrado = await publicar({
+      tipo: 'encontrado',
+      animal: { ...casoValido().animal, nome: undefined, castrado: undefined },
+    })
+
+    await prisma.pareamento.updateMany({
+      where: {
+        OR: [
+          { casoPerdidoId: perdido.id, casoEncontradoId: encontrado.id },
+          { casoPerdidoId: encontrado.id, casoEncontradoId: perdido.id },
+        ],
+      },
+      data: { veredito: 'descartado' },
+    })
+
+    const perguntas = await obterPerguntas(perdido.id)
+    await request(app.getHttpServer())
+      .post(`/casos/${perdido.id}/reivindicacoes`)
+      .send({
+        respostas: perguntas.map((p) => ({ perguntaId: p.id, texto: 'resp' })),
+        pessoa: { nome: 'Maria', telefone: '93991112233' },
+        casoProprio: { id: encontrado.id, codigoEdicao: encontrado.codigoEdicao },
+      })
+      .expect(400)
+  })
+
+  it('rejeita vínculo de caso próprio se caso próprio estiver fechado (400)', async () => {
+    const perdido = await publicar({ tipo: 'perdido' })
+    const encontrado = await publicar({
+      tipo: 'encontrado',
+      animal: { ...casoValido().animal, nome: undefined, castrado: undefined },
+    })
+
+    await prisma.caso.update({
+      where: { id: encontrado.id },
+      data: { estado: 'resolvido' },
+    })
+
+    const perguntas = await obterPerguntas(perdido.id)
+    await request(app.getHttpServer())
+      .post(`/casos/${perdido.id}/reivindicacoes`)
+      .send({
+        respostas: perguntas.map((p) => ({ perguntaId: p.id, texto: 'resp' })),
+        pessoa: { nome: 'Maria', telefone: '93991112233' },
+        casoProprio: { id: encontrado.id, codigoEdicao: encontrado.codigoEdicao },
+      })
+      .expect(400)
+  })
+
+  it('reivindicação de terceiro não renova ultima_interacao_em do caso', async () => {
+    const { id } = await publicar()
+    const perguntas = await obterPerguntas(id)
+
+    const dataAntiga = new Date('2026-01-01T10:00:00Z')
+    await prisma.caso.update({
+      where: { id },
+      data: { ultimaInteracaoEm: dataAntiga },
+    })
+
+    await request(app.getHttpServer())
+      .post(`/casos/${id}/reivindicacoes`)
+      .send({
+        respostas: perguntas.map((p) => ({ perguntaId: p.id, texto: 'resp' })),
+        pessoa: { nome: 'Maria', telefone: '93991112233' },
+      })
+      .expect(201)
+
+    const casoApos = await prisma.caso.findUniqueOrThrow({ where: { id } })
+    expect(casoApos.ultimaInteracaoEm.toISOString()).toBe(dataAntiga.toISOString())
+  })
+
+  it('corpo dos erros 403 e 404 não contém dados sensíveis', async () => {
+    const { id } = await publicar()
+    const res404 = await request(app.getHttpServer())
+      .post(`/casos/${randomUUID()}/reivindicacoes`)
+      .send({ respostas: [{ perguntaId: randomUUID(), texto: 'resp' }], pessoa: { nome: 'A', telefone: '93991112233' } })
+      .expect(404)
+
+    expect(JSON.stringify(res404.body)).not.toMatch(/senha|hash|codigoEdicao/i)
+
+    const res403 = await request(app.getHttpServer())
+      .get(`/casos/${id}/reivindicacoes`)
+      .set('x-codigo-edicao', 'ERRADO-1234')
+      .expect(403)
+
+    expect(JSON.stringify(res403.body)).not.toMatch(/senha|hash|codigoEdicao/i)
   })
 })

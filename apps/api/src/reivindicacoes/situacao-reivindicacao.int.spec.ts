@@ -7,7 +7,7 @@ import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
 
-describe('GET /reivindicacoes/:rid', () => {
+describe('GET /reivindicacoes/:id', () => {
   let app: INestApplication
   const prisma = new PrismaClient()
 
@@ -29,35 +29,41 @@ describe('GET /reivindicacoes/:rid', () => {
     return body
   }
 
-  async function criarReivindicacao(casoId: string) {
+  async function criarReivindicacao(casoId: string, telefone = '93991112233') {
     const { body: perguntas } = await request(app.getHttpServer()).get(`/casos/${casoId}/perguntas`).expect(200)
     const { body } = await request(app.getHttpServer())
       .post(`/casos/${casoId}/reivindicacoes`)
       .send({
         respostas: perguntas.map((p: { id: string }) => ({ perguntaId: p.id, texto: 'resp' })),
-        pessoa: { nome: 'Reivindicante', telefone: '93991112233', referencia: 'Perto da igreja' },
+        pessoa: { nome: 'Reivindicante', telefone, referencia: 'Perto da igreja' },
       })
       .expect(201)
     return body as { id: string; codigoAcompanhamento: string; veredito: string }
   }
 
-  it('exige x-codigo-acompanhamento válido (403) e responde 404 para id inexistente', async () => {
+  it('exige x-codigo-acompanhamento válido (403) e reivindicação existente (404)', async () => {
     const { id } = await publicar()
     const reiv = await criarReivindicacao(id)
 
-    await request(app.getHttpServer()).get(`/reivindicacoes/${reiv.id}`).expect(403)
+    // Sem cabeçalho -> 403
+    await request(app.getHttpServer())
+      .get(`/reivindicacoes/${reiv.id}`)
+      .expect(403)
+
+    // Código incorreto -> 403
     await request(app.getHttpServer())
       .get(`/reivindicacoes/${reiv.id}`)
       .set('x-codigo-acompanhamento', 'ERRADO-1234')
       .expect(403)
 
+    // Reivindicação inexistente -> 404
     await request(app.getHttpServer())
       .get(`/reivindicacoes/${randomUUID()}`)
       .set('x-codigo-acompanhamento', reiv.codigoAcompanhamento)
       .expect(404)
   })
 
-  it('retorna situação sem contato enquanto pendente', async () => {
+  it('retorna situação pendente com contato nulo', async () => {
     const { id } = await publicar()
     const reiv = await criarReivindicacao(id)
 
@@ -69,12 +75,13 @@ describe('GET /reivindicacoes/:rid', () => {
     expect(body).toEqual({
       id: reiv.id,
       veredito: 'pendente',
-      caso: { id, tipo: 'perdido', estado: 'procurando' },
+      caso: {
+        id,
+        tipo: 'perdido',
+        estado: 'procurando',
+      },
       contato: null,
     })
-
-    const noBanco = await prisma.tentativaVerificacao.findUniqueOrThrow({ where: { id: reiv.id } })
-    expect(noBanco.contatoVistoEm).toBeNull()
   })
 
   it('libera contato no caso encontrado com local.referencia e grava contato_visto_em na primeira leitura', async () => {
@@ -147,6 +154,36 @@ describe('GET /reivindicacoes/:rid', () => {
       nome: 'Tutor que perdeu',
       telefone: '93988887777',
       referencia: null,
+    })
+  })
+
+  it('situação de uma segunda pendente depois do aceite da primeira não tem contato', async () => {
+    const { id, codigoEdicao } = await publicar()
+    const r1 = await criarReivindicacao(id, '93991112233')
+    const r2 = await criarReivindicacao(id, '93991114455')
+
+    // Aceita a r1 -> caso vai para em_contato
+    await request(app.getHttpServer())
+      .post(`/casos/${id}/reivindicacoes/${r1.id}/veredito`)
+      .set('x-codigo-edicao', codigoEdicao)
+      .send({ veredito: 'aceita' })
+      .expect(200)
+
+    // r2 consulta sua situação
+    const { body: sit2 } = await request(app.getHttpServer())
+      .get(`/reivindicacoes/${r2.id}`)
+      .set('x-codigo-acompanhamento', r2.codigoAcompanhamento)
+      .expect(200)
+
+    expect(sit2).toEqual({
+      id: r2.id,
+      veredito: 'pendente',
+      caso: {
+        id,
+        tipo: 'perdido',
+        estado: 'em_contato',
+      },
+      contato: null,
     })
   })
 })

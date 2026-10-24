@@ -79,6 +79,34 @@ describe('POST /casos/:id/denuncias', () => {
     expect(salva.tentativaId).toBe(rid)
   })
 
+  it('uma denúncia por tentativaId e motivo: repetir devolve a existente sem criar outra linha', async () => {
+    const id = await publicar()
+    const rid = await criarReivindicacao(id)
+
+    const payload = {
+      motivo: 'pediu_dinheiro',
+      reivindicacaoId: rid,
+      texto: 'Primeiro relato',
+    }
+
+    const { body: res1 } = await request(app.getHttpServer())
+      .post(`/casos/${id}/denuncias`)
+      .send(payload)
+      .expect(201)
+
+    const { body: res2 } = await request(app.getHttpServer())
+      .post(`/casos/${id}/denuncias`)
+      .send({ ...payload, texto: 'Tentativa duplicada' })
+      .expect(201)
+
+    expect(res2.id).toBe(res1.id)
+
+    const total = await prisma.denuncia.count({
+      where: { tentativaId: rid, motivo: 'pediu_dinheiro' },
+    })
+    expect(total).toBe(1)
+  })
+
   it('recusa denúncia quando reivindicacaoId pertence a outro caso (400)', async () => {
     const caso1 = await publicar()
     const caso2 = await publicar()
