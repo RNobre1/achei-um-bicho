@@ -1,5 +1,11 @@
-import { Injectable } from '@nestjs/common'
-import type { PerguntaPublica, ReivindicacaoParaAutor, TipoCaso, VereditoVerificacao } from '@achei/contratos'
+import { ConflictException, Injectable } from '@nestjs/common'
+import {
+  ESTADOS_ABERTOS,
+  type PerguntaPublica,
+  type ReivindicacaoParaAutor,
+  type TipoCaso,
+  type VereditoVerificacao,
+} from '@achei/contratos'
 import { PrismaService } from '../prisma/prisma.service'
 import type { NovaDenunciaDto } from './dto/nova-denuncia.dto'
 import type { NovaReivindicacaoDto } from './dto/nova-reivindicacao.dto'
@@ -20,6 +26,7 @@ export interface GravarVereditoParams {
   casoId: string
   veredito: 'aceita' | 'recusada'
   novoTelefoneAutor?: string
+  autorJaTinhaTelefone?: boolean
   casoProprioId?: string | null
   autorId?: string
 }
@@ -228,6 +235,7 @@ export class ReivindicacoesRepositorio {
     casoId,
     veredito,
     novoTelefoneAutor,
+    autorJaTinhaTelefone,
     casoProprioId,
     autorId,
   }: GravarVereditoParams): Promise<void> {
@@ -235,25 +243,28 @@ export class ReivindicacoesRepositorio {
 
     await this.prisma.$transaction(async (tx) => {
       if (veredito === 'aceita') {
-        if (novoTelefoneAutor && autorId) {
-          await tx.pessoa.update({
-            where: { id: autorId },
-            data: { telefone: novoTelefoneAutor },
-          })
-        }
-
-        await tx.caso.update({
-          where: { id: casoId },
+        const resultadoCaso = await tx.caso.updateMany({
+          where: { id: casoId, estado: { in: [...ESTADOS_ABERTOS] } },
           data: {
             estado: 'em_contato',
             ultimaInteracaoEm: agora,
             cobradoEm: null,
           },
         })
+        if (resultadoCaso.count !== 1) {
+          throw new ConflictException('caso não está mais aberto para aceite')
+        }
+
+        if (novoTelefoneAutor && autorId && !autorJaTinhaTelefone) {
+          await tx.pessoa.update({
+            where: { id: autorId },
+            data: { telefone: novoTelefoneAutor },
+          })
+        }
 
         if (casoProprioId) {
-          await tx.caso.update({
-            where: { id: casoProprioId },
+          const resultadoProprio = await tx.caso.updateMany({
+            where: { id: casoProprioId, estado: { in: [...ESTADOS_ABERTOS] } },
             data: {
               estado: 'em_contato',
               ultimaInteracaoEm: agora,
@@ -261,36 +272,44 @@ export class ReivindicacoesRepositorio {
             },
           })
 
-          await tx.pareamento.updateMany({
-            where: {
-              OR: [
-                { casoPerdidoId: casoId, casoEncontradoId: casoProprioId },
-                { casoPerdidoId: casoProprioId, casoEncontradoId: casoId },
-              ],
-            },
-            data: {
-              veredito: 'confirmado',
-              decididoEm: agora,
-            },
-          })
+          if (resultadoProprio.count === 1) {
+            await tx.pareamento.updateMany({
+              where: {
+                OR: [
+                  { casoPerdidoId: casoId, casoEncontradoId: casoProprioId },
+                  { casoPerdidoId: casoProprioId, casoEncontradoId: casoId },
+                ],
+              },
+              data: {
+                veredito: 'confirmado',
+                decididoEm: agora,
+              },
+            })
+          }
         }
       } else {
-        await tx.caso.update({
-          where: { id: casoId },
+        const resultadoCaso = await tx.caso.updateMany({
+          where: { id: casoId, estado: { in: [...ESTADOS_ABERTOS] } },
           data: {
             ultimaInteracaoEm: agora,
             cobradoEm: null,
           },
         })
+        if (resultadoCaso.count !== 1) {
+          throw new ConflictException('caso fechado')
+        }
       }
 
-      await tx.tentativaVerificacao.update({
-        where: { id: tentativaId },
+      const resultadoTentativa = await tx.tentativaVerificacao.updateMany({
+        where: { id: tentativaId, veredito: 'pendente' },
         data: {
           veredito,
           decididoEm: agora,
         },
       })
+      if (resultadoTentativa.count !== 1) {
+        throw new ConflictException('reivindicação não está mais pendente')
+      }
     })
   }
 

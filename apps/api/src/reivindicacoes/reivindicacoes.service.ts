@@ -119,6 +119,14 @@ export class ReivindicacoesService {
       throw new NotFoundException('reivindicação não encontrada neste caso')
     }
 
+    if (tentativa.veredito !== 'pendente') {
+      throw new ConflictException('reivindicação já foi decidida')
+    }
+
+    if (!ESTADOS_ABERTOS.includes(tentativa.caso.estado as EstadoCaso)) {
+      throw new ConflictException('caso não está mais aberto')
+    }
+
     if (corpo.veredito === 'aceita') {
       const transicaoOk = transicaoPermitida(
         tentativa.caso.estado as EstadoCaso,
@@ -132,17 +140,6 @@ export class ReivindicacoesService {
       if (!tentativa.caso.autor.telefone && !corpo.telefone) {
         throw new UnprocessableEntityException('o autor precisa fornecer um telefone para contato ao aceitar')
       }
-
-      if (tentativa.casoProprio) {
-        const transicaoProprioOk = transicaoPermitida(
-          tentativa.casoProprio.estado as EstadoCaso,
-          'em_contato',
-          tentativa.casoProprio.tipo as TipoCaso,
-        )
-        if (!transicaoProprioOk) {
-          throw new ConflictException('o caso próprio não pode transicionar para em_contato')
-        }
-      }
     }
 
     await this.repositorio.gravarVeredito({
@@ -150,6 +147,7 @@ export class ReivindicacoesService {
       casoId,
       veredito: corpo.veredito,
       novoTelefoneAutor: corpo.telefone,
+      autorJaTinhaTelefone: Boolean(tentativa.caso.autor.telefone),
       casoProprioId: tentativa.casoProprioId,
       autorId: tentativa.caso.autor.id,
     })
