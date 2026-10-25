@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import {
   ESTADOS_ABERTOS,
+  ESTADOS_VIGIADOS,
   REIVINDICACAO,
   TELEFONE,
   type EstadoCaso,
@@ -289,6 +290,14 @@ export class ReivindicacoesRepositorio {
     const agora = new Date()
 
     await this.prisma.$transaction(async (tx) => {
+      // Trava em ordem crescente de id para evitar deadlock em aceites concorrentes
+      const idsParaTravar = [casoId, casoProprioId].filter((id): id is string => Boolean(id)).sort()
+      if (idsParaTravar.length === 1) {
+        await tx.$queryRaw`SELECT id FROM caso WHERE id = ${idsParaTravar[0]}::uuid FOR UPDATE`
+      } else if (idsParaTravar.length === 2) {
+        await tx.$queryRaw`SELECT id FROM caso WHERE id IN (${idsParaTravar[0]}::uuid, ${idsParaTravar[1]}::uuid) ORDER BY id FOR UPDATE`
+      }
+
       if (veredito === 'aceita') {
         const resultadoCaso = await tx.caso.updateMany({
           where: { id: casoId, estado: { in: [...ESTADOS_ABERTOS] } },
@@ -336,7 +345,7 @@ export class ReivindicacoesRepositorio {
         }
       } else {
         const resultadoCaso = await tx.caso.updateMany({
-          where: { id: casoId, estado: { in: [...ESTADOS_ABERTOS] } },
+          where: { id: casoId, estado: { in: [...ESTADOS_VIGIADOS] } },
           data: {
             ultimaInteracaoEm: agora,
             cobradoEm: null,

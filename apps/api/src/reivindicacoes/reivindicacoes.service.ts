@@ -1,5 +1,6 @@
 import {
   ESTADOS_ABERTOS,
+  ESTADOS_VIGIADOS,
   REIVINDICACAO,
   transicaoPermitida,
   type EstadoCaso,
@@ -122,11 +123,10 @@ export class ReivindicacoesService {
       throw new ConflictException('reivindicação já foi decidida')
     }
 
-    if (!ESTADOS_ABERTOS.includes(tentativa.caso.estado as EstadoCaso)) {
-      throw new ConflictException('caso não está mais aberto')
-    }
-
     if (corpo.veredito === 'aceita') {
+      if (!ESTADOS_ABERTOS.includes(tentativa.caso.estado as EstadoCaso)) {
+        throw new ConflictException('caso não está mais aberto')
+      }
       const transicaoOk = transicaoPermitida(
         tentativa.caso.estado as EstadoCaso,
         'em_contato',
@@ -138,6 +138,10 @@ export class ReivindicacoesService {
 
       if (!tentativa.caso.autor.telefone && !corpo.telefone) {
         throw new UnprocessableEntityException('o autor precisa fornecer um telefone para contato ao aceitar')
+      }
+    } else {
+      if (!ESTADOS_VIGIADOS.includes(tentativa.caso.estado as EstadoCaso)) {
+        throw new ConflictException('caso fechado')
       }
     }
 
