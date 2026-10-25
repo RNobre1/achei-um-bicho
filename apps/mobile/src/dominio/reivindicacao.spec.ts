@@ -1,9 +1,16 @@
+import { VEREDITO_VERIFICACAO } from '@achei/contratos'
 import { describe, expect, it } from 'vitest'
 import {
+  erroExigeTelefoneDoAutor,
   formularioReivindicacaoValido,
   limparTelefone,
+  montarPedidoReivindicacao,
   pedeReferencia,
+  podeDecidirReivindicacao,
+  ROTULOS_VEREDITO_LISTA,
+  ROTULOS_VEREDITO_SITUACAO,
   rotuloBotaoReivindicar,
+  rotuloCurtoReivindicacao,
   telefoneValido,
 } from './reivindicacao'
 
@@ -11,6 +18,11 @@ describe('regras de domínio da reivindicação', () => {
   it('define o rótulo do botão de reivindicação conforme o tipo de caso', () => {
     expect(rotuloBotaoReivindicar('perdido')).toBe('Acho que achei esse bicho')
     expect(rotuloBotaoReivindicar('encontrado')).toBe('Acho que esse bicho é meu')
+  })
+
+  it('define o rótulo curto de reivindicação para Meus casos conforme o tipo', () => {
+    expect(rotuloCurtoReivindicacao('perdido')).toBe('Acho que achei')
+    expect(rotuloCurtoReivindicacao('encontrado')).toBe('Acho que é meu')
   })
 
   it('só pede referência para quem está com o animal (caso perdido)', () => {
@@ -93,5 +105,60 @@ describe('regras de domínio da reivindicação', () => {
         pessoa: { nome: 'Maria', telefone: '93991112233' },
       }),
     ).toBe(true)
+  })
+
+  it('monta o pedido de reivindicação com e sem caso próprio', () => {
+    const respostas = [{ perguntaId: 'p1', texto: '  orelha cortada  ' }]
+
+    // Sem caso próprio
+    const pedidoSimples = montarPedidoReivindicacao({
+      respostas,
+      nome: '  Carlos  ',
+      telefone: '(93) 99123-4567',
+      tipoCaso: 'perdido',
+      referencia: '  Rua 1  ',
+    })
+    expect(pedidoSimples).toEqual({
+      respostas: [{ perguntaId: 'p1', texto: 'orelha cortada' }],
+      pessoa: { nome: 'Carlos', telefone: '93991234567', referencia: 'Rua 1' },
+    })
+
+    // Com caso próprio
+    const pedidoComProprio = montarPedidoReivindicacao({
+      respostas,
+      nome: 'Carlos',
+      telefone: '93991234567',
+      tipoCaso: 'encontrado',
+      casoProprio: { id: 'c1', codigoEdicao: 'ABCD-1234' },
+    })
+    expect(pedidoComProprio).toEqual({
+      respostas: [{ perguntaId: 'p1', texto: 'orelha cortada' }],
+      pessoa: { nome: 'Carlos', telefone: '93991234567' },
+      casoProprio: { id: 'c1', codigoEdicao: 'ABCD-1234' },
+    })
+  })
+
+  it('permite decidir apenas reivindicação pendente em caso aberto', () => {
+    expect(podeDecidirReivindicacao('pendente', 'procurando')).toBe(true)
+    expect(podeDecidirReivindicacao('pendente', 'em_contato')).toBe(true)
+    expect(podeDecidirReivindicacao('pendente', 'resolvido')).toBe(false)
+    expect(podeDecidirReivindicacao('pendente', 'expirado')).toBe(false)
+    expect(podeDecidirReivindicacao('aceita', 'procurando')).toBe(false)
+    expect(podeDecidirReivindicacao('recusada', 'procurando')).toBe(false)
+  })
+
+  it('identifica que erro 422 exige telefone do autor para contato', () => {
+    expect(erroExigeTelefoneDoAutor(422)).toBe(true)
+    expect(erroExigeTelefoneDoAutor(400)).toBe(false)
+    expect(erroExigeTelefoneDoAutor(409)).toBe(false)
+  })
+
+  it('possui rótulos de veredito para cada canal percorrendo todos os vereditos de verificação', () => {
+    for (const v of VEREDITO_VERIFICACAO.valores) {
+      expect(ROTULOS_VEREDITO_SITUACAO[v]).toBeDefined()
+      expect(typeof ROTULOS_VEREDITO_SITUACAO[v]).toBe('string')
+      expect(ROTULOS_VEREDITO_LISTA[v]).toBeDefined()
+      expect(typeof ROTULOS_VEREDITO_LISTA[v]).toBe('string')
+    }
   })
 })
