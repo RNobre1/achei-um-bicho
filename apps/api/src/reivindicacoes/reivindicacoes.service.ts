@@ -62,16 +62,6 @@ export class ReivindicacoesService {
       throw new BadRequestException('é necessária exatamente uma resposta para cada pergunta do caso')
     }
 
-    const totalPendentes = await this.repositorio.contarPendentesDoCaso(casoId)
-    if (totalPendentes >= REIVINDICACAO.maximoPendentesPorCaso) {
-      throw new ConflictException('o caso atingiu o limite de reivindicações pendentes')
-    }
-
-    const jaRecusado = await this.repositorio.telefoneFoiRecusadoNoCaso(casoId, dados.pessoa.telefone)
-    if (jaRecusado) {
-      throw new ConflictException('este telefone já teve uma reivindicação recusada neste caso')
-    }
-
     if (dados.casoProprio) {
       const proprio = await this.repositorio.buscarCasoProprio(dados.casoProprio.id)
       if (!proprio) throw new NotFoundException('caso próprio não encontrado')
@@ -82,6 +72,15 @@ export class ReivindicacoesService {
 
       if (proprio.tipo === caso.tipo) {
         throw new BadRequestException('o caso próprio precisa ser do tipo oposto (perdido versus encontrado)')
+      }
+
+      if (!ESTADOS_ABERTOS.includes(proprio.estado as EstadoCaso)) {
+        throw new BadRequestException('não foi possível vincular o caso próprio')
+      }
+
+      const pareamento = await this.repositorio.buscarPareamentoEntreCasos(casoId, dados.casoProprio.id)
+      if (!pareamento || pareamento.veredito === 'descartado') {
+        throw new BadRequestException('não foi possível vincular o caso próprio')
       }
     }
 

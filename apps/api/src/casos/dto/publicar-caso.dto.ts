@@ -3,6 +3,7 @@ import {
   COR,
   ESPECIE,
   PORTE,
+  TELEFONE,
   TIPO_CASO,
   type Coleira,
   type Cor,
@@ -28,6 +29,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   ValidateNested,
 } from 'class-validator'
@@ -53,7 +55,7 @@ export class LocalDto implements LocalNaPublicacao {
 
 export class AutorDto implements AutorNaPublicacao {
   @IsString() @IsNotEmpty() @MaxLength(80) nome!: string
-  @IsOptional() @IsString() @MaxLength(20) telefone?: string
+  @IsOptional() @IsString() @Matches(TELEFONE.expressao, { message: 'telefone deve ter 10 ou 11 dígitos' }) telefone?: string
 }
 
 export class PerguntaDto implements PerguntaNaPublicacao {

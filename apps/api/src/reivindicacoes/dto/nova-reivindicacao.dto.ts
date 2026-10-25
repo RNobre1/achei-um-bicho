@@ -1,4 +1,4 @@
-import type { NovaReivindicacao } from '@achei/contratos'
+import { TELEFONE, type NovaReivindicacao } from '@achei/contratos'
 import { Type } from 'class-transformer'
 import {
   ArrayMinSize,
@@ -29,7 +29,7 @@ export class PessoaReivindicacaoDto {
   nome!: string
 
   @IsString()
-  @Matches(/^\d{10,11}$/, { message: 'telefone deve ter 10 ou 11 dígitos' })
+  @Matches(TELEFONE.expressao, { message: 'telefone deve ter 10 ou 11 dígitos' })
   telefone!: string
 
   @IsOptional()
