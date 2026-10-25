@@ -8,7 +8,7 @@ import { Botao } from '../../componentes/Botao'
 import { Campo } from '../../componentes/Campo'
 import { GrupoDeChips } from '../../componentes/GrupoDeChips'
 import { Voltar } from '../../componentes/Voltar'
-import { AVISO_SEGURANCA_CONTATO } from '../../dominio/reivindicacao'
+import { AVISO_SEGURANCA_CONTATO, ROTULOS_VEREDITO_SITUACAO } from '../../dominio/reivindicacao'
 import { api, ErroApi } from '../../servicos/api'
 import { minhaReivindicacao } from '../../servicos/minhas-reivindicacoes'
 import { cores, fontes } from '../../tema'
@@ -87,11 +87,7 @@ export function SituacaoReivindicacao() {
         <ScrollView contentContainerStyle={[estilos.conteudo, { paddingBottom: margens.bottom + 24 }]}>
           <Text style={estilos.selo}>SITUAÇÃO DA REIVINDICAÇÃO</Text>
           <Text style={estilos.titulo}>
-            {situacao.veredito === 'aceita'
-              ? 'Reivindicação aceita!'
-              : situacao.veredito === 'recusada'
-                ? 'Reivindicação recusada'
-                : 'Aguardando verificação'}
+            {ROTULOS_VEREDITO_SITUACAO[situacao.veredito]}
           </Text>
 
           {avisoSucesso ? <Aviso titulo="Obrigado" texto={avisoSucesso} /> : null}

@@ -140,7 +140,7 @@ describe('regras de domínio da reivindicação', () => {
 
   it('permite decidir apenas reivindicação pendente em caso aberto', () => {
     expect(podeDecidirReivindicacao('pendente', 'procurando')).toBe(true)
-    expect(podeDecidirReivindicacao('pendente', 'em_contato')).toBe(true)
+    expect(podeDecidirReivindicacao('pendente', 'em_contato')).toBe(false)
     expect(podeDecidirReivindicacao('pendente', 'resolvido')).toBe(false)
     expect(podeDecidirReivindicacao('pendente', 'expirado')).toBe(false)
     expect(podeDecidirReivindicacao('aceita', 'procurando')).toBe(false)

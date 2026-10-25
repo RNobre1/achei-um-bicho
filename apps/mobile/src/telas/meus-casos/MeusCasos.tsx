@@ -8,6 +8,7 @@ import { Etiqueta } from '../../componentes/Etiqueta'
 import { LinhaMarcada } from '../../componentes/LinhaMarcada'
 import { Placa } from '../../componentes/Placa'
 import { formatarTempoDesde } from '../../dominio/formatar'
+import { rotuloCurtoReivindicacao } from '../../dominio/reivindicacao'
 import type { MeuCaso } from '../../dominio/meus-casos'
 import type { MinhaReivindicacao } from '../../dominio/minhas-reivindicacoes'
 import { resumoDoMeuCaso } from '../../dominio/pistas'
@@ -69,7 +70,7 @@ export function MeusCasos() {
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={estilos.nomeReivindicacao}>
                   {r.nomeAnimal ? `${r.nomeAnimal} · ` : ''}
-                  {r.tipoCaso === 'perdido' ? 'Acho que achei' : 'Acho que é meu'}
+                  {rotuloCurtoReivindicacao(r.tipoCaso)}
                 </Text>
                 <Text style={estilos.dataReivindicacao}>Enviada {formatarTempoDesde(r.criadoEm)}</Text>
               </View>

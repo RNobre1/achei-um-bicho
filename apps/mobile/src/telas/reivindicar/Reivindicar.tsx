@@ -11,8 +11,9 @@ import { nomeDoAnimal } from '../../dominio/mural'
 import {
   AVISO_APP_NAO_DECIDE,
   formularioReivindicacaoValido,
-  limparTelefone,
+  montarPedidoReivindicacao,
   pedeReferencia,
+  rotuloBotaoReivindicar,
 } from '../../dominio/reivindicacao'
 import { api, ErroApi } from '../../servicos/api'
 import { meuCaso } from '../../servicos/meus-casos'
@@ -33,6 +34,8 @@ export function Reivindicar() {
   const [carregando, setCarregando] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string>()
+  const [avisoPista, setAvisoPista] = useState<string>()
+  const [avisoNaoSalvo, setAvisoNaoSalvo] = useState<string>()
   const [codigoGerado, setCodigoGerado] = useState<string>()
   const [reivindicacaoId, setReivindicacaoId] = useState<string>()
 
@@ -54,6 +57,20 @@ export function Reivindicar() {
     void carregar()
   }, [carregar])
 
+  useEffect(() => {
+    async function checarCasoProprio() {
+      if (casoProprio) {
+        const meu = await meuCaso(casoProprio)
+        if (!meu) {
+          setAvisoPista(
+            'Seu caso próprio não foi encontrado neste celular. A reivindicação será enviada sem o vínculo com a pista.',
+          )
+        }
+      }
+    }
+    void checarCasoProprio()
+  }, [casoProprio])
+
   async function enviar() {
     if (!caso || !perguntas) return
     setEnviando(true)
@@ -68,32 +85,37 @@ export function Reivindicar() {
         }
       }
 
-      const payload = {
+      const payload = montarPedidoReivindicacao({
         respostas: perguntas.map((p) => ({
           perguntaId: p.id,
-          texto: respostas[p.id]?.trim() ?? '',
+          texto: respostas[p.id] ?? '',
         })),
-        pessoa: {
-          nome: nome.trim(),
-          telefone: limparTelefone(telefone),
-          ...(pedeReferencia(caso.tipo) && { referencia: referencia.trim() }),
-        },
-        ...(dadosCasoProprio && { casoProprio: dadosCasoProprio }),
-      }
+        nome,
+        telefone,
+        tipoCaso: caso.tipo,
+        referencia,
+        casoProprio: dadosCasoProprio,
+      })
 
       const resultado = await api.reivindicar(id, payload)
 
-      await guardarMinhaReivindicacao({
-        id: resultado.id,
-        casoId: id,
-        tipoCaso: caso.tipo,
-        codigoAcompanhamento: resultado.codigoAcompanhamento,
-        criadoEm: new Date().toISOString(),
-        nomeAnimal: nomeDoAnimal(caso.animal),
-      })
-
+      // Mostra o código de acompanhamento primeiro
       setCodigoGerado(resultado.codigoAcompanhamento)
       setReivindicacaoId(resultado.id)
+
+      // Salva no aparelho num try/catch separado
+      try {
+        await guardarMinhaReivindicacao({
+          id: resultado.id,
+          casoId: id,
+          tipoCaso: caso.tipo,
+          codigoAcompanhamento: resultado.codigoAcompanhamento,
+          criadoEm: new Date().toISOString(),
+          nomeAnimal: nomeDoAnimal(caso.animal),
+        })
+      } catch {
+        setAvisoNaoSalvo('Anote este código: ele não ficou guardado no celular')
+      }
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Não deu para enviar a reivindicação.')
     } finally {
@@ -123,8 +145,8 @@ export function Reivindicar() {
           <View style={estilos.caixaCodigo}>
             <Text style={estilos.rotuloCodigo}>SEU CÓDIGO DE ACOMPANHAMENTO</Text>
             <Text style={estilos.codigo}>{codigoGerado}</Text>
-            <Text style={estilos.dicaCodigo}>
-              Ele já foi salvo neste aparelho e você pode acompanhar a resposta na aba Meus casos.
+            <Text style={[estilos.dicaCodigo, avisoNaoSalvo ? estilos.dicaAlerta : null]}>
+              {avisoNaoSalvo ?? 'Ele já foi salvo neste aparelho e você pode acompanhar a resposta na aba Meus casos.'}
             </Text>
           </View>
 
@@ -154,9 +176,9 @@ export function Reivindicar() {
         </View>
       ) : caso && perguntas ? (
         <ScrollView contentContainerStyle={[estilos.conteudo, { paddingBottom: margens.bottom + 24 }]}>
-          <Text style={estilos.titulo}>
-            {caso.tipo === 'perdido' ? 'Acho que achei esse bicho' : 'Acho que esse bicho é meu'}
-          </Text>
+          <Text style={estilos.titulo}>{rotuloBotaoReivindicar(caso.tipo)}</Text>
+
+          {avisoPista ? <Aviso titulo="Atenção ao vínculo" texto={avisoPista} /> : null}
 
           <Aviso titulo="Como funciona a verificação" texto={AVISO_APP_NAO_DECIDE} />
 
@@ -239,4 +261,5 @@ const estilos = StyleSheet.create({
   rotuloCodigo: { fontFamily: fontes.dado, fontSize: 10.5, letterSpacing: 1.1, color: cores.apagado },
   codigo: { fontFamily: fontes.dadoMedio, fontSize: 24, letterSpacing: 2, color: cores.tapajos },
   dicaCodigo: { fontFamily: fontes.texto, fontSize: 12.5, textAlign: 'center', color: cores.apagado },
+  dicaAlerta: { color: '#B02020', fontFamily: fontes.textoForte },
 })

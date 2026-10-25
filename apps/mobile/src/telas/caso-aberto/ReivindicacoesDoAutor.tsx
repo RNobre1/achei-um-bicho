@@ -1,12 +1,27 @@
-import { MOTIVO_DENUNCIA, opcoes, type MotivoDenuncia, type ReivindicacaoParaAutor, type TipoCaso } from '@achei/contratos'
+import {
+  MOTIVO_DENUNCIA,
+  opcoes,
+  type EstadoCaso,
+  type MotivoDenuncia,
+  type ReivindicacaoParaAutor,
+  type TipoCaso,
+} from '@achei/contratos'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Platform, StyleSheet, Text, View } from 'react-native'
 import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
 import { Campo } from '../../componentes/Campo'
 import { GrupoDeChips } from '../../componentes/GrupoDeChips'
 import { formatarTempoDesde } from '../../dominio/formatar'
-import { AVISO_SEGURANCA_CONTATO, limparTelefone, telefoneValido } from '../../dominio/reivindicacao'
+import {
+  AVISO_SEGURANCA_CONTATO,
+  MENSAGEM_CONFIRMACAO_RECUSA,
+  ROTULOS_VEREDITO_LISTA,
+  erroExigeTelefoneDoAutor,
+  limparTelefone,
+  podeDecidirReivindicacao,
+  telefoneValido,
+} from '../../dominio/reivindicacao'
 import { api, ErroApi } from '../../servicos/api'
 import { cores, fontes } from '../../tema'
 
@@ -14,9 +29,10 @@ interface Props {
   casoId: string
   codigoEdicao: string
   tipo: TipoCaso
+  estadoCaso: EstadoCaso
 }
 
-export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo }: Props) {
+export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo, estadoCaso }: Props) {
   const [reivindicacoes, setReivindicacoes] = useState<ReivindicacaoParaAutor[]>()
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string>()
@@ -53,13 +69,25 @@ export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo }: Props) {
       setReivIdParaTelefone(undefined)
       await carregar()
     } catch (e) {
-      if (e instanceof ErroApi && e.status === 422) {
+      if (e instanceof ErroApi && erroExigeTelefoneDoAutor(e.status)) {
         setReivIdParaTelefone(rid)
       } else {
         setErro(e instanceof ErroApi ? e.message : 'Não deu para registrar o veredito.')
       }
     } finally {
       setDecidindo(undefined)
+    }
+  }
+
+  function confirmarRecusa(rid: string) {
+    if (Platform.OS === 'web') {
+      const ok = typeof window !== 'undefined' ? window.confirm(MENSAGEM_CONFIRMACAO_RECUSA) : true
+      if (ok) void decidir(rid, 'recusada')
+    } else {
+      Alert.alert('Recusar reivindicação', MENSAGEM_CONFIRMACAO_RECUSA, [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Recusar', style: 'destructive', onPress: () => void decidir(rid, 'recusada') },
+      ])
     }
   }
 
@@ -111,11 +139,7 @@ export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo }: Props) {
             <View style={estilos.itemTopo}>
               <Text style={estilos.quando}>Recebida {formatarTempoDesde(reiv.criadoEm)}</Text>
               <Text style={[estilos.status, estilos[`status_${reiv.veredito}`]]}>
-                {reiv.veredito === 'aceita'
-                  ? 'ACEITA'
-                  : reiv.veredito === 'recusada'
-                    ? 'RECUSADA'
-                    : 'AGUARDANDO DECISÃO'}
+                {ROTULOS_VEREDITO_LISTA[reiv.veredito]}
               </Text>
             </View>
 
@@ -147,7 +171,7 @@ export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo }: Props) {
               ))}
             </View>
 
-            {reiv.veredito === 'pendente' ? (
+            {podeDecidirReivindicacao(reiv.veredito, estadoCaso) ? (
               <View style={estilos.acoesPendente}>
                 {reivIdParaTelefone === reiv.id ? (
                   <View style={estilos.caixaTelefone}>
@@ -196,7 +220,7 @@ export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo }: Props) {
                         rotulo="Recusar"
                         variante="fraco"
                         carregando={decidindo === reiv.id}
-                        aoTocar={() => void decidir(reiv.id, 'recusada')}
+                        aoTocar={() => confirmarRecusa(reiv.id)}
                       />
                     </View>
                   </View>

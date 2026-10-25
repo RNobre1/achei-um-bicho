@@ -132,7 +132,7 @@ export function CasoAberto() {
           {meu ? (
             <View style={[estilos.bloco, estilos.divisa, estilos.acoes]}>
               <AvisosDoAutor tipo={caso.tipo} avisos={avisos} erro={erroAvisos} />
-              <ReivindicacoesDoAutor casoId={caso.id} codigoEdicao={meu.codigoEdicao} tipo={caso.tipo} />
+              <ReivindicacoesDoAutor casoId={caso.id} codigoEdicao={meu.codigoEdicao} tipo={caso.tipo} estadoCaso={caso.estado} />
             </View>
           ) : (
             <View style={[estilos.bloco, estilos.divisa, estilos.acoes]}>
