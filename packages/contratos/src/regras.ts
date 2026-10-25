@@ -48,14 +48,11 @@ export const REIVINDICACAO = {
   maximoPendentesPorCaso: 5,
 } as const
 
-/**
- * Normalização e conferência de telefone brasileiro (DDD com 2 dígitos + 8 ou 9 dígitos).
- */
-export function normalizarTelefone(telefone: string): string {
+function normalizarTelefone(telefone: string): string {
   return telefone.replace(/\D/g, '')
 }
 
-export function chaveDoTelefone(telefone: string): string {
+function chaveDoTelefone(telefone: string): string {
   const digitos = normalizarTelefone(telefone)
   if (digitos.length < 10) return digitos
   const ddd = digitos.slice(0, 2)
@@ -63,8 +60,12 @@ export function chaveDoTelefone(telefone: string): string {
   return `${ddd}${ultimos8}`
 }
 
+/**
+ * Validação, mensagem de erro, normalização e chave de telefone brasileiro.
+ */
 export const TELEFONE = {
   expressao: /^\d{10,11}$/,
+  mensagem: 'Telefone com DDD: 10 ou 11 dígitos',
   normalizar: normalizarTelefone,
   chave: chaveDoTelefone,
 } as const
