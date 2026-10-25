@@ -58,6 +58,21 @@ describe('publicação em quatro passos', () => {
     ])
   })
 
+  it('acusa telefone preenchido que não passa em TELEFONE no passo de verificação', () => {
+    const r = rascunhoCompleto()
+    r.autor.telefone = '123'
+    expect(pendenciasDoPasso(r, 'verificacao')).toContain('Telefone com DDD: 10 ou 11 dígitos')
+
+    r.autor.telefone = '93991234567'
+    expect(pendenciasDoPasso(r, 'verificacao')).not.toContain('Telefone com DDD: 10 ou 11 dígitos')
+
+    r.autor.telefone = '(93) 99123-4567'
+    expect(pendenciasDoPasso(r, 'verificacao')).not.toContain('Telefone com DDD: 10 ou 11 dígitos')
+
+    r.autor.telefone = ''
+    expect(pendenciasDoPasso(r, 'verificacao')).not.toContain('Telefone com DDD: 10 ou 11 dígitos')
+  })
+
   it('não tem pendência nenhuma com o rascunho completo', () => {
     const r = rascunhoCompleto()
     for (const passo of PASSOS) expect(pendenciasDoPasso(r, passo.id)).toEqual([])
