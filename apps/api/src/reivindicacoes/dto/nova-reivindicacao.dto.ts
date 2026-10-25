@@ -29,7 +29,7 @@ export class PessoaReivindicacaoDto {
   nome!: string
 
   @IsString()
-  @Matches(TELEFONE.expressao, { message: 'telefone deve ter 10 ou 11 dígitos' })
+  @Matches(TELEFONE.expressao, { message: TELEFONE.mensagem })
   telefone!: string
 
   @IsOptional()

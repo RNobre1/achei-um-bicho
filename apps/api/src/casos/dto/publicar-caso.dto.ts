@@ -55,7 +55,7 @@ export class LocalDto implements LocalNaPublicacao {
 
 export class AutorDto implements AutorNaPublicacao {
   @IsString() @IsNotEmpty() @MaxLength(80) nome!: string
-  @IsOptional() @IsString() @Matches(TELEFONE.expressao, { message: 'telefone deve ter 10 ou 11 dígitos' }) telefone?: string
+  @IsOptional() @IsString() @Matches(TELEFONE.expressao, { message: TELEFONE.mensagem }) telefone?: string
 }
 
 export class PerguntaDto implements PerguntaNaPublicacao {

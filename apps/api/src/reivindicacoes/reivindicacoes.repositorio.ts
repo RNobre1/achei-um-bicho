@@ -2,14 +2,14 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import {
   ESTADOS_ABERTOS,
   REIVINDICACAO,
-  chaveDoTelefone,
-  normalizarTelefone,
+  TELEFONE,
   type EstadoCaso,
   type PerguntaPublica,
   type ReivindicacaoParaAutor,
   type TipoCaso,
   type VereditoVerificacao,
 } from '@achei/contratos'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import type { NovaDenunciaDto } from './dto/nova-denuncia.dto'
 import type { NovaReivindicacaoDto } from './dto/nova-reivindicacao.dto'
@@ -100,31 +100,6 @@ export class ReivindicacoesRepositorio {
     })
   }
 
-  async contarPendentesDoCaso(casoId: string): Promise<number> {
-    return this.prisma.tentativaVerificacao.count({
-      where: {
-        casoId,
-        veredito: 'pendente',
-      },
-    })
-  }
-
-  async telefoneFoiRecusadoNoCaso(casoId: string, telefone: string): Promise<boolean> {
-    const chave = chaveDoTelefone(telefone)
-    const recusadas = await this.prisma.tentativaVerificacao.findMany({
-      where: {
-        casoId,
-        veredito: 'recusada',
-      },
-      select: {
-        pessoa: {
-          select: { telefone: true },
-        },
-      },
-    })
-    return recusadas.some((r) => r.pessoa.telefone && chaveDoTelefone(r.pessoa.telefone) === chave)
-  }
-
   async perguntasDoCaso(casoId: string): Promise<PerguntaPublica[] | null> {
     const caso = await this.prisma.caso.findUnique({
       where: { id: casoId },
@@ -162,15 +137,15 @@ export class ReivindicacoesRepositorio {
         throw new ConflictException('o caso atingiu o limite de reivindicações pendentes')
       }
 
-      const telefoneNormalizado = normalizarTelefone(dados.pessoa.telefone)
-      const chaveTelefone = chaveDoTelefone(telefoneNormalizado)
+      const telefoneNormalizado = TELEFONE.normalizar(dados.pessoa.telefone)
+      const chaveTelefone = TELEFONE.chave(telefoneNormalizado)
 
       const recusadas = await tx.tentativaVerificacao.findMany({
         where: { casoId, veredito: 'recusada' },
         select: { pessoa: { select: { telefone: true } } },
       })
       const vetado = recusadas.some(
-        (r) => r.pessoa.telefone && chaveDoTelefone(r.pessoa.telefone) === chaveTelefone,
+        (r) => r.pessoa.telefone && TELEFONE.chave(r.pessoa.telefone) === chaveTelefone,
       )
       if (vetado) {
         throw new ConflictException('Não foi possível registrar a reivindicação neste caso.')
@@ -224,39 +199,37 @@ export class ReivindicacoesRepositorio {
       },
     })
 
-    const denunciasComTentativa = await this.prisma.denuncia.findMany({
-      where: {
-        tentativaId: { not: null },
-      },
-      select: {
-        tentativaId: true,
-        tentativa: {
-          select: {
-            pessoa: {
-              select: { telefone: true },
-            },
-          },
-        },
-      },
-    })
+    const chaves = Array.from(
+      new Set(
+        tentativas
+          .map((t) => (t.pessoa.telefone ? TELEFONE.chave(t.pessoa.telefone) : ''))
+          .filter((k): k is string => Boolean(k)),
+      ),
+    )
 
-    const tentativasDenunciadasPorChave = new Map<string, Set<string>>()
-    for (const d of denunciasComTentativa) {
-      if (!d.tentativa?.pessoa?.telefone || !d.tentativaId) continue
-      const chave = chaveDoTelefone(d.tentativa.pessoa.telefone)
-      let set = tentativasDenunciadasPorChave.get(chave)
-      if (!set) {
-        set = new Set()
-        tentativasDenunciadasPorChave.set(chave, set)
+    const mapaDenuncias = new Map<string, number>()
+    if (chaves.length > 0) {
+      const resultados = await this.prisma.$queryRaw<{ chave: string; total: number }[]>`
+        SELECT
+          CONCAT(SUBSTRING(p.telefone, 1, 2), RIGHT(p.telefone, 8)) AS chave,
+          COUNT(DISTINCT d.tentativa_id)::int AS total
+        FROM denuncia d
+        JOIN tentativa_verificacao tv ON tv.id = d.tentativa_id
+        JOIN pessoa p ON p.id = tv.pessoa_id
+        WHERE p.telefone IS NOT NULL
+          AND CONCAT(SUBSTRING(p.telefone, 1, 2), RIGHT(p.telefone, 8)) IN (${Prisma.join(chaves)})
+        GROUP BY 1
+      `
+      for (const r of resultados) {
+        mapaDenuncias.set(r.chave, Number(r.total))
       }
-      set.add(d.tentativaId)
     }
 
     const itens: ReivindicacaoParaAutor[] = []
 
     for (const t of tentativas) {
-      const chave = t.pessoa.telefone ? chaveDoTelefone(t.pessoa.telefone) : ''
-      const denunciasDoTelefone = chave ? (tentativasDenunciadasPorChave.get(chave)?.size ?? 0) : 0
+      const chave = t.pessoa.telefone ? TELEFONE.chave(t.pessoa.telefone) : ''
+      const denunciasDoTelefone = chave ? (mapaDenuncias.get(chave) ?? 0) : 0
 
       const contato =
         t.veredito === 'aceita'
