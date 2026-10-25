@@ -138,13 +138,23 @@ describe('regras de domínio da reivindicação', () => {
     })
   })
 
-  it('permite decidir apenas reivindicação pendente em caso aberto', () => {
-    expect(podeDecidirReivindicacao('pendente', 'procurando')).toBe(true)
-    expect(podeDecidirReivindicacao('pendente', 'em_contato')).toBe(false)
-    expect(podeDecidirReivindicacao('pendente', 'resolvido')).toBe(false)
-    expect(podeDecidirReivindicacao('pendente', 'expirado')).toBe(false)
-    expect(podeDecidirReivindicacao('aceita', 'procurando')).toBe(false)
-    expect(podeDecidirReivindicacao('recusada', 'procurando')).toBe(false)
+  it('separa regras de podeAceitar e podeRecusar conforme o estado do caso', () => {
+    expect(podeAceitar('pendente', 'procurando')).toBe(true)
+    expect(podeAceitar('pendente', 'em_contato')).toBe(false)
+    expect(podeAceitar('pendente', 'resolvido')).toBe(false)
+    expect(podeAceitar('aceita', 'procurando')).toBe(false)
+
+    expect(podeRecusar('pendente', 'procurando')).toBe(true)
+    expect(podeRecusar('pendente', 'em_contato')).toBe(true)
+    expect(podeRecusar('pendente', 'resolvido')).toBe(false)
+    expect(podeRecusar('pendente', 'expirado')).toBe(false)
+    expect(podeRecusar('recusada', 'procurando')).toBe(false)
+  })
+
+  it('formata texto de aviso de denúncias do telefone dizendo o que foi contado', () => {
+    expect(textoAvisoDenunciasDoTelefone(0)).toBe('')
+    expect(textoAvisoDenunciasDoTelefone(1)).toBe('Este telefone tem 1 reivindicação denunciada')
+    expect(textoAvisoDenunciasDoTelefone(3)).toBe('Este telefone tem 3 reivindicações denunciadas')
   })
 
   it('identifica que erro 422 exige telefone do autor para contato', () => {
