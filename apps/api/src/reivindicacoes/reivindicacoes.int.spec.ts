@@ -123,13 +123,14 @@ describe('POST /casos/:id/reivindicacoes', () => {
     const { id } = await publicar()
     const perguntas = await obterPerguntas(id)
 
-    await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .post(`/casos/${id}/reivindicacoes`)
       .send({
         respostas: perguntas.map((p) => ({ perguntaId: p.id, texto: 'resp' })),
         pessoa: { nome: 'Maria', telefone: '123' },
       })
       .expect(400)
+    expect(res.body.message).toEqual(expect.arrayContaining(['Telefone com DDD: 10 ou 11 dígitos']))
   })
 
   it('bloqueia reivindicação quando atinge o limite de 5 pendentes por caso (409)', async () => {

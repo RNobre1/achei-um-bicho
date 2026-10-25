@@ -46,4 +46,12 @@ describe('POST /casos recusa publicação inválida', () => {
     const adiantado = new Date(Date.now() + 2 * 60 * 1000).toISOString()
     await request(app.getHttpServer()).post('/casos').send(casoValido({ ocorridoEm: adiantado })).expect(201)
   })
+
+  it('recusa telefone do autor fora do padrão com a mensagem padronizada', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/casos')
+      .send(casoValido({ autor: { nome: 'Autor', telefone: '123' } }))
+      .expect(400)
+    expect(res.body.message).toEqual(expect.arrayContaining(['Telefone com DDD: 10 ou 11 dígitos']))
+  })
 })
