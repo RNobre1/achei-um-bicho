@@ -1,4 +1,4 @@
-import type { Coleira, Cor, Especie, NovaPublicacao, Porte, TipoCaso } from '@achei/contratos'
+import { TELEFONE, type Coleira, type Cor, type Especie, type NovaPublicacao, type Porte, type TipoCaso } from '@achei/contratos'
 
 export type IdPasso = 'tipo' | 'animal' | 'ondeQuando' | 'verificacao'
 
@@ -102,6 +102,12 @@ export function pendenciasDoPasso(r: RascunhoPublicacao, passo: IdPasso): string
         else if (!p.resposta.trim()) falta.push(`Responda a pergunta ${i + 1}`)
       })
       if (!r.autor.nome.trim()) falta.push('Diga seu nome')
+      if (r.autor.telefone.trim()) {
+        const digitos = TELEFONE.normalizar(r.autor.telefone)
+        if (!TELEFONE.expressao.test(digitos)) {
+          falta.push(TELEFONE.mensagem)
+        }
+      }
       break
   }
   return falta
