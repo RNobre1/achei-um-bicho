@@ -82,6 +82,9 @@ describe('GET /reivindicacoes/:id', () => {
       },
       contato: null,
     })
+
+    const noBanco = await prisma.tentativaVerificacao.findUniqueOrThrow({ where: { id: reiv.id } })
+    expect(noBanco.contatoVistoEm).toBeNull()
   })
 
   it('libera contato no caso encontrado com local.referencia e grava contato_visto_em na primeira leitura', async () => {

@@ -365,4 +365,79 @@ describe('POST /casos/:id/reivindicacoes/:rid/veredito', () => {
     expect(casoAposAceite.ultimaInteracaoEm.getTime()).toBeGreaterThan(dataAntiga.getTime())
     expect(casoAposAceite.cobradoEm).toBeNull()
   })
+
+  it('com caso em_contato, recusar uma pendente retorna 200, mas aceitar retorna 409', async () => {
+    const { id, codigoEdicao } = await publicar()
+    const r1 = await criarReivindicacao(id, '93991112233')
+    const r2 = await criarReivindicacao(id, '93991114455')
+    const r3 = await criarReivindicacao(id, '93991116677')
+
+    // Aceita r1 -> caso transiciona para em_contato
+    await request(app.getHttpServer())
+      .post(`/casos/${id}/reivindicacoes/${r1.id}/veredito`)
+      .set('x-codigo-edicao', codigoEdicao)
+      .send({ veredito: 'aceita' })
+      .expect(200)
+
+    const casoEmContato = await prisma.caso.findUniqueOrThrow({ where: { id } })
+    expect(casoEmContato.estado).toBe('em_contato')
+
+    // Aceitar r2 com caso em_contato dá 409
+    await request(app.getHttpServer())
+      .post(`/casos/${id}/reivindicacoes/${r2.id}/veredito`)
+      .set('x-codigo-edicao', codigoEdicao)
+      .send({ veredito: 'aceita' })
+      .expect(409)
+
+    // Recusar r3 com caso em_contato dá 200
+    await request(app.getHttpServer())
+      .post(`/casos/${id}/reivindicacoes/${r3.id}/veredito`)
+      .set('x-codigo-edicao', codigoEdicao)
+      .send({ veredito: 'recusada' })
+      .expect(200)
+
+    const r3Banco = await prisma.tentativaVerificacao.findUniqueOrThrow({ where: { id: r3.id } })
+    expect(r3Banco.veredito).toBe('recusada')
+  })
+
+  it('aceites cruzados concorrentes em Promise.all travam em ordem e nenhum dá 500', async () => {
+    const c1 = await publicar({ tipo: 'perdido' })
+    const c2 = await publicar({ tipo: 'encontrado' })
+
+    // O pareamento pode já ter sido gerado na publicação; se não, cria
+    await prisma.pareamento.upsert({
+      where: {
+        casoPerdidoId_casoEncontradoId: {
+          casoPerdidoId: c1.id,
+          casoEncontradoId: c2.id,
+        },
+      },
+      update: { veredito: 'pendente' },
+      create: {
+        casoPerdidoId: c1.id,
+        casoEncontradoId: c2.id,
+        distanciaM: 500,
+        diasDiferenca: 0,
+        veredito: 'pendente',
+      },
+    })
+
+    const r1 = await criarReivindicacao(c1.id, '93991112233', { id: c2.id, codigoEdicao: c2.codigoEdicao })
+    const r2 = await criarReivindicacao(c2.id, '93991114455', { id: c1.id, codigoEdicao: c1.codigoEdicao })
+
+    const [res1, res2] = await Promise.all([
+      request(app.getHttpServer())
+        .post(`/casos/${c1.id}/reivindicacoes/${r1.id}/veredito`)
+        .set('x-codigo-edicao', c1.codigoEdicao)
+        .send({ veredito: 'aceita' }),
+      request(app.getHttpServer())
+        .post(`/casos/${c2.id}/reivindicacoes/${r2.id}/veredito`)
+        .set('x-codigo-edicao', c2.codigoEdicao)
+        .send({ veredito: 'aceita' }),
+    ])
+
+    expect(res1.status).not.toBe(500)
+    expect(res2.status).not.toBe(500)
+    expect([res1.status, res2.status]).toEqual(expect.arrayContaining([200]))
+  })
 })
