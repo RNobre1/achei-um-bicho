@@ -60,14 +60,14 @@ describe('avistamentos de um caso', () => {
       expect(gravado).toMatchObject({ casoId: id, pessoaId: null, observacao: corpo.observacao })
     })
 
-    it('conta como interação no caso, o que adia a cobrança e a expiração', async () => {
+    it('não conta como interação no caso: só ação do autor renova', async () => {
       const { id } = await publicar()
       await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '8 days' WHERE id = ${id}::uuid`
 
       await avisar(id).expect(201)
 
       const caso = await prisma.caso.findUniqueOrThrow({ where: { id } })
-      expect(Date.now() - caso.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
+      expect(Date.now() - caso.ultimaInteracaoEm.getTime()).toBeGreaterThan(7 * 24 * 60 * 60 * 1000)
     })
 
     it('responde 404 para caso que não existe', async () => {
