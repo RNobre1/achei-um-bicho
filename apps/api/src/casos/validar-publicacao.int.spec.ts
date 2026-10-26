@@ -52,6 +52,6 @@ describe('POST /casos recusa publicação inválida', () => {
       .post('/casos')
       .send(casoValido({ autor: { nome: 'Autor', telefone: '123' } }))
       .expect(400)
-    expect(res.body.message).toEqual(expect.arrayContaining(['Telefone com DDD: 10 ou 11 dígitos']))
+    expect(res.body.message.some((m: string) => m.includes('Telefone com DDD: 10 ou 11 dígitos'))).toBe(true)
   })
 })

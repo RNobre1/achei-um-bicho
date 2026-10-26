@@ -1,6 +1,7 @@
 import {
   ESTADOS_ABERTOS,
-  normalizarTelefone,
+  ESTADOS_VIGIADOS,
+  TELEFONE,
   type EstadoCaso,
   type NovaReivindicacao,
   type TipoCaso,
@@ -38,13 +39,13 @@ export function pedeReferencia(tipo: TipoCaso): boolean {
 
 /** Limpa caracteres não numéricos do telefone */
 export function limparTelefone(telefone: string): string {
-  return normalizarTelefone(telefone)
+  return TELEFONE.normalizar(telefone)
 }
 
 /** Valida se o telefone possui 10 ou 11 dígitos */
 export function telefoneValido(telefone: string): boolean {
   const digitos = limparTelefone(telefone)
-  return digitos.length === 10 || digitos.length === 11
+  return TELEFONE.expressao.test(digitos)
 }
 
 export interface DadosFormularioReivindicacao {
@@ -93,7 +94,7 @@ export function montarPedidoReivindicacao(params: ParametrosMontarPedido): NovaR
     })),
     pessoa: {
       nome: params.nome.trim(),
-      telefone: normalizarTelefone(params.telefone),
+      telefone: TELEFONE.normalizar(params.telefone),
       ...(pedeReferencia(params.tipoCaso) && params.referencia?.trim()
         ? { referencia: params.referencia.trim() }
         : {}),
@@ -102,9 +103,26 @@ export function montarPedidoReivindicacao(params: ParametrosMontarPedido): NovaR
   }
 }
 
-/** Aceitar e recusar só aparecem quando a reivindicação é pendente e o caso está em estado aberto */
-export function podeDecidirReivindicacao(veredito: VereditoVerificacao, estadoCaso: EstadoCaso): boolean {
+/** Aceitar só aparece quando a reivindicação é pendente e o caso está em estado aberto */
+export function podeAceitar(veredito: VereditoVerificacao, estadoCaso: EstadoCaso): boolean {
   return veredito === 'pendente' && ESTADOS_ABERTOS.includes(estadoCaso)
+}
+
+/** Recusar aparece quando a reivindicação é pendente e o caso está aberto ou em contato */
+export function podeRecusar(veredito: VereditoVerificacao, estadoCaso: EstadoCaso): boolean {
+  return veredito === 'pendente' && ESTADOS_VIGIADOS.includes(estadoCaso)
+}
+
+export function podeDecidirReivindicacao(veredito: VereditoVerificacao, estadoCaso: EstadoCaso): boolean {
+  return podeAceitar(veredito, estadoCaso) || podeRecusar(veredito, estadoCaso)
+}
+
+/** Texto explicativo para alerta de denúncias associadas ao telefone do reivindicante */
+export function textoAvisoDenunciasDoTelefone(total: number): string {
+  if (total <= 0) return ''
+  return total === 1
+    ? 'Este telefone tem 1 reivindicação denunciada'
+    : `Este telefone tem ${total} reivindicações denunciadas`
 }
 
 /** Identifica que o backend exigiu telefone de contato ao aceitar */

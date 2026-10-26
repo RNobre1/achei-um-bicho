@@ -19,8 +19,11 @@ import {
   ROTULOS_VEREDITO_LISTA,
   erroExigeTelefoneDoAutor,
   limparTelefone,
+  podeAceitar,
   podeDecidirReivindicacao,
+  podeRecusar,
   telefoneValido,
+  textoAvisoDenunciasDoTelefone,
 } from '../../dominio/reivindicacao'
 import { api, ErroApi } from '../../servicos/api'
 import { cores, fontes } from '../../tema'
@@ -30,9 +33,10 @@ interface Props {
   codigoEdicao: string
   tipo: TipoCaso
   estadoCaso: EstadoCaso
+  aoDecidir?: () => void
 }
 
-export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo, estadoCaso }: Props) {
+export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo, estadoCaso, aoDecidir }: Props) {
   const [reivindicacoes, setReivindicacoes] = useState<ReivindicacaoParaAutor[]>()
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string>()
@@ -68,6 +72,7 @@ export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo, estadoCaso }
       await api.decidirReivindicacao(casoId, rid, codigoEdicao, veredito, telefone)
       setReivIdParaTelefone(undefined)
       await carregar()
+      aoDecidir?.()
     } catch (e) {
       if (e instanceof ErroApi && erroExigeTelefoneDoAutor(e.status)) {
         setReivIdParaTelefone(rid)
@@ -146,7 +151,7 @@ export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo, estadoCaso }
             {reiv.denunciasDoTelefone > 0 ? (
               <View style={estilos.alertaDenuncia}>
                 <Text style={estilos.alertaTexto}>
-                  Atenção: há {reiv.denunciasDoTelefone} denúncia(s) contra este telefone em outros casos.
+                  {textoAvisoDenunciasDoTelefone(reiv.denunciasDoTelefone)}
                 </Text>
               </View>
             ) : null}
@@ -207,22 +212,26 @@ export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo, estadoCaso }
                   </View>
                 ) : (
                   <View style={estilos.duplaBotoes}>
-                    <View style={{ flex: 1 }}>
-                      <Botao
-                        rotulo="Aceitar respostas"
-                        variante="acento"
-                        carregando={decidindo === reiv.id}
-                        aoTocar={() => void decidir(reiv.id, 'aceita')}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Botao
-                        rotulo="Recusar"
-                        variante="fraco"
-                        carregando={decidindo === reiv.id}
-                        aoTocar={() => confirmarRecusa(reiv.id)}
-                      />
-                    </View>
+                    {podeAceitar(reiv.veredito, estadoCaso) ? (
+                      <View style={{ flex: 1 }}>
+                        <Botao
+                          rotulo="Aceitar respostas"
+                          variante="acento"
+                          carregando={decidindo === reiv.id}
+                          aoTocar={() => void decidir(reiv.id, 'aceita')}
+                        />
+                      </View>
+                    ) : null}
+                    {podeRecusar(reiv.veredito, estadoCaso) ? (
+                      <View style={{ flex: 1 }}>
+                        <Botao
+                          rotulo="Recusar"
+                          variante="fraco"
+                          carregando={decidindo === reiv.id}
+                          aoTocar={() => confirmarRecusa(reiv.id)}
+                        />
+                      </View>
+                    ) : null}
                   </View>
                 )}
 

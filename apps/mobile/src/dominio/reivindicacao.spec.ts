@@ -6,12 +6,15 @@ import {
   limparTelefone,
   montarPedidoReivindicacao,
   pedeReferencia,
+  podeAceitar,
+  podeRecusar,
   podeDecidirReivindicacao,
   ROTULOS_VEREDITO_LISTA,
   ROTULOS_VEREDITO_SITUACAO,
   rotuloBotaoReivindicar,
   rotuloCurtoReivindicacao,
   telefoneValido,
+  textoAvisoDenunciasDoTelefone,
 } from './reivindicacao'
 
 describe('regras de domínio da reivindicação', () => {

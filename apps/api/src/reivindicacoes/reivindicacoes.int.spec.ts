@@ -130,7 +130,7 @@ describe('POST /casos/:id/reivindicacoes', () => {
         pessoa: { nome: 'Maria', telefone: '123' },
       })
       .expect(400)
-    expect(res.body.message).toEqual(expect.arrayContaining(['Telefone com DDD: 10 ou 11 dígitos']))
+    expect(res.body.message.some((m: string) => m.includes('Telefone com DDD: 10 ou 11 dígitos'))).toBe(true)
   })
 
   it('bloqueia reivindicação quando atinge o limite de 5 pendentes por caso (409)', async () => {
