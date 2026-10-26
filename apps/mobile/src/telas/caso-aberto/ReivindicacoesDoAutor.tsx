@@ -78,6 +78,9 @@ export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo, estadoCaso, 
         setReivIdParaTelefone(rid)
       } else {
         setErro(e instanceof ErroApi ? e.message : 'Não deu para registrar o veredito.')
+        // o caso pode ter mudado noutro aparelho: recarrega para os botões refletirem o estado atual
+        void carregar()
+        aoDecidir?.()
       }
     } finally {
       setDecidindo(undefined)

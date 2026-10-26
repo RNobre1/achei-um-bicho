@@ -212,13 +212,13 @@ export class ReivindicacoesRepositorio {
     if (chaves.length > 0) {
       const resultados = await this.prisma.$queryRaw<{ chave: string; total: number }[]>`
         SELECT
-          CONCAT(SUBSTRING(p.telefone, 1, 2), RIGHT(p.telefone, 8)) AS chave,
+          CONCAT(SUBSTRING(regexp_replace(p.telefone, '[^0-9]', '', 'g'), 1, 2), RIGHT(regexp_replace(p.telefone, '[^0-9]', '', 'g'), 8)) AS chave,
           COUNT(DISTINCT d.tentativa_id)::int AS total
         FROM denuncia d
         JOIN tentativa_verificacao tv ON tv.id = d.tentativa_id
         JOIN pessoa p ON p.id = tv.pessoa_id
         WHERE p.telefone IS NOT NULL
-          AND CONCAT(SUBSTRING(p.telefone, 1, 2), RIGHT(p.telefone, 8)) IN (${Prisma.join(chaves)})
+          AND CONCAT(SUBSTRING(regexp_replace(p.telefone, '[^0-9]', '', 'g'), 1, 2), RIGHT(regexp_replace(p.telefone, '[^0-9]', '', 'g'), 8)) IN (${Prisma.join(chaves)})
         GROUP BY 1
       `
       for (const r of resultados) {
