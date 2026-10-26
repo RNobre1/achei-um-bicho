@@ -143,12 +143,16 @@ export class PareamentoRepositorio {
     }))
   }
 
-  /** Grava a decisão; devolve falso se o par não for deste caso. */
+  /** Grava a decisão e renova a última interação do caso do autor; devolve falso se o par não for deste caso. */
   async decidir(pistaId: string, casoId: string, veredito: VereditoPareamento): Promise<boolean> {
-    const { count } = await this.prisma.pareamento.updateMany({
-      where: { id: pistaId, OR: [{ casoPerdidoId: casoId }, { casoEncontradoId: casoId }] },
-      data: { veredito, decididoEm: new Date() },
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.pareamento.updateMany({
+        where: { id: pistaId, OR: [{ casoPerdidoId: casoId }, { casoEncontradoId: casoId }] },
+        data: { veredito, decididoEm: new Date() },
+      })
+      if (count === 0) return false
+      await tx.caso.update({ where: { id: casoId }, data: { ultimaInteracaoEm: new Date() } })
+      return true
     })
-    return count > 0
   }
 }
