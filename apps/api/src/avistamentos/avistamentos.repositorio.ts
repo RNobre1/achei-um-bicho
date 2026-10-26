@@ -37,7 +37,7 @@ export class AvistamentosRepositorio {
     return caso && { estado: caso.estado as EstadoCaso, codigoEdicaoHash: caso.codigoEdicao }
   }
 
-  /** Grava o aviso e renova a última interação do caso, na mesma transação. */
+  /** Grava o aviso sem renovar a última interação do caso: só ação do autor renova. */
   async registrar(casoId: string, dados: RegistrarAvistamentoDto): Promise<string> {
     return this.prisma.$transaction(async (tx) => {
       const localId = await this.geo.inserirLocal(
@@ -56,7 +56,6 @@ export class AvistamentosRepositorio {
           observacao: dados.observacao ?? null,
         },
       })
-      await tx.caso.update({ where: { id: casoId }, data: { ultimaInteracaoEm: new Date() } })
       return avistamento.id
     })
   }
