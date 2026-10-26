@@ -171,5 +171,18 @@ describe('pistas de pareamento', () => {
 
       await descartar(nego.id, pista.id, achado.codigoEdicao).expect(403)
     })
+
+    it('renova a última interação do caso do autor', async () => {
+      const nego = await publicar(casoValido())
+      await publicar(encontrado(850))
+      const [pista] = (await pistas(nego.id, nego.codigoEdicao)).body
+
+      await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '8 days' WHERE id = ${nego.id}::uuid`
+
+      await descartar(nego.id, pista.id, nego.codigoEdicao).expect(200)
+
+      const caso = await prisma.caso.findUniqueOrThrow({ where: { id: nego.id } })
+      expect(Date.now() - caso.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
+    })
   })
 })
