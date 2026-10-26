@@ -438,6 +438,6 @@ describe('POST /casos/:id/reivindicacoes/:rid/veredito', () => {
 
     expect(res1.status).not.toBe(500)
     expect(res2.status).not.toBe(500)
-    expect([res1.status, res2.status]).toEqual(expect.arrayContaining([200]))
+    expect([res1.status, res2.status].sort()).toEqual([200, 409])
   })
 })
