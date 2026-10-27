@@ -24,8 +24,8 @@ describe('F8 ciclo de vida', () => {
     await prisma.$disconnect()
   })
 
-  async function publicar(): Promise<{ id: string; codigoEdicao: string }> {
-    const { body } = await request(app.getHttpServer()).post('/casos').send(casoValido()).expect(201)
+  async function publicar(sobrescrever: Record<string, unknown> = {}): Promise<{ id: string; codigoEdicao: string }> {
+    const { body } = await request(app.getHttpServer()).post('/casos').send(casoValido(sobrescrever)).expect(201)
     return body
   }
 
@@ -135,6 +135,59 @@ describe('F8 ciclo de vida', () => {
     it('responde 404 para caso inexistente', async () => {
       await request(app.getHttpServer())
         .post(`/casos/${randomUUID()}/confirmacao`)
+        .set('x-codigo-edicao', 'ABCD-EFGH')
+        .expect(404)
+    })
+  })
+
+  describe('POST /casos/:id/reabertura', () => {
+    it('de em_contato volta ao estado inicial do caso e renova interação', async () => {
+      const perdido = await publicar()
+      await prisma.caso.update({ where: { id: perdido.id }, data: { estado: 'em_contato' } })
+      await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '8 days' WHERE id = ${perdido.id}::uuid`
+
+      await request(app.getHttpServer())
+        .post(`/casos/${perdido.id}/reabertura`)
+        .set('x-codigo-edicao', perdido.codigoEdicao)
+        .expect(200)
+
+      const casoPerdido = await prisma.caso.findUniqueOrThrow({ where: { id: perdido.id } })
+      expect(casoPerdido.estado).toBe('procurando')
+      expect(Date.now() - casoPerdido.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
+
+      const achado = await publicar({ tipo: 'encontrado' })
+      await prisma.caso.update({ where: { id: achado.id }, data: { estado: 'em_contato' } })
+
+      await request(app.getHttpServer())
+        .post(`/casos/${achado.id}/reabertura`)
+        .set('x-codigo-edicao', achado.codigoEdicao)
+        .expect(200)
+
+      const casoAchado = await prisma.caso.findUniqueOrThrow({ where: { id: achado.id } })
+      expect(casoAchado.estado).toBe('abrigado_temporariamente')
+    })
+
+    it('recusa com 409 quando o caso não está em em_contato', async () => {
+      const { id, codigoEdicao } = await publicar()
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/reabertura`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .expect(409)
+    })
+
+    it('recusa sem o código de edição correto (403)', async () => {
+      const { id } = await publicar()
+      await request(app.getHttpServer()).post(`/casos/${id}/reabertura`).expect(403)
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/reabertura`)
+        .set('x-codigo-edicao', 'ERRADO-123')
+        .expect(403)
+    })
+
+    it('responde 404 para caso inexistente', async () => {
+      await request(app.getHttpServer())
+        .post(`/casos/${randomUUID()}/reabertura`)
         .set('x-codigo-edicao', 'ABCD-EFGH')
         .expect(404)
     })
