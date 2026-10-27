@@ -53,4 +53,13 @@ export class CasosController {
   ): Promise<{ ok: true }> {
     return this.casos.confirmar(id, codigoEdicao)
   }
+
+  @Post(':id/reabertura')
+  @HttpCode(HttpStatus.OK)
+  reabrir(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Headers(CABECALHO_CODIGO_EDICAO) codigoEdicao?: string,
+  ): Promise<{ ok: true }> {
+    return this.casos.reabrir(id, codigoEdicao)
+  }
 }

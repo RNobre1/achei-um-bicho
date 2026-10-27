@@ -205,4 +205,14 @@ export class CasosRepositorio {
       },
     })
   }
+
+  async reabrir(id: string, novoEstado: EstadoCaso): Promise<void> {
+    await this.prisma.caso.update({
+      where: { id },
+      data: {
+        estado: novoEstado,
+        ultimaInteracaoEm: new Date(),
+      },
+    })
+  }
 }

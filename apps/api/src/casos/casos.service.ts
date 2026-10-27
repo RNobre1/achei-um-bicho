@@ -4,6 +4,7 @@ import {
   RAIO,
   type EstadoCaso,
   type SituacaoDoCaso,
+  type TipoCaso,
   type TipoDesfecho,
 } from '@achei/contratos'
 import {
@@ -121,6 +122,20 @@ export class CasosService {
       throw new ConflictException(`caso em estado "${caso.estado}" não aceita confirmação`)
     }
     await this.repositorio.confirmar(id)
+    return { ok: true }
+  }
+
+  async reabrir(id: string, codigoEdicao?: string): Promise<{ ok: true }> {
+    const caso = await this.repositorio.buscarParaSituacao(id)
+    if (!caso) throw new NotFoundException('caso não encontrado')
+    if (!conferirCodigoEdicao(codigoEdicao, caso.codigoEdicao)) {
+      throw new ForbiddenException('código de edição não confere com este caso')
+    }
+    if (caso.estado !== 'em_contato') {
+      throw new ConflictException(`caso em estado "${caso.estado}" não pode ser reaberto`)
+    }
+    const novoEstado = ESTADO_INICIAL[caso.tipo as TipoCaso]
+    await this.repositorio.reabrir(id, novoEstado)
     return { ok: true }
   }
 }
