@@ -7,7 +7,7 @@ import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
 
-describe('F8 ciclo de vida: situação do caso', () => {
+describe('F8 ciclo de vida', () => {
   let app: INestApplication
   const prisma = new PrismaClient()
 
@@ -93,6 +93,48 @@ describe('F8 ciclo de vida: situação do caso', () => {
     it('responde 404 para caso inexistente', async () => {
       await request(app.getHttpServer())
         .get(`/casos/${randomUUID()}/situacao`)
+        .set('x-codigo-edicao', 'ABCD-EFGH')
+        .expect(404)
+    })
+  })
+
+  describe('POST /casos/:id/confirmacao', () => {
+    it('renova a última interação e zera cobrado_em', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.$executeRaw`UPDATE caso SET cobrado_em = now(), ultima_interacao_em = now() - interval '9 days' WHERE id = ${id}::uuid`
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/confirmacao`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .expect(200)
+
+      const caso = await prisma.caso.findUniqueOrThrow({ where: { id } })
+      expect(caso.cobradoEm).toBeNull()
+      expect(Date.now() - caso.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
+    })
+
+    it('recusa com 409 quando o caso não está em ESTADOS_VIGIADOS', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.caso.update({ where: { id }, data: { estado: 'resolvido' } })
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/confirmacao`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .expect(409)
+    })
+
+    it('recusa sem o código de edição correto (403)', async () => {
+      const { id } = await publicar()
+      await request(app.getHttpServer()).post(`/casos/${id}/confirmacao`).expect(403)
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/confirmacao`)
+        .set('x-codigo-edicao', 'ERRADO-123')
+        .expect(403)
+    })
+
+    it('responde 404 para caso inexistente', async () => {
+      await request(app.getHttpServer())
+        .post(`/casos/${randomUUID()}/confirmacao`)
         .set('x-codigo-edicao', 'ABCD-EFGH')
         .expect(404)
     })
