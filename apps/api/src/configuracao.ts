@@ -6,6 +6,12 @@ export interface Configuracao {
   raioPadraoM: number
   /** Teto de distância para um caso virar candidato de outro (RN7). */
   raioMaximoPareamentoM: number
+  /** Dias sem interação até marcar para cobrança. */
+  diasAteCobranca: number
+  /** Dias sem interação até expirar e sair do mural. */
+  diasAteExpirar: number
+  /** Chave que autoriza a execução da tarefa diária de ciclo de vida. */
+  tarefasChave?: string
 }
 
 type Ambiente = Record<string, string | undefined>
@@ -34,6 +40,19 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
       `RAIO_MAXIMO_PAREAMENTO_METROS precisa ficar entre ${RAIO.minimoM} e ${RAIO.maximoM}; veio ${raioMaximoPareamentoM}`,
     )
   }
+  const diasAteCobranca = inteiro(ambiente, 'DIAS_ATE_COBRANCA', 9)
+  const diasAteExpirar = inteiro(ambiente, 'DIAS_ATE_EXPIRAR', 15)
+  if (diasAteCobranca <= 0) {
+    throw new Error(`DIAS_ATE_COBRANCA precisa ser maior que zero; veio ${diasAteCobranca}`)
+  }
+  if (diasAteExpirar <= diasAteCobranca) {
+    throw new Error(
+      `DIAS_ATE_EXPIRAR precisa ser maior que DIAS_ATE_COBRANCA (${diasAteCobranca}); veio ${diasAteExpirar}`,
+    )
+  }
+  const tarefasChaveBruta = ambiente.TAREFAS_CHAVE?.trim()
+  const tarefasChave = tarefasChaveBruta ? tarefasChaveBruta : undefined
+
   return {
     porta: inteiro(ambiente, 'PORT', 3333),
     origensCors: (ambiente.CORS_ORIGINS ?? 'http://localhost:8081')
@@ -42,5 +61,8 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
       .filter(Boolean),
     raioPadraoM,
     raioMaximoPareamentoM,
+    diasAteCobranca,
+    diasAteExpirar,
+    tarefasChave,
   }
 }
