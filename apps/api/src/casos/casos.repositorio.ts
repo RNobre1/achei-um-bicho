@@ -195,4 +195,14 @@ export class CasosRepositorio {
       },
     })
   }
+
+  async confirmar(id: string): Promise<void> {
+    await this.prisma.caso.update({
+      where: { id },
+      data: {
+        ultimaInteracaoEm: new Date(),
+        cobradoEm: null,
+      },
+    })
+  }
 }

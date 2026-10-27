@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common'
 import { CABECALHO_CODIGO_EDICAO, type SituacaoDoCaso } from '@achei/contratos'
 import { CasosService } from './casos.service'
 import type { CasoAberto } from './dto/caso-aberto.dto'
@@ -32,5 +43,14 @@ export class CasosController {
     @Headers(CABECALHO_CODIGO_EDICAO) codigoEdicao?: string,
   ): Promise<SituacaoDoCaso> {
     return this.casos.situacao(id, codigoEdicao)
+  }
+
+  @Post(':id/confirmacao')
+  @HttpCode(HttpStatus.OK)
+  confirmar(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Headers(CABECALHO_CODIGO_EDICAO) codigoEdicao?: string,
+  ): Promise<{ ok: true }> {
+    return this.casos.confirmar(id, codigoEdicao)
   }
 }

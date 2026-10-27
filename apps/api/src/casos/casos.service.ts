@@ -6,7 +6,13 @@ import {
   type SituacaoDoCaso,
   type TipoDesfecho,
 } from '@achei/contratos'
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common'
+import {
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import type { Configuracao } from '../configuracao'
 import { CONFIGURACAO } from '../configuracao.module'
 import { areaAproximada } from '../geo/area-aproximada'
@@ -103,5 +109,18 @@ export class CasosService {
           }
         : null,
     }
+  }
+
+  async confirmar(id: string, codigoEdicao?: string): Promise<{ ok: true }> {
+    const caso = await this.repositorio.buscarParaSituacao(id)
+    if (!caso) throw new NotFoundException('caso não encontrado')
+    if (!conferirCodigoEdicao(codigoEdicao, caso.codigoEdicao)) {
+      throw new ForbiddenException('código de edição não confere com este caso')
+    }
+    if (!ESTADOS_VIGIADOS.includes(caso.estado as EstadoCaso)) {
+      throw new ConflictException(`caso em estado "${caso.estado}" não aceita confirmação`)
+    }
+    await this.repositorio.confirmar(id)
+    return { ok: true }
   }
 }
