@@ -168,4 +168,31 @@ export class CasosRepositorio {
        ORDER BY f.enviada_em, f.id`
     return linhas.map((linha) => linha.caminho)
   }
+
+  async buscarParaSituacao(id: string) {
+    return this.prisma.caso.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        tipo: true,
+        estado: true,
+        codigoEdicao: true,
+        ultimaInteracaoEm: true,
+        cobradoEm: true,
+        desfecho: {
+          select: {
+            tipo: true,
+            ocorridoEm: true,
+          },
+        },
+        _count: {
+          select: {
+            tentativas: {
+              where: { veredito: 'pendente' },
+            },
+          },
+        },
+      },
+    })
+  }
 }

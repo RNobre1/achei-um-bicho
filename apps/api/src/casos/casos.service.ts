@@ -1,11 +1,18 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common'
-import { ESTADO_INICIAL, RAIO } from '@achei/contratos'
+import {
+  ESTADO_INICIAL,
+  ESTADOS_VIGIADOS,
+  RAIO,
+  type EstadoCaso,
+  type SituacaoDoCaso,
+  type TipoDesfecho,
+} from '@achei/contratos'
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 import type { Configuracao } from '../configuracao'
 import { CONFIGURACAO } from '../configuracao.module'
 import { areaAproximada } from '../geo/area-aproximada'
 import { GeradorDePareamentos } from '../pareamento/gerador-de-pareamentos'
 import { CasosRepositorio } from './casos.repositorio'
-import { gerarCodigoEdicao, hashCodigoEdicao } from './codigo-edicao'
+import { conferirCodigoEdicao, gerarCodigoEdicao, hashCodigoEdicao } from './codigo-edicao'
 import type { CasoAberto } from './dto/caso-aberto.dto'
 import type { ConsultarMuralDto, Mural } from './dto/consultar-mural.dto'
 import type { CasoPublicado, PublicarCasoDto } from './dto/publicar-caso.dto'
@@ -67,6 +74,34 @@ export class CasosService {
       },
       fotos,
       area: { latitude: centro.latitude, longitude: centro.longitude, raioM, bairro: caso.bairro },
+    }
+  }
+
+  async situacao(id: string, codigoEdicao?: string): Promise<SituacaoDoCaso> {
+    const caso = await this.repositorio.buscarParaSituacao(id)
+    if (!caso) throw new NotFoundException('caso não encontrado')
+    if (!conferirCodigoEdicao(codigoEdicao, caso.codigoEdicao)) {
+      throw new ForbiddenException('código de edição não confere com este caso')
+    }
+
+    const agora = Date.now()
+    const diasSemInteracao = Math.floor((agora - caso.ultimaInteracaoEm.getTime()) / (24 * 60 * 60 * 1000))
+    const cobrancaPendente =
+      Boolean(caso.cobradoEm) ||
+      (ESTADOS_VIGIADOS.includes(caso.estado as EstadoCaso) && diasSemInteracao >= this.configuracao.diasAteCobranca)
+
+    return {
+      id: caso.id,
+      estado: caso.estado as EstadoCaso,
+      cobrancaPendente,
+      diasSemInteracao,
+      reivindicacoesPendentes: caso._count.tentativas,
+      desfecho: caso.desfecho
+        ? {
+            tipo: caso.desfecho.tipo as TipoDesfecho,
+            ocorridoEm: caso.desfecho.ocorridoEm.toISOString(),
+          }
+        : null,
     }
   }
 }
