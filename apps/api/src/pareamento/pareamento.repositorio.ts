@@ -100,6 +100,25 @@ export class PareamentoRepositorio {
     })
   }
 
+  /** Atualiza os atributos dos pares que ainda não foram decididos (veredito pendente). */
+  async atualizarPistasPendentes(pares: NovoPar[]): Promise<void> {
+    for (const par of pares) {
+      await this.prisma.pareamento.updateMany({
+        where: {
+          casoPerdidoId: par.casoPerdidoId,
+          casoEncontradoId: par.casoEncontradoId,
+          veredito: 'pendente',
+        },
+        data: {
+          distanciaM: par.distanciaM,
+          diasDiferenca: par.diasDiferenca,
+          atributosBatem: par.batem as unknown as Prisma.InputJsonValue,
+          atributosDivergem: par.divergem as unknown as Prisma.InputJsonValue,
+        },
+      })
+    }
+  }
+
   async codigoDoCaso(id: string): Promise<{ codigoEdicaoHash: string | null } | null> {
     const caso = await this.prisma.caso.findUnique({ where: { id }, select: { codigoEdicao: true } })
     return caso && { codigoEdicaoHash: caso.codigoEdicao }

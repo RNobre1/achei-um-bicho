@@ -32,4 +32,26 @@ export class GeradorDePareamentos {
     await this.repositorio.gravar(pares)
     return pares.length
   }
+
+  /**
+   * Refaz as pistas quando porte, cor ou coleira mudam: grava novos pares e atualiza
+   * os pares pendentes, mantendo intactos os já decididos (descartados não voltam).
+   */
+  async recalcularPara(casoId: string): Promise<void> {
+    const caso = await this.repositorio.caso(casoId)
+    if (!caso) return
+    const candidatos = await this.repositorio.candidatos(casoId, this.configuracao.raioMaximoPareamentoM)
+
+    const pares = candidatos.map((candidato): NovoPar => {
+      const [perdido, encontrado] = caso.tipo === 'perdido' ? [caso, candidato] : [candidato, caso]
+      return {
+        casoPerdidoId: perdido.id,
+        casoEncontradoId: encontrado.id,
+        distanciaM: candidato.distanciaM,
+        ...compararCasos(perdido, encontrado, candidato.distanciaM),
+      }
+    })
+    await this.repositorio.gravar(pares)
+    await this.repositorio.atualizarPistasPendentes(pares)
+  }
 }

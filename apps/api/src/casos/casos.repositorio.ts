@@ -14,6 +14,7 @@ import { GeoRepositorio, pontoSql } from '../geo/geo.repositorio'
 import type { Ponto } from '../geo/ponto'
 import { PrismaService } from '../prisma/prisma.service'
 import type { CasoNoMural } from './dto/consultar-mural.dto'
+import type { EdicaoDoCasoDto } from './dto/edicao-do-caso.dto'
 import type { PublicarCasoDto } from './dto/publicar-caso.dto'
 
 /** Quantos casos o mural traz de uma vez; o suficiente para um bairro. */
@@ -234,6 +235,47 @@ export class CasosRepositorio {
         },
       })
       return { id: desfecho.id }
+    })
+  }
+
+  async buscarParaEdicao(id: string) {
+    return this.prisma.caso.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        estado: true,
+        codigoEdicao: true,
+        animal: {
+          select: {
+            id: true,
+            porte: true,
+            corDominante: true,
+            coleira: true,
+          },
+        },
+      },
+    })
+  }
+
+  async editar(id: string, animalId: string, dados: EdicaoDoCasoDto): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const dataCaso: Prisma.CasoUpdateInput = { ultimaInteracaoEm: new Date() }
+      if (dados.relato !== undefined) dataCaso.relato = dados.relato
+
+      await tx.caso.update({ where: { id }, data: dataCaso })
+
+      if (dados.animal) {
+        await tx.animal.update({
+          where: { id: animalId },
+          data: {
+            porte: dados.animal.porte,
+            corDominante: dados.animal.corDominante,
+            coleira: dados.animal.coleira,
+            nome: dados.animal.nome,
+            castrado: dados.animal.castrado,
+          },
+        })
+      }
     })
   }
 }

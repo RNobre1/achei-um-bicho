@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common'
@@ -16,6 +17,7 @@ import type { CasoAberto } from './dto/caso-aberto.dto'
 import type { Mural } from './dto/consultar-mural.dto'
 import { ConsultarMuralDto } from './dto/consultar-mural.dto'
 import { NovoDesfechoDto } from './dto/desfecho.dto'
+import { EdicaoDoCasoDto } from './dto/edicao-do-caso.dto'
 import type { CasoPublicado } from './dto/publicar-caso.dto'
 import { PublicarCasoDto } from './dto/publicar-caso.dto'
 
@@ -71,5 +73,15 @@ export class CasosController {
     @Headers(CABECALHO_CODIGO_EDICAO) codigoEdicao?: string,
   ): Promise<{ id: string }> {
     return this.casos.encerrar(id, dados, codigoEdicao)
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  editar(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dados: EdicaoDoCasoDto,
+    @Headers(CABECALHO_CODIGO_EDICAO) codigoEdicao?: string,
+  ): Promise<{ ok: true }> {
+    return this.casos.editar(id, dados, codigoEdicao)
   }
 }

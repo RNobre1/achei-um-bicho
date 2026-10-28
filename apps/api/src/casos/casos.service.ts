@@ -1,6 +1,8 @@
 import {
   ESTADO_INICIAL,
+  ESTADOS_ABERTOS,
   ESTADOS_VIGIADOS,
+  PARECE_CONTATO,
   RAIO,
   transicaoPermitida,
   type EstadoCaso,
@@ -9,6 +11,7 @@ import {
   type TipoDesfecho,
 } from '@achei/contratos'
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -24,6 +27,7 @@ import { conferirCodigoEdicao, gerarCodigoEdicao, hashCodigoEdicao } from './cod
 import type { CasoAberto } from './dto/caso-aberto.dto'
 import type { ConsultarMuralDto, Mural } from './dto/consultar-mural.dto'
 import type { NovoDesfechoDto } from './dto/desfecho.dto'
+import type { EdicaoDoCasoDto } from './dto/edicao-do-caso.dto'
 import type { CasoPublicado, PublicarCasoDto } from './dto/publicar-caso.dto'
 
 @Injectable()
@@ -151,5 +155,32 @@ export class CasosService {
       throw new ConflictException(`caso em estado "${caso.estado}" não pode transicionar para resolvido`)
     }
     return this.repositorio.encerrarComDesfecho(id, dados)
+  }
+
+  async editar(id: string, dados: EdicaoDoCasoDto, codigoEdicao?: string): Promise<{ ok: true }> {
+    const caso = await this.repositorio.buscarParaEdicao(id)
+    if (!caso) throw new NotFoundException('caso não encontrado')
+    if (!conferirCodigoEdicao(codigoEdicao, caso.codigoEdicao)) {
+      throw new ForbiddenException('código de edição não confere com este caso')
+    }
+    if (!ESTADOS_ABERTOS.includes(caso.estado as EstadoCaso)) {
+      throw new ConflictException(`caso em estado "${caso.estado}" não pode ser editado`)
+    }
+    if (dados.relato && PARECE_CONTATO.test(dados.relato)) {
+      throw new BadRequestException('relato não pode conter telefone, WhatsApp ou links (contato mediado)')
+    }
+
+    const mudouAtributosDePareamento =
+      Boolean(dados.animal?.porte && dados.animal.porte !== caso.animal.porte) ||
+      Boolean(dados.animal?.corDominante && dados.animal.corDominante !== caso.animal.corDominante) ||
+      Boolean(dados.animal?.coleira && dados.animal.coleira !== caso.animal.coleira)
+
+    await this.repositorio.editar(id, caso.animal.id, dados)
+
+    if (mudouAtributosDePareamento) {
+      await this.gerador.recalcularPara(id)
+    }
+
+    return { ok: true }
   }
 }
