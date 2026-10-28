@@ -130,3 +130,25 @@ describe('POST /tarefas/ciclo-de-vida', () => {
     await executarTarefas('chave-errada').expect(403)
   })
 })
+
+describe('POST /tarefas/ciclo-de-vida sem chave configurada', () => {
+  let app: INestApplication
+  const prisma = new PrismaClient()
+
+  beforeAll(async () => {
+    delete process.env.TAREFAS_CHAVE
+    app = await criarAppDeTeste()
+  })
+
+  afterAll(async () => {
+    await app.close()
+    await prisma.$disconnect()
+  })
+
+  it('retorna 503 quando TAREFAS_CHAVE não estiver configurada', async () => {
+    await request(app.getHttpServer())
+      .post('/tarefas/ciclo-de-vida')
+      .set('x-chave-tarefas', 'qualquer-chave')
+      .expect(503)
+  })
+})
