@@ -7,6 +7,8 @@ import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
 
+const UMA_HORA = 60 * 60 * 1000
+
 describe('F8 ciclo de vida', () => {
   let app: INestApplication
   const prisma = new PrismaClient()
@@ -189,6 +191,87 @@ describe('F8 ciclo de vida', () => {
       await request(app.getHttpServer())
         .post(`/casos/${randomUUID()}/reabertura`)
         .set('x-codigo-edicao', 'ABCD-EFGH')
+        .expect(404)
+    })
+  })
+
+  describe('POST /casos/:id/desfecho', () => {
+    it('registra o desfecho e muda o estado para resolvido, renovando interação', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '8 days' WHERE id = ${id}::uuid`
+
+      const ocorridoEm = new Date(Date.now() - UMA_HORA).toISOString()
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/desfecho`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ tipo: 'voltou_para_casa', ocorridoEm })
+        .expect(201)
+
+      const caso = await prisma.caso.findUniqueOrThrow({
+        where: { id },
+        include: { desfecho: true },
+      })
+      expect(caso.estado).toBe('resolvido')
+      expect(caso.desfecho).toMatchObject({
+        tipo: 'voltou_para_casa',
+        ocorridoEm: new Date(ocorridoEm),
+      })
+      expect(Date.now() - caso.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
+    })
+
+    it('permite informar desfecho de caso expirado', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.caso.update({ where: { id }, data: { estado: 'expirado' } })
+
+      const ocorridoEm = new Date().toISOString()
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/desfecho`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ tipo: 'foi_adotado', ocorridoEm })
+        .expect(201)
+
+      const caso = await prisma.caso.findUniqueOrThrow({ where: { id } })
+      expect(caso.estado).toBe('resolvido')
+    })
+
+    it('recusa com 409 quando o caso já está resolvido', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.caso.update({ where: { id }, data: { estado: 'resolvido' } })
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/desfecho`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ tipo: 'voltou_para_casa', ocorridoEm: new Date().toISOString() })
+        .expect(409)
+    })
+
+    it.each([
+      ['com data no futuro', { tipo: 'voltou_para_casa', ocorridoEm: new Date(Date.now() + 2 * UMA_HORA).toISOString() }],
+      ['com tipo inválido', { tipo: 'alienigena', ocorridoEm: new Date().toISOString() }],
+      ['sem tipo', { ocorridoEm: new Date().toISOString() }],
+      ['sem ocorridoEm', { tipo: 'voltou_para_casa' }],
+    ])('recusa desfecho inválido: %s', async (_caso, corpo) => {
+      const { id, codigoEdicao } = await publicar()
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/desfecho`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send(corpo)
+        .expect(400)
+    })
+
+    it('recusa sem o código de edição correto (403)', async () => {
+      const { id } = await publicar()
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/desfecho`)
+        .send({ tipo: 'voltou_para_casa', ocorridoEm: new Date().toISOString() })
+        .expect(403)
+    })
+
+    it('responde 404 para caso inexistente', async () => {
+      await request(app.getHttpServer())
+        .post(`/casos/${randomUUID()}/desfecho`)
+        .set('x-codigo-edicao', 'ABCD-EFGH')
+        .send({ tipo: 'voltou_para_casa', ocorridoEm: new Date().toISOString() })
         .expect(404)
     })
   })
