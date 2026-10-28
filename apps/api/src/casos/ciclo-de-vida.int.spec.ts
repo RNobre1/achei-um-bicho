@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
+import { aoSul, CENTRO_SANTAREM } from '../../test/pontos'
 
 const UMA_HORA = 60 * 60 * 1000
 
@@ -272,6 +273,116 @@ describe('F8 ciclo de vida', () => {
         .post(`/casos/${randomUUID()}/desfecho`)
         .set('x-codigo-edicao', 'ABCD-EFGH')
         .send({ tipo: 'voltou_para_casa', ocorridoEm: new Date().toISOString() })
+        .expect(404)
+    })
+  })
+
+  describe('PATCH /casos/:id', () => {
+    it('permite editar relato e animal de caso aberto, renovando a última interação', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '8 days' WHERE id = ${id}::uuid`
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({
+          relato: 'Novo relato editado pelo autor.',
+          animal: {
+            nome: 'Pipoca',
+            castrado: false,
+          },
+        })
+        .expect(200)
+
+      const caso = await prisma.caso.findUniqueOrThrow({
+        where: { id },
+        include: { animal: true },
+      })
+      expect(caso.relato).toBe('Novo relato editado pelo autor.')
+      expect(caso.animal.nome).toBe('Pipoca')
+      expect(caso.animal.castrado).toBe(false)
+      expect(Date.now() - caso.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
+    })
+
+    it('recusa relato com dados de contato (400)', async () => {
+      const { id, codigoEdicao } = await publicar()
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ relato: 'Favor chamar no zap 93991234567' })
+        .expect(400)
+    })
+
+    it('recusa editar caso que não está em ESTADOS_ABERTOS (409)', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.caso.update({ where: { id }, data: { estado: 'em_contato' } })
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ relato: 'Tentando editar em contato' })
+        .expect(409)
+    })
+
+    it('ao mudar porte, cor ou coleira, recalcula pistas mantendo as descartadas intactas', async () => {
+      const nego = await publicar(casoValido({ animal: { ...casoValido().animal, corDominante: 'preto', coleira: 'com' } }))
+      const achado = await publicar(casoValido({
+        tipo: 'encontrado',
+        animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'sem' },
+        local: { ...casoValido().local, ...aoSul(CENTRO_SANTAREM, 500) },
+      }))
+
+      // A pista inicial para nego e achado: cor divergem (preto x caramelo), coleira divergem (com x sem)
+      const pistasIniciais = (await request(app.getHttpServer()).get(`/casos/${nego.id}/pistas`).set('x-codigo-edicao', nego.codigoEdicao)).body
+      expect(pistasIniciais).toHaveLength(1)
+      expect(pistasIniciais[0].divergem.some((d: { atributo: string }) => d.atributo === 'cor')).toBe(true)
+
+      // Agora o autor de nego edita a corDominante para caramelo: agora a cor bate!
+      await request(app.getHttpServer())
+        .patch(`/casos/${nego.id}`)
+        .set('x-codigo-edicao', nego.codigoEdicao)
+        .send({ animal: { corDominante: 'caramelo' } })
+        .expect(200)
+
+      const pistasAposEdicao = (await request(app.getHttpServer()).get(`/casos/${nego.id}/pistas`).set('x-codigo-edicao', nego.codigoEdicao)).body
+      expect(pistasAposEdicao).toHaveLength(1)
+      expect(pistasAposEdicao[0].batem.some((b: { atributo: string }) => b.atributo === 'cor')).toBe(true)
+
+      // Agora descarta a pista
+      await request(app.getHttpServer())
+        .post(`/casos/${nego.id}/pistas/${pistasAposEdicao[0].id}/veredito`)
+        .set('x-codigo-edicao', nego.codigoEdicao)
+        .send({ veredito: 'descartado' })
+        .expect(200)
+
+      // Autor edita a coleira para sem: a pista descartada NÃO volta!
+      await request(app.getHttpServer())
+        .patch(`/casos/${nego.id}`)
+        .set('x-codigo-edicao', nego.codigoEdicao)
+        .send({ animal: { coleira: 'sem' } })
+        .expect(200)
+
+      const pistasFinais = (await request(app.getHttpServer()).get(`/casos/${nego.id}/pistas`).set('x-codigo-edicao', nego.codigoEdicao)).body
+      expect(pistasFinais).toHaveLength(0)
+
+      const parNoBanco = await prisma.pareamento.findUniqueOrThrow({ where: { id: pistasAposEdicao[0].id } })
+      expect(parNoBanco.veredito).toBe('descartado')
+    })
+
+    it('recusa sem o código de edição correto (403)', async () => {
+      const { id } = await publicar()
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .send({ relato: 'Sem código' })
+        .expect(403)
+    })
+
+    it('responde 404 para caso inexistente', async () => {
+      await request(app.getHttpServer())
+        .patch(`/casos/${randomUUID()}`)
+        .set('x-codigo-edicao', 'ABCD-EFGH')
+        .send({ relato: 'Inexistente' })
         .expect(404)
     })
   })
