@@ -5,6 +5,7 @@ import {
   type Cor,
   type Especie,
   type EstadoCaso,
+  type NovoDesfecho,
   type Porte,
   type TipoCaso,
 } from '@achei/contratos'
@@ -213,6 +214,26 @@ export class CasosRepositorio {
         estado: novoEstado,
         ultimaInteracaoEm: new Date(),
       },
+    })
+  }
+
+  async encerrarComDesfecho(casoId: string, dados: NovoDesfecho): Promise<{ id: string }> {
+    return this.prisma.$transaction(async (tx) => {
+      const desfecho = await tx.desfecho.create({
+        data: {
+          casoId,
+          tipo: dados.tipo,
+          ocorridoEm: new Date(dados.ocorridoEm),
+        },
+      })
+      await tx.caso.update({
+        where: { id: casoId },
+        data: {
+          estado: 'resolvido',
+          ultimaInteracaoEm: new Date(),
+        },
+      })
+      return { id: desfecho.id }
     })
   }
 }

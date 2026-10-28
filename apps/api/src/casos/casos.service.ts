@@ -2,6 +2,7 @@ import {
   ESTADO_INICIAL,
   ESTADOS_VIGIADOS,
   RAIO,
+  transicaoPermitida,
   type EstadoCaso,
   type SituacaoDoCaso,
   type TipoCaso,
@@ -22,6 +23,7 @@ import { CasosRepositorio } from './casos.repositorio'
 import { conferirCodigoEdicao, gerarCodigoEdicao, hashCodigoEdicao } from './codigo-edicao'
 import type { CasoAberto } from './dto/caso-aberto.dto'
 import type { ConsultarMuralDto, Mural } from './dto/consultar-mural.dto'
+import type { NovoDesfechoDto } from './dto/desfecho.dto'
 import type { CasoPublicado, PublicarCasoDto } from './dto/publicar-caso.dto'
 
 @Injectable()
@@ -137,5 +139,17 @@ export class CasosService {
     const novoEstado = ESTADO_INICIAL[caso.tipo as TipoCaso]
     await this.repositorio.reabrir(id, novoEstado)
     return { ok: true }
+  }
+
+  async encerrar(id: string, dados: NovoDesfechoDto, codigoEdicao?: string): Promise<{ id: string }> {
+    const caso = await this.repositorio.buscarParaSituacao(id)
+    if (!caso) throw new NotFoundException('caso não encontrado')
+    if (!conferirCodigoEdicao(codigoEdicao, caso.codigoEdicao)) {
+      throw new ForbiddenException('código de edição não confere com este caso')
+    }
+    if (!transicaoPermitida(caso.estado as EstadoCaso, 'resolvido', caso.tipo as TipoCaso)) {
+      throw new ConflictException(`caso em estado "${caso.estado}" não pode transicionar para resolvido`)
+    }
+    return this.repositorio.encerrarComDesfecho(id, dados)
   }
 }

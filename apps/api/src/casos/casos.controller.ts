@@ -15,6 +15,7 @@ import { CasosService } from './casos.service'
 import type { CasoAberto } from './dto/caso-aberto.dto'
 import type { Mural } from './dto/consultar-mural.dto'
 import { ConsultarMuralDto } from './dto/consultar-mural.dto'
+import { NovoDesfechoDto } from './dto/desfecho.dto'
 import type { CasoPublicado } from './dto/publicar-caso.dto'
 import { PublicarCasoDto } from './dto/publicar-caso.dto'
 
@@ -61,5 +62,14 @@ export class CasosController {
     @Headers(CABECALHO_CODIGO_EDICAO) codigoEdicao?: string,
   ): Promise<{ ok: true }> {
     return this.casos.reabrir(id, codigoEdicao)
+  }
+
+  @Post(':id/desfecho')
+  encerrar(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dados: NovoDesfechoDto,
+    @Headers(CABECALHO_CODIGO_EDICAO) codigoEdicao?: string,
+  ): Promise<{ id: string }> {
+    return this.casos.encerrar(id, dados, codigoEdicao)
   }
 }
