@@ -1,4 +1,11 @@
-import type { NovaDenuncia, NovaPublicacao, NovaReivindicacao } from '@achei/contratos'
+import type {
+  EdicaoDoCaso,
+  NovaDenuncia,
+  NovaPublicacao,
+  NovaReivindicacao,
+  NovoDesfecho,
+  SituacaoDoCaso,
+} from '@achei/contratos'
 import { describe, expect, it, vi } from 'vitest'
 import { criarClienteApi, ErroApi } from './api'
 
@@ -209,5 +216,64 @@ describe('cliente da API', () => {
       headers: { 'Content-Type': 'application/json' },
     })
     expect(JSON.parse((opcoes as RequestInit).body as string)).toEqual(denuncia)
+  })
+
+  it('consulta a situação do próprio caso com o código de edição', async () => {
+    const situacao: SituacaoDoCaso = {
+      id: 'abc',
+      estado: 'procurando',
+      cobrancaPendente: true,
+      diasSemInteracao: 10,
+      reivindicacoesPendentes: 0,
+      desfecho: null,
+    }
+    const buscar = vi.fn().mockResolvedValue(respostaJson(situacao))
+    const resultado = await (criarClienteApi('http://api.teste', buscar) as any).situacaoDoCaso('abc', 'ABCD-EFGH')
+    expect(resultado).toEqual(situacao)
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/situacao')
+    expect((opcoes as RequestInit).headers).toEqual({ 'x-codigo-edicao': 'ABCD-EFGH' })
+  })
+
+  it('confirma caso vigiado com o código de edição', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson({ ok: true }))
+    await (criarClienteApi('http://api.teste', buscar) as any).confirmarCaso('abc', 'ABCD-EFGH')
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/confirmacao')
+    expect((opcoes as RequestInit).method).toBe('POST')
+    expect((opcoes as RequestInit).headers).toEqual({ 'x-codigo-edicao': 'ABCD-EFGH' })
+  })
+
+  it('reabre caso em_contato com o código de edição', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson({ ok: true }))
+    await (criarClienteApi('http://api.teste', buscar) as any).reabrirCaso('abc', 'ABCD-EFGH')
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/reabertura')
+    expect((opcoes as RequestInit).method).toBe('POST')
+    expect((opcoes as RequestInit).headers).toEqual({ 'x-codigo-edicao': 'ABCD-EFGH' })
+  })
+
+  it('encerra caso enviando desfecho e código de edição', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson({ id: 'abc' }))
+    const desfecho: NovoDesfecho = { tipo: 'voltou_para_casa', ocorridoEm: '2026-10-01T12:00:00.000Z' }
+    await (criarClienteApi('http://api.teste', buscar) as any).encerrarCaso('abc', 'ABCD-EFGH', desfecho)
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc/desfecho')
+    const { method, headers, body } = opcoes as RequestInit
+    expect(method).toBe('POST')
+    expect(headers).toEqual({ 'Content-Type': 'application/json', 'x-codigo-edicao': 'ABCD-EFGH' })
+    expect(JSON.parse(body as string)).toEqual(desfecho)
+  })
+
+  it('edita dados do caso com o código de edição', async () => {
+    const buscar = vi.fn().mockResolvedValue(respostaJson({ ok: true }))
+    const edicao: EdicaoDoCaso = { relato: 'Novo relato', animal: { corDominante: 'preto' } }
+    await (criarClienteApi('http://api.teste', buscar) as any).editarCaso('abc', 'ABCD-EFGH', edicao)
+    const [url, opcoes] = buscar.mock.calls[0]!
+    expect(url).toBe('http://api.teste/casos/abc')
+    const { method, headers, body } = opcoes as RequestInit
+    expect(method).toBe('PATCH')
+    expect(headers).toEqual({ 'Content-Type': 'application/json', 'x-codigo-edicao': 'ABCD-EFGH' })
+    expect(JSON.parse(body as string)).toEqual(edicao)
   })
 })
