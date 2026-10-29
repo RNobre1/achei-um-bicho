@@ -1,0 +1,16 @@
+name: Ciclo de vida dos casos
+
+on:
+  schedule:
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+jobs:
+  executar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Executar tarefa diária de ciclo de vida
+        run: |
+          curl -X POST https://achei-um-bicho-api.onrender.com/tarefas/ciclo-de-vida \
+            -H "x-chave-tarefas: ${{ secrets.TAREFAS_CHAVE }}" \
+            --max-time 120 --retry 5 --retry-delay 30 --retry-all-errors --fail
