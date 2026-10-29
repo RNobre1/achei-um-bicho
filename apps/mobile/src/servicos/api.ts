@@ -8,17 +8,20 @@ import {
   type CasoPublicado,
   type ConsultaMural,
   type DenunciaRegistrada,
+  type EdicaoDoCaso,
   type FotoEnviada,
   type Mural,
   type NovaDenuncia,
   type NovaPublicacao,
   type NovaReivindicacao,
   type NovoAvistamento,
+  type NovoDesfecho,
   type PerguntaPublica,
   type Pista,
   type ReivindicacaoParaAutor,
   type ReivindicacaoRegistrada,
   type SituacaoDaReivindicacao,
+  type SituacaoDoCaso,
   type VereditoVerificacao,
 } from '@achei/contratos'
 
@@ -57,6 +60,11 @@ export interface ClienteApi {
   ): Promise<{ id: string; veredito: VereditoVerificacao }>
   situacaoDaReivindicacao(id: string, codigoAcompanhamento: string): Promise<SituacaoDaReivindicacao>
   denunciar(casoId: string, dados: NovaDenuncia): Promise<DenunciaRegistrada>
+  situacaoDoCaso(casoId: string, codigoEdicao: string): Promise<SituacaoDoCaso>
+  confirmarCaso(casoId: string, codigoEdicao: string): Promise<void>
+  reabrirCaso(casoId: string, codigoEdicao: string): Promise<void>
+  encerrarCaso(casoId: string, codigoEdicao: string, dados: NovoDesfecho): Promise<void>
+  editarCaso(casoId: string, codigoEdicao: string, dados: EdicaoDoCaso): Promise<void>
 }
 
 /** Blob na web; no celular, o File do expo-file-system, que se comporta como Blob. */
@@ -178,6 +186,37 @@ export function criarClienteApi(urlBase: string, buscar: Buscar = fetch): Client
       return pedir<DenunciaRegistrada>(`/casos/${encodeURIComponent(casoId)}/denuncias`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados),
+      })
+    },
+    situacaoDoCaso(casoId, codigoEdicao) {
+      return pedir<SituacaoDoCaso>(`/casos/${encodeURIComponent(casoId)}/situacao`, {
+        headers: { [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
+      })
+    },
+    async confirmarCaso(casoId, codigoEdicao) {
+      await pedir(`/casos/${encodeURIComponent(casoId)}/confirmacao`, {
+        method: 'POST',
+        headers: { [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
+      })
+    },
+    async reabrirCaso(casoId, codigoEdicao) {
+      await pedir(`/casos/${encodeURIComponent(casoId)}/reabertura`, {
+        method: 'POST',
+        headers: { [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
+      })
+    },
+    async encerrarCaso(casoId, codigoEdicao, dados) {
+      await pedir(`/casos/${encodeURIComponent(casoId)}/desfecho`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
+        body: JSON.stringify(dados),
+      })
+    },
+    async editarCaso(casoId, codigoEdicao, dados) {
+      await pedir(`/casos/${encodeURIComponent(casoId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', [CABECALHO_CODIGO_EDICAO]: codigoEdicao },
         body: JSON.stringify(dados),
       })
     },
