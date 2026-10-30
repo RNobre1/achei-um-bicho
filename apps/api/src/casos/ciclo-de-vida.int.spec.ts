@@ -51,6 +51,19 @@ describe('F8 ciclo de vida', () => {
       })
     })
 
+    it('caso expirado com cobrado_em preenchido não indica cobrança pendente', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.caso.update({ where: { id }, data: { estado: 'expirado', cobradoEm: new Date() } })
+
+      const { body } = await request(app.getHttpServer())
+        .get(`/casos/${id}/situacao`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .expect(200)
+
+      expect(body.cobrancaPendente).toBe(false)
+      expect(body.estado).toBe('expirado')
+    })
+
     it('indica cobrança pendente quando cobrado_em está preenchido ou sem interação há tempo', async () => {
       const { id, codigoEdicao } = await publicar()
       await prisma.$executeRaw`UPDATE caso SET cobrado_em = now(), ultima_interacao_em = now() - interval '9 days' WHERE id = ${id}::uuid`
@@ -117,6 +130,16 @@ describe('F8 ciclo de vida', () => {
       expect(Date.now() - caso.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
     })
 
+    it('confirmar caso que já foi expirado pela tarefa dá 409', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.caso.update({ where: { id }, data: { estado: 'expirado', cobradoEm: new Date() } })
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/confirmacao`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .expect(409)
+    })
+
     it('recusa com 409 quando o caso não está em ESTADOS_VIGIADOS', async () => {
       const { id, codigoEdicao } = await publicar()
       await prisma.caso.update({ where: { id }, data: { estado: 'resolvido' } })
@@ -170,6 +193,16 @@ describe('F8 ciclo de vida', () => {
 
       const casoAchado = await prisma.caso.findUniqueOrThrow({ where: { id: achado.id } })
       expect(casoAchado.estado).toBe('abrigado_temporariamente')
+    })
+
+    it('reabrir caso depois de expirado dá 409', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.caso.update({ where: { id }, data: { estado: 'expirado' } })
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/reabertura`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .expect(409)
     })
 
     it('recusa com 409 quando o caso não está em em_contato', async () => {
@@ -235,6 +268,17 @@ describe('F8 ciclo de vida', () => {
 
       const caso = await prisma.caso.findUniqueOrThrow({ where: { id } })
       expect(caso.estado).toBe('resolvido')
+    })
+
+    it('dois encerramentos simultâneos resultam em um sucesso (201) e um conflito (409)', async () => {
+      const { id, codigoEdicao } = await publicar()
+      const ocorridoEm = new Date().toISOString()
+      const res = await Promise.all([
+        request(app.getHttpServer()).post(`/casos/${id}/desfecho`).set('x-codigo-edicao', codigoEdicao).send({ tipo: 'voltou_para_casa', ocorridoEm }),
+        request(app.getHttpServer()).post(`/casos/${id}/desfecho`).set('x-codigo-edicao', codigoEdicao).send({ tipo: 'voltou_para_casa', ocorridoEm }),
+      ])
+      const statuses = res.map((r) => r.status).sort()
+      expect(statuses).toEqual([201, 409])
     })
 
     it('recusa com 409 quando o caso já está resolvido', async () => {
