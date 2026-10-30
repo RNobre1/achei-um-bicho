@@ -11,6 +11,7 @@ import {
 } from '@achei/contratos'
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
+import { dadosDeRenovacao } from '../casos/casos.repositorio'
 import { PrismaService } from '../prisma/prisma.service'
 import type { ResultadoDaComparacao } from './comparar'
 
@@ -119,9 +120,13 @@ export class PareamentoRepositorio {
     }
   }
 
+  async casoParaDecisao(id: string): Promise<{ estado: string; codigoEdicaoHash: string | null } | null> {
+    const caso = await this.prisma.caso.findUnique({ where: { id }, select: { estado: true, codigoEdicao: true } })
+    return caso && { estado: caso.estado, codigoEdicaoHash: caso.codigoEdicao }
+  }
+
   async codigoDoCaso(id: string): Promise<{ codigoEdicaoHash: string | null } | null> {
-    const caso = await this.prisma.caso.findUnique({ where: { id }, select: { codigoEdicao: true } })
-    return caso && { codigoEdicaoHash: caso.codigoEdicao }
+    return this.casoParaDecisao(id)
   }
 
   /** Pares do caso que ainda não foram descartados, cada um visto pelo lado de quem pergunta. */
@@ -170,7 +175,7 @@ export class PareamentoRepositorio {
         data: { veredito, decididoEm: new Date() },
       })
       if (count === 0) return false
-      await tx.caso.update({ where: { id: casoId }, data: { ultimaInteracaoEm: new Date() } })
+      await tx.caso.update({ where: { id: casoId }, data: dadosDeRenovacao() })
       return true
     })
   }

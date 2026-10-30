@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common'
 import type { Configuracao } from '../configuracao'
 import { CONFIGURACAO } from '../configuracao.module'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 
 function conferirChave(informada: string | undefined, esperada: string): boolean {
@@ -57,19 +58,19 @@ export class TarefasService {
       })
 
       // 2. Expiração: caso em ESTADOS_VIGIADOS com cobrado_em mais velho que DIAS_ATE_EXPIRAR - DIAS_ATE_COBRANCA dias
-      // (só expira quem foi cobrado)
+      // (só expira quem foi cobrado e não teve interação após a cobrança)
       const diasAposCobranca = diasAteExpirar - diasAteCobranca
       const limiteExpiracao = new Date(agora.getTime() - diasAposCobranca * 24 * 60 * 60 * 1000)
-      const expirados = await tx.caso.updateMany({
-        where: {
-          estado: { in: [...ESTADOS_VIGIADOS] },
-          cobradoEm: { not: null, lte: limiteExpiracao },
-        },
-        data: {
-          estado: 'expirado',
-          ultimaInteracaoEm: agora,
-        },
-      })
+      const expiradosCount = await tx.$executeRaw`
+        UPDATE caso
+           SET estado = 'expirado',
+               ultima_interacao_em = ${agora}
+         WHERE estado IN (${Prisma.join([...ESTADOS_VIGIADOS])})
+           AND cobrado_em IS NOT NULL
+           AND cobrado_em <= ${limiteExpiracao}
+           AND ultima_interacao_em <= cobrado_em
+      `
+      const expirados = { count: Number(expiradosCount) }
 
       // 3. Anonimização: caso resolvido ou expirado encerrado há TAREFA_DIARIA.diasAteAnonimizar dias
       const limiteAnonimizacao = new Date(agora.getTime() - diasAteAnonimizar * 24 * 60 * 60 * 1000)

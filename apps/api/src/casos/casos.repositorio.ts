@@ -71,6 +71,13 @@ export interface NovoCaso {
   codigoEdicaoHash: string
 }
 
+export function dadosDeRenovacao(agora: Date = new Date()) {
+  return {
+    ultimaInteracaoEm: agora,
+    cobradoEm: null,
+  }
+}
+
 @Injectable()
 export class CasosRepositorio {
   constructor(
@@ -201,10 +208,7 @@ export class CasosRepositorio {
   async confirmar(id: string): Promise<void> {
     await this.prisma.caso.update({
       where: { id },
-      data: {
-        ultimaInteracaoEm: new Date(),
-        cobradoEm: null,
-      },
+      data: dadosDeRenovacao(),
     })
   }
 
@@ -213,7 +217,7 @@ export class CasosRepositorio {
       where: { id },
       data: {
         estado: novoEstado,
-        ultimaInteracaoEm: new Date(),
+        ...dadosDeRenovacao(),
       },
     })
   }
@@ -259,7 +263,7 @@ export class CasosRepositorio {
 
   async editar(id: string, animalId: string, dados: EdicaoDoCasoDto): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      const dataCaso: Prisma.CasoUpdateInput = { ultimaInteracaoEm: new Date() }
+      const dataCaso: Prisma.CasoUpdateInput = { ...dadosDeRenovacao() }
       if (dados.relato !== undefined) dataCaso.relato = dados.relato
 
       await tx.caso.update({ where: { id }, data: dataCaso })
