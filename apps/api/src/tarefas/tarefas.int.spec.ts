@@ -49,6 +49,18 @@ describe('POST /tarefas/ciclo-de-vida', () => {
     expect(caso.cobradoEm).not.toBeNull()
   })
 
+  it('não expira caso que interagiu após cobrança (cobrado d9, interagiu d12, tarefa d15)', async () => {
+    const { id } = await publicar()
+    // Cobrado 6 dias atrás, mas teve interação 3 dias atrás (após a cobrança)
+    await prisma.$executeRaw`UPDATE caso SET cobrado_em = now() - interval '6 days', ultima_interacao_em = now() - interval '3 days' WHERE id = ${id}::uuid`
+
+    const { body } = await executarTarefas().expect(200)
+
+    expect(body.expirados).toBe(0)
+    const caso = await prisma.caso.findUniqueOrThrow({ where: { id } })
+    expect(caso.estado).toBe('procurando')
+  })
+
   it('expira caso cobrado há mais de 6 dias (15 - 9), mas não expira caso não cobrado', async () => {
     const cobrado = await publicar()
     await prisma.$executeRaw`UPDATE caso SET cobrado_em = now() - interval '7 days', ultima_interacao_em = now() - interval '16 days' WHERE id = ${cobrado.id}::uuid`

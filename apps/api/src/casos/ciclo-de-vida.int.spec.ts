@@ -113,6 +113,7 @@ describe('F8 ciclo de vida', () => {
 
       const caso = await prisma.caso.findUniqueOrThrow({ where: { id } })
       expect(caso.cobradoEm).toBeNull()
+      expect(caso.cobradoEm).toBeNull()
       expect(Date.now() - caso.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
     })
 
@@ -144,10 +145,10 @@ describe('F8 ciclo de vida', () => {
   })
 
   describe('POST /casos/:id/reabertura', () => {
-    it('de em_contato volta ao estado inicial do caso e renova interação', async () => {
+    it('de em_contato volta ao estado inicial do caso e renova interação zerando cobrado_em', async () => {
       const perdido = await publicar()
       await prisma.caso.update({ where: { id: perdido.id }, data: { estado: 'em_contato' } })
-      await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '8 days' WHERE id = ${perdido.id}::uuid`
+      await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '8 days', cobrado_em = now() - interval '2 days' WHERE id = ${perdido.id}::uuid`
 
       await request(app.getHttpServer())
         .post(`/casos/${perdido.id}/reabertura`)
@@ -156,6 +157,7 @@ describe('F8 ciclo de vida', () => {
 
       const casoPerdido = await prisma.caso.findUniqueOrThrow({ where: { id: perdido.id } })
       expect(casoPerdido.estado).toBe('procurando')
+      expect(casoPerdido.cobradoEm).toBeNull()
       expect(Date.now() - casoPerdido.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
 
       const achado = await publicar({ tipo: 'encontrado' })
@@ -278,9 +280,9 @@ describe('F8 ciclo de vida', () => {
   })
 
   describe('PATCH /casos/:id', () => {
-    it('permite editar relato e animal de caso aberto, renovando a última interação', async () => {
+    it('permite editar relato e animal de caso aberto, renovando a última interação e zerando cobrado_em', async () => {
       const { id, codigoEdicao } = await publicar()
-      await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '8 days' WHERE id = ${id}::uuid`
+      await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '8 days', cobrado_em = now() - interval '2 days' WHERE id = ${id}::uuid`
 
       await request(app.getHttpServer())
         .patch(`/casos/${id}`)
