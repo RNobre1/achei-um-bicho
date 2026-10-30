@@ -99,9 +99,10 @@ export class CasosService {
 
     const agora = Date.now()
     const diasSemInteracao = Math.floor((agora - caso.ultimaInteracaoEm.getTime()) / (24 * 60 * 60 * 1000))
+    const estaVigiado = ESTADOS_VIGIADOS.includes(caso.estado as EstadoCaso)
     const cobrancaPendente =
-      Boolean(caso.cobradoEm) ||
-      (ESTADOS_VIGIADOS.includes(caso.estado as EstadoCaso) && diasSemInteracao >= this.configuracao.diasAteCobranca)
+      estaVigiado &&
+      (Boolean(caso.cobradoEm) || diasSemInteracao >= this.configuracao.diasAteCobranca)
 
     return {
       id: caso.id,
@@ -127,7 +128,10 @@ export class CasosService {
     if (!ESTADOS_VIGIADOS.includes(caso.estado as EstadoCaso)) {
       throw new ConflictException(`caso em estado "${caso.estado}" não aceita confirmação`)
     }
-    await this.repositorio.confirmar(id)
+    const ok = await this.repositorio.confirmar(id, caso.estado as EstadoCaso)
+    if (!ok) {
+      throw new ConflictException(`caso em estado "${caso.estado}" mudou concorrentemente`)
+    }
     return { ok: true }
   }
 
@@ -141,7 +145,13 @@ export class CasosService {
       throw new ConflictException(`caso em estado "${caso.estado}" não pode ser reaberto`)
     }
     const novoEstado = ESTADO_INICIAL[caso.tipo as TipoCaso]
-    await this.repositorio.reabrir(id, novoEstado)
+    if (!transicaoPermitida(caso.estado as EstadoCaso, novoEstado, caso.tipo as TipoCaso)) {
+      throw new ConflictException(`caso em estado "${caso.estado}" não pode transicionar para ${novoEstado}`)
+    }
+    const ok = await this.repositorio.reabrir(id, caso.estado as EstadoCaso, novoEstado)
+    if (!ok) {
+      throw new ConflictException(`caso em estado "${caso.estado}" mudou concorrentemente`)
+    }
     return { ok: true }
   }
 
@@ -154,7 +164,14 @@ export class CasosService {
     if (!transicaoPermitida(caso.estado as EstadoCaso, 'resolvido', caso.tipo as TipoCaso)) {
       throw new ConflictException(`caso em estado "${caso.estado}" não pode transicionar para resolvido`)
     }
-    return this.repositorio.encerrarComDesfecho(id, dados)
+    try {
+      return await this.repositorio.encerrarComDesfecho(id, caso.estado as EstadoCaso, dados)
+    } catch (e: any) {
+      if (e?.code === 'P2002' || e?.message === 'ESTADO_MODIFICADO') {
+        throw new ConflictException('caso já encerrado ou modificado concorrentemente')
+      }
+      throw e
+    }
   }
 
   async editar(id: string, dados: EdicaoDoCasoDto, codigoEdicao?: string): Promise<{ ok: true }> {
@@ -175,7 +192,10 @@ export class CasosService {
       Boolean(dados.animal?.corDominante && dados.animal.corDominante !== caso.animal.corDominante) ||
       Boolean(dados.animal?.coleira && dados.animal.coleira !== caso.animal.coleira)
 
-    await this.repositorio.editar(id, caso.animal.id, dados)
+    const ok = await this.repositorio.editar(id, caso.estado as EstadoCaso, caso.animal.id, dados)
+    if (!ok) {
+      throw new ConflictException(`caso em estado "${caso.estado}" mudou concorrentemente`)
+    }
 
     if (mudouAtributosDePareamento) {
       await this.gerador.recalcularPara(id)

@@ -205,24 +205,26 @@ export class CasosRepositorio {
     })
   }
 
-  async confirmar(id: string): Promise<void> {
-    await this.prisma.caso.update({
-      where: { id },
+  async confirmar(id: string, estadoEsperado: EstadoCaso): Promise<boolean> {
+    const { count } = await this.prisma.caso.updateMany({
+      where: { id, estado: estadoEsperado },
       data: dadosDeRenovacao(),
     })
+    return count > 0
   }
 
-  async reabrir(id: string, novoEstado: EstadoCaso): Promise<void> {
-    await this.prisma.caso.update({
-      where: { id },
+  async reabrir(id: string, estadoEsperado: EstadoCaso, novoEstado: EstadoCaso): Promise<boolean> {
+    const { count } = await this.prisma.caso.updateMany({
+      where: { id, estado: estadoEsperado },
       data: {
         estado: novoEstado,
         ...dadosDeRenovacao(),
       },
     })
+    return count > 0
   }
 
-  async encerrarComDesfecho(casoId: string, dados: NovoDesfecho): Promise<{ id: string }> {
+  async encerrarComDesfecho(casoId: string, estadoEsperado: EstadoCaso, dados: NovoDesfecho): Promise<{ id: string }> {
     return this.prisma.$transaction(async (tx) => {
       const desfecho = await tx.desfecho.create({
         data: {
@@ -231,13 +233,16 @@ export class CasosRepositorio {
           ocorridoEm: new Date(dados.ocorridoEm),
         },
       })
-      await tx.caso.update({
-        where: { id: casoId },
+      const { count } = await tx.caso.updateMany({
+        where: { id: casoId, estado: estadoEsperado },
         data: {
           estado: 'resolvido',
-          ultimaInteracaoEm: new Date(),
+          ...dadosDeRenovacao(),
         },
       })
+      if (count === 0) {
+        throw new Error('ESTADO_MODIFICADO')
+      }
       return { id: desfecho.id }
     })
   }
@@ -261,12 +266,15 @@ export class CasosRepositorio {
     })
   }
 
-  async editar(id: string, animalId: string, dados: EdicaoDoCasoDto): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+  async editar(id: string, estadoEsperado: EstadoCaso, animalId: string, dados: EdicaoDoCasoDto): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
       const dataCaso: Prisma.CasoUpdateInput = { ...dadosDeRenovacao() }
-      if (dados.relato !== undefined) dataCaso.relato = dados.relato
+      if (dados.relato !== undefined) {
+        dataCaso.relato = dados.relato.trim() || null
+      }
 
-      await tx.caso.update({ where: { id }, data: dataCaso })
+      const { count } = await tx.caso.updateMany({ where: { id, estado: estadoEsperado }, data: dataCaso })
+      if (count === 0) return false
 
       if (dados.animal) {
         await tx.animal.update({
@@ -275,11 +283,12 @@ export class CasosRepositorio {
             porte: dados.animal.porte,
             corDominante: dados.animal.corDominante,
             coleira: dados.animal.coleira,
-            nome: dados.animal.nome,
+            nome: dados.animal.nome !== undefined ? (dados.animal.nome.trim() || null) : undefined,
             castrado: dados.animal.castrado,
           },
         })
       }
+      return true
     })
   }
 }
