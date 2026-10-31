@@ -2,11 +2,12 @@ import { randomUUID } from 'node:crypto'
 import type { INestApplication } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import request from 'supertest'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
 import { aoSul, CENTRO_SANTAREM } from '../../test/pontos'
+import { CasosRepositorio } from './casos.repositorio'
 
 const UMA_HORA = 60 * 60 * 1000
 
@@ -19,6 +20,7 @@ describe('F8 ciclo de vida', () => {
   })
 
   beforeEach(async () => {
+    vi.restoreAllMocks()
     await limparBanco(prisma)
   })
 
@@ -30,6 +32,20 @@ describe('F8 ciclo de vida', () => {
   async function publicar(sobrescrever: Record<string, unknown> = {}): Promise<{ id: string; codigoEdicao: string }> {
     const { body } = await request(app.getHttpServer()).post('/casos').send(casoValido(sobrescrever)).expect(201)
     return body
+  }
+
+  async function mudarEstadoDepoisDaLeituraDeSituacao(id: string, novoEstado: 'em_contato' | 'expirado') {
+    const repositorio = app.get(CasosRepositorio)
+    const situacaoAntiga = await repositorio.buscarParaSituacao(id)
+    await prisma.caso.update({ where: { id }, data: { estado: novoEstado } })
+    return vi.spyOn(repositorio, 'buscarParaSituacao').mockResolvedValueOnce(situacaoAntiga)
+  }
+
+  async function mudarEstadoDepoisDaLeituraParaEdicao(id: string) {
+    const repositorio = app.get(CasosRepositorio)
+    const edicaoAntiga = await repositorio.buscarParaEdicao(id)
+    await prisma.caso.update({ where: { id }, data: { estado: 'em_contato' } })
+    return vi.spyOn(repositorio, 'buscarParaEdicao').mockResolvedValueOnce(edicaoAntiga)
   }
 
   describe('GET /casos/:id/situacao', () => {
@@ -148,6 +164,25 @@ describe('F8 ciclo de vida', () => {
         .post(`/casos/${id}/confirmacao`)
         .set('x-codigo-edicao', codigoEdicao)
         .expect(409)
+    })
+
+    it('usa o conflito da gravação quando o estado muda depois da leitura', async () => {
+      const { id, codigoEdicao } = await publicar()
+      const ultimaInteracao = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+      const cobradoEm = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+      await prisma.caso.update({ where: { id }, data: { ultimaInteracaoEm: ultimaInteracao, cobradoEm } })
+      const busca = await mudarEstadoDepoisDaLeituraDeSituacao(id, 'expirado')
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/confirmacao`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .expect(409)
+
+      expect(busca).toHaveBeenCalledTimes(1)
+      const casoApos = await prisma.caso.findUniqueOrThrow({ where: { id } })
+      expect(casoApos.estado).toBe('expirado')
+      expect(casoApos.ultimaInteracaoEm.getTime()).toBe(ultimaInteracao.getTime())
+      expect(casoApos.cobradoEm?.getTime()).toBe(cobradoEm.getTime())
     })
 
     it('recusa sem o código de edição correto (403)', async () => {
@@ -383,6 +418,28 @@ describe('F8 ciclo de vida', () => {
         .expect(409)
     })
 
+    it('usa o conflito da gravação quando o estado muda depois da leitura', async () => {
+      const { id, codigoEdicao } = await publicar()
+      const ultimaInteracao = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+      const cobradoEm = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+      await prisma.caso.update({
+        where: { id },
+        data: { estado: 'em_contato', ultimaInteracaoEm: ultimaInteracao, cobradoEm },
+      })
+      const busca = await mudarEstadoDepoisDaLeituraDeSituacao(id, 'expirado')
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/reabertura`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .expect(409)
+
+      expect(busca).toHaveBeenCalledTimes(1)
+      const casoApos = await prisma.caso.findUniqueOrThrow({ where: { id } })
+      expect(casoApos.estado).toBe('expirado')
+      expect(casoApos.ultimaInteracaoEm.getTime()).toBe(ultimaInteracao.getTime())
+      expect(casoApos.cobradoEm?.getTime()).toBe(cobradoEm.getTime())
+    })
+
     it('recusa sem o código de edição correto (403)', async () => {
       const { id } = await publicar()
       await request(app.getHttpServer()).post(`/casos/${id}/reabertura`).expect(403)
@@ -461,6 +518,21 @@ describe('F8 ciclo de vida', () => {
         .expect(409)
     })
 
+    it('usa o conflito da gravação quando o estado muda depois da leitura', async () => {
+      const { id, codigoEdicao } = await publicar()
+      const busca = await mudarEstadoDepoisDaLeituraDeSituacao(id, 'em_contato')
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/desfecho`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ tipo: 'voltou_para_casa', ocorridoEm: new Date(Date.now() - UMA_HORA).toISOString() })
+        .expect(409)
+
+      expect(busca).toHaveBeenCalledTimes(1)
+      expect(await prisma.caso.findUniqueOrThrow({ where: { id } })).toMatchObject({ estado: 'em_contato' })
+      expect(await prisma.desfecho.findUnique({ where: { casoId: id } })).toBeNull()
+    })
+
     it.each([
       ['com data no futuro', { tipo: 'voltou_para_casa', ocorridoEm: new Date(Date.now() + 2 * UMA_HORA).toISOString() }],
       ['com tipo inválido', { tipo: 'alienigena', ocorridoEm: new Date().toISOString() }],
@@ -517,6 +589,7 @@ describe('F8 ciclo de vida', () => {
       expect(caso.animal.nome).toBe('Pipoca')
       expect(caso.animal.castrado).toBe(false)
       expect(Date.now() - caso.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
+      expect(caso.cobradoEm).toBeNull()
     })
 
     it('recusa relato com dados de contato (400)', async () => {
@@ -538,6 +611,23 @@ describe('F8 ciclo de vida', () => {
         .set('x-codigo-edicao', codigoEdicao)
         .send({ relato: 'Tentando editar em contato' })
         .expect(409)
+    })
+
+    it('usa o conflito da gravação quando o estado muda depois da leitura', async () => {
+      const { id, codigoEdicao } = await publicar()
+      const casoInicial = await prisma.caso.findUniqueOrThrow({ where: { id } })
+      const busca = await mudarEstadoDepoisDaLeituraParaEdicao(id)
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ relato: 'Edição concorrente que não deve gravar' })
+        .expect(409)
+
+      expect(busca).toHaveBeenCalledTimes(1)
+      const casoApos = await prisma.caso.findUniqueOrThrow({ where: { id } })
+      expect(casoApos.estado).toBe('em_contato')
+      expect(casoApos.relato).toBe(casoInicial.relato)
     })
 
     it('ao mudar porte, cor ou coleira, recalcula pistas mantendo as descartadas intactas', async () => {
