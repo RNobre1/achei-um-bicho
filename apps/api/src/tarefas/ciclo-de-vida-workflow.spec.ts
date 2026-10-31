@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { TAREFA_DIARIA } from '@achei/contratos'
 import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
 
 const CAMINHO_WORKFLOW = resolve(__dirname, '../../../../.github/workflows/ciclo-de-vida.yml')
 
@@ -13,8 +14,9 @@ describe('ação agendada de ciclo de vida (.github/workflows/ciclo-de-vida.yml)
     // Deve ter workflow_dispatch
     expect(conteudo).toContain('workflow_dispatch')
 
-    // Deve ter schedule com o cron do manifesto de contratos
-    expect(conteudo).toContain(`cron: '${TAREFA_DIARIA.cronUtc}'`)
+    // Lê o YAML e confere on.schedule[0].cron === TAREFA_DIARIA.cronUtc
+    const workflow = parse(conteudo)
+    expect(workflow.on.schedule[0].cron).toBe(TAREFA_DIARIA.cronUtc)
   })
 
   it('chama o endpoint com curl, segredo TAREFAS_CHAVE e tolerância a dormência da API', () => {

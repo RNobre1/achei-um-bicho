@@ -119,6 +119,20 @@ describe('pistas de pareamento', () => {
       expect(JSON.stringify(body)).not.toContain('93998887777')
     })
 
+    it('só mostra pistas cujo outro caso está vigiado', async () => {
+      const nego = await publicar(casoValido())
+      const achado1 = await publicar(encontrado(850))
+      const achado2 = await publicar(encontrado(900))
+
+      // Muda o achado2 para expirado (não vigiado)
+      await prisma.caso.update({ where: { id: achado2.id }, data: { estado: 'expirado' } })
+
+      const { body } = await pistas(nego.id, nego.codigoEdicao).expect(200)
+
+      expect(body).toHaveLength(1)
+      expect(body[0].outro.id).toBe(achado1.id)
+    })
+
     it('só quem publicou vê as pistas', async () => {
       const nego = await publicar(casoValido())
       const achado = await publicar(encontrado(850))
