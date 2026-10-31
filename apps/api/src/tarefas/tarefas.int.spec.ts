@@ -1,11 +1,12 @@
 import type { INestApplication } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import request from 'supertest'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
 import { areaAproximada } from '../geo/area-aproximada'
+import { PrismaService } from '../prisma/prisma.service'
 
 const CHAVE_TESTE = 'chave-tarefas-teste'
 
@@ -19,6 +20,7 @@ describe('POST /tarefas/ciclo-de-vida', () => {
   })
 
   beforeEach(async () => {
+    vi.restoreAllMocks()
     await limparBanco(prisma)
   })
 
@@ -181,6 +183,79 @@ describe('POST /tarefas/ciclo-de-vida', () => {
     for (const p of caso.perguntas) {
       expect(p.respostaEsperada).toBe('anonimizado')
     }
+  })
+
+  it('duas execuções simultâneas anonimiza o mesmo caso uma única vez', async () => {
+    const pontoOriginal = { latitude: -2.4385, longitude: -54.7155 }
+    const { id } = await publicar({ local: { ...casoValido().local, ...pontoOriginal } })
+    await prisma.caso.update({
+      where: { id },
+      data: { estado: 'expirado', ultimaInteracaoEm: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) },
+    })
+    const caso = await prisma.caso.findUniqueOrThrow({
+      where: { id },
+      select: { local: { select: { raioImprecisaoM: true } } },
+    })
+
+    const prismaDaApi = app.get(PrismaService)
+    const findManyOriginal = prismaDaApi.caso.findMany.bind(prismaDaApi.caso)
+    let candidaturasLidas = 0
+    let liberarBarreira!: () => void
+    const barreira = new Promise<void>((resolve) => {
+      liberarBarreira = resolve
+    })
+    vi.spyOn(prismaDaApi.caso, 'findMany').mockImplementation(((argumentos: any) => {
+      const consulta = findManyOriginal(argumentos)
+      if (!argumentos?.where?.AND) return consulta
+      return consulta.then(async (candidatos) => {
+        candidaturasLidas++
+        if (candidaturasLidas === 2) liberarBarreira()
+        await barreira
+        return candidatos
+      }) as any
+    }) as any)
+
+    const resultados = await Promise.all([executarTarefas().expect(200), executarTarefas().expect(200)])
+
+    expect(resultados.map(({ body }) => body.anonimizados).sort()).toEqual([0, 1])
+    const [pontoFinal] = await prisma.$queryRaw<{ latitude: number; longitude: number }[]>`
+      SELECT ST_Y(ponto::geometry) AS latitude, ST_X(ponto::geometry) AS longitude
+        FROM local
+        JOIN caso ON caso.local_id = local.id
+       WHERE caso.id = ${id}::uuid
+    `
+    const { centro } = areaAproximada(id, pontoOriginal, caso.local.raioImprecisaoM)
+    expect(pontoFinal?.latitude).toBeCloseTo(centro.latitude, 6)
+    expect(pontoFinal?.longitude).toBeCloseTo(centro.longitude, 6)
+  })
+
+  it('uma segunda rodada sequencial não altera dados já anonimizados', async () => {
+    const pontoOriginal = { latitude: -2.4385, longitude: -54.7155 }
+    const { id } = await publicar({ local: { ...casoValido().local, ...pontoOriginal } })
+    await prisma.caso.update({
+      where: { id },
+      data: { estado: 'expirado', ultimaInteracaoEm: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) },
+    })
+
+    const primeira = await executarTarefas().expect(200)
+    expect(primeira.body.anonimizados).toBe(1)
+    const pontoAposPrimeira = await prisma.$queryRaw<{ latitude: number; longitude: number }[]>`
+      SELECT ST_Y(ponto::geometry) AS latitude, ST_X(ponto::geometry) AS longitude
+        FROM local
+        JOIN caso ON caso.local_id = local.id
+       WHERE caso.id = ${id}::uuid
+    `
+
+    const segunda = await executarTarefas().expect(200)
+    const pontoAposSegunda = await prisma.$queryRaw<{ latitude: number; longitude: number }[]>`
+      SELECT ST_Y(ponto::geometry) AS latitude, ST_X(ponto::geometry) AS longitude
+        FROM local
+        JOIN caso ON caso.local_id = local.id
+       WHERE caso.id = ${id}::uuid
+    `
+
+    expect(segunda.body.anonimizados).toBe(0)
+    expect(pontoAposSegunda).toEqual(pontoAposPrimeira)
   })
 
   it('não anonimiza caso resolvido há 29 dias', async () => {
