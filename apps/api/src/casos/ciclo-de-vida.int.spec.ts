@@ -200,7 +200,24 @@ describe('F8 ciclo de vida', () => {
       await prisma.caso.update({ where: { id: perdido.id }, data: { estado: 'em_contato' } })
 
       const achado = await publicar({ tipo: 'encontrado' })
-      await prisma.caso.update({ where: { id: achado.id }, data: { estado: 'em_contato' } })
+      const interacaoAnterior = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+      await prisma.caso.update({
+        where: { id: achado.id },
+        data: { estado: 'em_contato', ultimaInteracaoEm: interacaoAnterior },
+      })
+
+      await prisma.pareamento.upsert({
+        where: { casoPerdidoId_casoEncontradoId: { casoPerdidoId: perdido.id, casoEncontradoId: achado.id } },
+        create: {
+          casoPerdidoId: perdido.id,
+          casoEncontradoId: achado.id,
+          distanciaM: 500,
+          diasDiferenca: 0,
+          veredito: 'confirmado',
+          decididoEm: new Date(Date.now() - 3600_000),
+        },
+        update: { veredito: 'confirmado', decididoEm: new Date(Date.now() - 3600_000) },
+      })
 
       const pessoa = await prisma.pessoa.create({ data: { nome: 'Reivindicante', telefone: '93991234567' } })
       const tentativa = await prisma.tentativaVerificacao.create({
@@ -225,6 +242,126 @@ describe('F8 ciclo de vida', () => {
 
       const achadoApos = await prisma.caso.findUniqueOrThrow({ where: { id: achado.id } })
       expect(achadoApos.estado).toBe('abrigado_temporariamente')
+      expect(achadoApos.ultimaInteracaoEm.getTime()).toBe(interacaoAnterior.getTime())
+
+      const pareamentoApos = await prisma.pareamento.findUniqueOrThrow({
+        where: { casoPerdidoId_casoEncontradoId: { casoPerdidoId: perdido.id, casoEncontradoId: achado.id } },
+      })
+      expect(pareamentoApos.veredito).toBe('pendente')
+      expect(pareamentoApos.decididoEm).toBeNull()
+    })
+
+    it('mantém caso próprio em contato quando outra reivindicação aceita ainda o relaciona', async () => {
+      const perdido = await publicar({ tipo: 'perdido' })
+      const interacaoAnterior = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+      await prisma.caso.update({
+        where: { id: perdido.id },
+        data: { estado: 'em_contato', ultimaInteracaoEm: interacaoAnterior },
+      })
+
+      const pessoaDoContatoExistente = await prisma.pessoa.create({ data: { nome: 'T3', telefone: '93991112223' } })
+      const tentativaT3 = await prisma.tentativaVerificacao.create({
+        data: {
+          casoId: perdido.id,
+          pessoaId: pessoaDoContatoExistente.id,
+          codigoAcompanhamento: 'hash-t3-aceita',
+          veredito: 'aceita',
+          decididoEm: new Date(Date.now() - 3600_000),
+        },
+      })
+
+      const encontrado = await publicar({ tipo: 'encontrado' })
+      await prisma.caso.update({ where: { id: encontrado.id }, data: { estado: 'em_contato' } })
+      const pessoaDeT1 = await prisma.pessoa.create({ data: { nome: 'T1', telefone: '93991112224' } })
+      const tentativaT1 = await prisma.tentativaVerificacao.create({
+        data: {
+          casoId: encontrado.id,
+          pessoaId: pessoaDeT1.id,
+          casoProprioId: perdido.id,
+          codigoAcompanhamento: 'hash-t1-aceita',
+          veredito: 'aceita',
+          decididoEm: new Date(Date.now() - 1800_000),
+        },
+      })
+
+      await prisma.pareamento.upsert({
+        where: { casoPerdidoId_casoEncontradoId: { casoPerdidoId: perdido.id, casoEncontradoId: encontrado.id } },
+        create: {
+          casoPerdidoId: perdido.id,
+          casoEncontradoId: encontrado.id,
+          distanciaM: 500,
+          diasDiferenca: 0,
+          veredito: 'confirmado',
+          decididoEm: new Date(Date.now() - 1800_000),
+        },
+        update: { veredito: 'confirmado', decididoEm: new Date(Date.now() - 1800_000) },
+      })
+
+      await request(app.getHttpServer())
+        .post(`/casos/${encontrado.id}/reabertura`)
+        .set('x-codigo-edicao', encontrado.codigoEdicao)
+        .expect(200)
+
+      const casoProprioApos = await prisma.caso.findUniqueOrThrow({ where: { id: perdido.id } })
+      expect(casoProprioApos.estado).toBe('em_contato')
+      expect(casoProprioApos.ultimaInteracaoEm.getTime()).toBe(interacaoAnterior.getTime())
+
+      const tentativaT1Apos = await prisma.tentativaVerificacao.findUniqueOrThrow({ where: { id: tentativaT1.id } })
+      const tentativaT3Apos = await prisma.tentativaVerificacao.findUniqueOrThrow({ where: { id: tentativaT3.id } })
+      expect(tentativaT1Apos.veredito).toBe('recusada')
+      expect(tentativaT3Apos.veredito).toBe('aceita')
+
+      const pareamentoApos = await prisma.pareamento.findUniqueOrThrow({
+        where: {
+          casoPerdidoId_casoEncontradoId: { casoPerdidoId: perdido.id, casoEncontradoId: encontrado.id },
+        },
+      })
+      expect(pareamentoApos.veredito).toBe('pendente')
+      expect(pareamentoApos.decididoEm).toBeNull()
+    })
+
+    it('volta pareamento confirmado para pendente ao reabrir o caso', async () => {
+      const perdido = await publicar({ tipo: 'perdido' })
+      const achado = await publicar({ tipo: 'encontrado' })
+      await prisma.caso.updateMany({
+        where: { id: { in: [perdido.id, achado.id] } },
+        data: { estado: 'em_contato' },
+      })
+
+      const pessoa = await prisma.pessoa.create({ data: { nome: 'Reivindicante', telefone: '93991234567' } })
+      await prisma.tentativaVerificacao.create({
+        data: {
+          casoId: perdido.id,
+          pessoaId: pessoa.id,
+          casoProprioId: achado.id,
+          codigoAcompanhamento: 'hash-pareamento-confirmado',
+          veredito: 'aceita',
+          decididoEm: new Date(Date.now() - 3600_000),
+        },
+      })
+      await prisma.pareamento.upsert({
+        where: { casoPerdidoId_casoEncontradoId: { casoPerdidoId: perdido.id, casoEncontradoId: achado.id } },
+        create: {
+          casoPerdidoId: perdido.id,
+          casoEncontradoId: achado.id,
+          distanciaM: 500,
+          diasDiferenca: 0,
+          veredito: 'confirmado',
+          decididoEm: new Date(Date.now() - 3600_000),
+        },
+        update: { veredito: 'confirmado', decididoEm: new Date(Date.now() - 3600_000) },
+      })
+
+      await request(app.getHttpServer())
+        .post(`/casos/${perdido.id}/reabertura`)
+        .set('x-codigo-edicao', perdido.codigoEdicao)
+        .expect(200)
+
+      const pareamentoApos = await prisma.pareamento.findUniqueOrThrow({
+        where: { casoPerdidoId_casoEncontradoId: { casoPerdidoId: perdido.id, casoEncontradoId: achado.id } },
+      })
+      expect(pareamentoApos.veredito).toBe('pendente')
+      expect(pareamentoApos.decididoEm).toBeNull()
     })
 
     it('reabrir caso depois de expirado dá 409', async () => {
