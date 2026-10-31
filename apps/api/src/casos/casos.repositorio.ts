@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import {
   ESTADOS_ABERTOS,
+  ESTADO_INICIAL,
+  transicaoPermitida,
   type Coleira,
   type Cor,
   type Especie,
@@ -214,14 +216,47 @@ export class CasosRepositorio {
   }
 
   async reabrir(id: string, estadoEsperado: EstadoCaso, novoEstado: EstadoCaso): Promise<boolean> {
-    const { count } = await this.prisma.caso.updateMany({
-      where: { id, estado: estadoEsperado },
-      data: {
-        estado: novoEstado,
-        ...dadosDeRenovacao(),
-      },
+    const agora = new Date()
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.caso.updateMany({
+        where: { id, estado: estadoEsperado },
+        data: {
+          estado: novoEstado,
+          ...dadosDeRenovacao(agora),
+        },
+      })
+      if (count === 0) return false
+
+      const aceitas = await tx.tentativaVerificacao.findMany({
+        where: { casoId: id, veredito: 'aceita' },
+        include: { casoProprio: true },
+      })
+
+      for (const tentativa of aceitas) {
+        await tx.tentativaVerificacao.update({
+          where: { id: tentativa.id },
+          data: {
+            veredito: 'recusada',
+            decididoEm: agora,
+          },
+        })
+
+        if (tentativa.casoProprioId && tentativa.casoProprio?.estado === 'em_contato') {
+          const estadoInicialProprio = ESTADO_INICIAL[tentativa.casoProprio.tipo as TipoCaso]
+          if (transicaoPermitida('em_contato', estadoInicialProprio, tentativa.casoProprio.tipo as TipoCaso)) {
+            await tx.caso.updateMany({
+              where: { id: tentativa.casoProprioId, estado: 'em_contato' },
+              data: {
+                estado: estadoInicialProprio,
+                ...dadosDeRenovacao(agora),
+              },
+            })
+          }
+        }
+      }
+
+      return true
     })
-    return count > 0
   }
 
   async encerrarComDesfecho(casoId: string, estadoEsperado: EstadoCaso, dados: NovoDesfecho): Promise<{ id: string }> {
