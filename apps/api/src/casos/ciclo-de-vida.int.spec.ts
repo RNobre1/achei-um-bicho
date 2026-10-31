@@ -463,5 +463,51 @@ describe('F8 ciclo de vida', () => {
         .send({ relato: 'Inexistente' })
         .expect(404)
     })
+
+    it('limpa relato e nome gravando null quando enviados como string vazia', async () => {
+      const { id, codigoEdicao } = await publicar({ relato: 'Relato inicial', animal: { nome: 'Rex' } })
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ relato: '', animal: { nome: '' } })
+        .expect(200)
+
+      const caso = await prisma.caso.findUniqueOrThrow({ where: { id }, include: { animal: true } })
+      expect(caso.relato).toBeNull()
+      expect(caso.animal.nome).toBeNull()
+    })
+
+    it('recusa alteração de espécie com 400', async () => {
+      const { id, codigoEdicao } = await publicar()
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ animal: { especie: 'gato' } })
+        .expect(400)
+    })
+
+    it('respeita limite de 600 caracteres no relato e 60 no nome', async () => {
+      const { id, codigoEdicao } = await publicar()
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ relato: 'a'.repeat(601) })
+        .expect(400)
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ animal: { nome: 'a'.repeat(61) } })
+        .expect(400)
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ relato: 'a'.repeat(600), animal: { nome: 'a'.repeat(60) } })
+        .expect(200)
+    })
   })
 })
