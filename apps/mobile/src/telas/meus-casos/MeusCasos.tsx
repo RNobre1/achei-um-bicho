@@ -87,7 +87,7 @@ export function MeusCasos() {
       {!situacoes ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={cores.tapajos} />
       ) : situacoes.length === 0 ? (
-        <View style={[estilos.margem, { gap: 14, paddingTop: 28 }]}>\
+        <View style={[estilos.margem, { gap: 14, paddingTop: 28 }]}>
           <Text style={estilos.estadoTitulo}>Nenhum caso por aqui ainda</Text>
           <Text style={estilos.paragrafo}>
             Quem publica sem conta continua dono do caso pelo código de edição, que fica guardado neste celular.

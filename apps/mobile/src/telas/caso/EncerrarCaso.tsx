@@ -11,6 +11,7 @@ import { Voltar } from '../../componentes/Voltar'
 import {
   montarDesfecho,
   pendenciasDoDesfecho,
+  validarDesfecho,
   type QuandoDesfecho,
   type RascunhoDesfecho,
 } from '../../dominio/ciclo-de-vida'
@@ -71,10 +72,24 @@ export function EncerrarCaso() {
       return
     }
 
+    let desfechoMontado
+    try {
+      desfechoMontado = montarDesfecho(rascunho)
+    } catch (e) {
+      setPendencias([e instanceof Error ? e.message : "Dados do desfecho incompletos"])
+      return
+    }
+
+    const erros = validarDesfecho(desfechoMontado)
+    if (erros.length > 0) {
+      setPendencias(erros)
+      return
+    }
+
     setEnviando(true)
     setErro(undefined)
     try {
-      await api.encerrarCaso(id, codigoEdicao, montarDesfecho(rascunho))
+      await api.encerrarCaso(id, codigoEdicao, desfechoMontado)
       setEncerrado(true)
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Não foi possível encerrar o caso. Tente de novo.')
@@ -97,7 +112,7 @@ export function EncerrarCaso() {
           <View style={{ gap: 16 }}>
             <Text style={estilos.titulo}>Caso encerrado.</Text>
             <Text style={estilos.paragrafo}>
-              O desfecho de {nome ?? 'animal'} foi registrado. O caso deixa de aparecer no mural ativo e suas pistas foram concluídas.
+              O desfecho de {nome ?? 'animal'} foi registrado. O caso saiu do mural.
             </Text>
             <Botao rotulo="Voltar para Meus Casos" aoTocar={() => router.replace('/(abas)/meus-casos')} />
           </View>
@@ -153,7 +168,7 @@ export function EncerrarCaso() {
             <Botao
               rotulo={enviando ? 'Encerrando...' : 'Confirmar encerramento'}
               aoTocar={encerrar}
-              variante="primario"
+              variante="escuro"
             />
           </View>
         )}

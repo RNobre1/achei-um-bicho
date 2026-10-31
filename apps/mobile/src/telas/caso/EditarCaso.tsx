@@ -16,17 +16,14 @@ import { Botao } from '../../componentes/Botao'
 import { Campo } from '../../componentes/Campo'
 import { GrupoDeChips } from '../../componentes/GrupoDeChips'
 import { Voltar } from '../../componentes/Voltar'
+import {
+  opcoesCastradoEdicao,
+  prepararEdicao,
+  type OpcaoCastrado,
+} from '../../dominio/ciclo-de-vida'
 import { api, ErroApi } from '../../servicos/api'
 import { meuCaso } from '../../servicos/meus-casos'
 import { cores, fontes } from '../../tema'
-
-type OpcaoCastrado = 'sim' | 'nao' | 'nao_informado'
-
-const OPCOES_CASTRADO: readonly { valor: OpcaoCastrado; rotulo: string }[] = [
-  { valor: 'sim', rotulo: 'Sim' },
-  { valor: 'nao', rotulo: 'Não' },
-  { valor: 'nao_informado', rotulo: 'Não informado' },
-]
 
 export function EditarCaso() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -42,6 +39,7 @@ export function EditarCaso() {
   const [coleira, setColeira] = useState<Coleira>()
   const [nome, setNome] = useState('')
   const [castrado, setCastrado] = useState<OpcaoCastrado>('nao_informado')
+  const [castradoOriginal, setCastradoOriginal] = useState<boolean | null | undefined>()
 
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string>()
@@ -61,6 +59,7 @@ export function EditarCaso() {
         setCorDominante(caso.animal.corDominante)
         setColeira(caso.animal.coleira)
         setNome(caso.animal.nome ?? '')
+        setCastradoOriginal(caso.animal.castrado)
         if (caso.animal.castrado === true) {
           setCastrado('sim')
         } else if (caso.animal.castrado === false) {
@@ -86,18 +85,16 @@ export function EditarCaso() {
     setSalvando(true)
     setErro(undefined)
     try {
-      const castradoBooleano = castrado === 'sim' ? true : castrado === 'nao' ? false : undefined
-
-      await api.editarCaso(id, codigoEdicao, {
-        relato: relato.trim() || undefined,
-        animal: {
-          porte,
-          corDominante,
-          coleira,
-          nome: nome.trim() || undefined,
-          castrado: castradoBooleano,
-        },
+      const edicao = prepararEdicao({
+        relato,
+        nome,
+        porte,
+        corDominante,
+        coleira,
+        castrado,
       })
+
+      await api.editarCaso(id, codigoEdicao, edicao)
       setSalvo(true)
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Não foi possível salvar as alterações.')
@@ -138,6 +135,7 @@ export function EditarCaso() {
               rotulo="Nome do animal"
               valor={nome}
               aoMudar={setNome}
+              maxLength={60}
               placeholder="Nome que ele atende ou como é chamado"
             />
 
@@ -164,7 +162,7 @@ export function EditarCaso() {
 
             <GrupoDeChips
               rotulo="Castrado"
-              opcoes={OPCOES_CASTRADO}
+              opcoes={opcoesCastradoEdicao(castradoOriginal)}
               marcado={castrado}
               aoEscolher={setCastrado}
             />
@@ -174,7 +172,7 @@ export function EditarCaso() {
               valor={relato}
               aoMudar={setRelato}
               multiline
-              maxLength={500}
+              maxLength={600}
               placeholder="Detalhes adicionais que ajudam a identificar o animal ou o contexto"
             />
 
@@ -183,7 +181,7 @@ export function EditarCaso() {
             <Botao
               rotulo={salvando ? 'Salvando...' : 'Salvar alterações'}
               aoTocar={salvar}
-              variante="primario"
+              variante="escuro"
             />
           </View>
         )}

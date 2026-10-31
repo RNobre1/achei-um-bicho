@@ -49,7 +49,7 @@ describe('ciclo de vida no domínio mobile', () => {
     it('caso resolvido exibe o rótulo do desfecho', () => {
       const texto = textoDaSituacao({
         estado: 'resolvido',
-        desfecho: { tipo: 'voltou_para_casa', ocorridoEm: '2026-10-01T10:00:00.000Z' },
+        desfecho: { tipo: 'voltou_para_casa' },
       })
       expect(texto).toBe('Resolvido · Voltou para casa')
     })
