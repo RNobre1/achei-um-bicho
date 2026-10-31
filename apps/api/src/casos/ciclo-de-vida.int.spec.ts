@@ -195,6 +195,38 @@ describe('F8 ciclo de vida', () => {
       expect(casoAchado.estado).toBe('abrigado_temporariamente')
     })
 
+    it('ao reabrir, desfaz o contato passando reivindicação aceita para recusada e revertendo caso próprio', async () => {
+      const perdido = await publicar({ tipo: 'perdido' })
+      await prisma.caso.update({ where: { id: perdido.id }, data: { estado: 'em_contato' } })
+
+      const achado = await publicar({ tipo: 'encontrado' })
+      await prisma.caso.update({ where: { id: achado.id }, data: { estado: 'em_contato' } })
+
+      const pessoa = await prisma.pessoa.create({ data: { nome: 'Reivindicante', telefone: '93991234567' } })
+      const tentativa = await prisma.tentativaVerificacao.create({
+        data: {
+          casoId: perdido.id,
+          pessoaId: pessoa.id,
+          casoProprioId: achado.id,
+          codigoAcompanhamento: 'hash-acompanha-1',
+          veredito: 'aceita',
+          decididoEm: new Date(Date.now() - 3600_000),
+        },
+      })
+
+      await request(app.getHttpServer())
+        .post(`/casos/${perdido.id}/reabertura`)
+        .set('x-codigo-edicao', perdido.codigoEdicao)
+        .expect(200)
+
+      const tentativaApos = await prisma.tentativaVerificacao.findUniqueOrThrow({ where: { id: tentativa.id } })
+      expect(tentativaApos.veredito).toBe('recusada')
+      expect(tentativaApos.decididoEm).not.toBeNull()
+
+      const achadoApos = await prisma.caso.findUniqueOrThrow({ where: { id: achado.id } })
+      expect(achadoApos.estado).toBe('abrigado_temporariamente')
+    })
+
     it('reabrir caso depois de expirado dá 409', async () => {
       const { id, codigoEdicao } = await publicar()
       await prisma.caso.update({ where: { id }, data: { estado: 'expirado' } })
