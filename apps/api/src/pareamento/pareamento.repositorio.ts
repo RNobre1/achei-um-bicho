@@ -1,5 +1,6 @@
 import {
   ESTADOS_ABERTOS,
+  ESTADOS_VIGIADOS,
   type Coleira,
   type Comparacao,
   type Cor,
@@ -142,7 +143,8 @@ export class PareamentoRepositorio {
         JOIN animal a ON a.id = o.animal_id
         JOIN local l ON l.id = o.local_id
        WHERE (p.caso_perdido_id = ${id}::uuid OR p.caso_encontrado_id = ${id}::uuid)
-         AND p.veredito <> 'descartado'`
+         AND p.veredito <> 'descartado'
+         AND o.estado IN (${Prisma.join([...ESTADOS_VIGIADOS])})`
     return linhas.map((linha) => ({
       id: linha.id,
       veredito: linha.veredito,
