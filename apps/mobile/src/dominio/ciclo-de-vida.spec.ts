@@ -4,7 +4,9 @@ import {
   acoesDisponiveis,
   momentoDoDesfecho,
   montarDesfecho,
+  opcoesCastradoEdicao,
   pendenciasDoDesfecho,
+  prepararEdicao,
   textoDaSituacao,
   validarDesfecho,
 } from './ciclo-de-vida'
@@ -57,9 +59,14 @@ describe('ciclo de vida no domínio mobile', () => {
       expect(texto).toBe('Resolvido')
     })
 
-    it('cobrança pendente exibe aviso de busca', () => {
+    it('cobrança pendente exibe aviso de busca apenas para casos vigiados', () => {
       const texto = textoDaSituacao({ estado: 'procurando', cobrancaPendente: true })
       expect(texto).toBe('Ainda está procurando?')
+    })
+
+    it('caso expirado com cobrado_em/cobrancaPendente exibe Expirado e não Ainda está procurando?', () => {
+      const texto = textoDaSituacao({ estado: 'expirado', cobrancaPendente: true })
+      expect(texto).toBe('Expirado')
     })
 
     it('exibe rótulo padrão nos demais estados', () => {
@@ -78,13 +85,31 @@ describe('ciclo de vida no domínio mobile', () => {
     it('calcula momento para hoje, ontem e outro dia', () => {
       expect(momentoDoDesfecho('hoje', undefined, agora)).toBe('2026-10-15T12:00:00.000Z')
       expect(momentoDoDesfecho('ontem', undefined, agora)).toBe('2026-10-14T12:00:00.000Z')
-      expect(momentoDoDesfecho('outro_dia', '2026-10-10T08:00:00.000Z', agora)).toBe('2026-10-10T08:00:00.000Z')
     })
 
-    it('aponta pendências de formulário incompleto', () => {
+    it('interpreta 11/10/2026 como 11 de outubro de 2026 (DD/MM/AAAA)', () => {
+      const dataIso = momentoDoDesfecho('outro_dia', '11/10/2026', agora)
+      const data = new Date(dataIso)
+      expect(data.getUTCDate()).toBe(11)
+      expect(data.getUTCMonth()).toBe(9) // Outubro
+      expect(data.getUTCFullYear()).toBe(2026)
+    })
+
+    it('interpreta 2026-10-11 como 11 de outubro de 2026 (AAAA-MM-DD)', () => {
+      const dataIso = momentoDoDesfecho('outro_dia', '2026-10-11', agora)
+      const data = new Date(dataIso)
+      expect(data.getUTCDate()).toBe(11)
+      expect(data.getUTCMonth()).toBe(9) // Outubro
+      expect(data.getUTCFullYear()).toBe(2026)
+    })
+
+    it('aponta pendências de formulário incompleto ou data inválida', () => {
       expect(pendenciasDoDesfecho({})).toContain('Escolha o desfecho do caso')
       expect(pendenciasDoDesfecho({})).toContain('Diga quando o desfecho aconteceu')
-      expect(pendenciasDoDesfecho({ quando: 'outro_dia' })).toContain('Informe uma data válida para o desfecho')
+      expect(pendenciasDoDesfecho({ quando: 'outro_dia' })).toContain('Informe uma data válida para o desfecho (DD/MM/AAAA ou AAAA-MM-DD)')
+      expect(pendenciasDoDesfecho({ quando: 'outro_dia', dataOutroDia: '10-11-2026' })).toContain(
+        'Informe uma data válida para o desfecho (DD/MM/AAAA ou AAAA-MM-DD)',
+      )
     })
 
     it('monta corpo de NovoDesfecho válido', () => {
@@ -102,6 +127,22 @@ describe('ciclo de vida no domínio mobile', () => {
         'Data do desfecho não pode ser no futuro',
       )
       expect(validarDesfecho({ tipo: 'voltou_para_casa', ocorridoEm: '2026-10-10T12:00:00.000Z' }, agora)).toEqual([])
+    })
+  })
+
+  describe('edição de caso no domínio', () => {
+    it('remove opção Não informado se o animal já tiver informação de castração', () => {
+      expect(opcoesCastradoEdicao(true).map((o) => o.valor)).toEqual(['sim', 'nao'])
+      expect(opcoesCastradoEdicao(false).map((o) => o.valor)).toEqual(['sim', 'nao'])
+      expect(opcoesCastradoEdicao(null).map((o) => o.valor)).toEqual(['sim', 'nao', 'nao_informado'])
+      expect(opcoesCastradoEdicao(undefined).map((o) => o.valor)).toEqual(['sim', 'nao', 'nao_informado'])
+    })
+
+    it('prepara payload de edição mantendo strings vazias para relato e nome limpos', () => {
+      const edicao = prepararEdicao({ relato: '', nome: '', porte: 'medio' })
+      expect(edicao.relato).toBe('')
+      expect(edicao.animal?.nome).toBe('')
+      expect(edicao.animal?.porte).toBe('medio')
     })
   })
 })
