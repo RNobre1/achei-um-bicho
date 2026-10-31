@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
+import { areaAproximada } from '../geo/area-aproximada'
 
 const CHAVE_TESTE = 'chave-tarefas-teste'
 
@@ -27,8 +28,8 @@ describe('POST /tarefas/ciclo-de-vida', () => {
     delete process.env.TAREFAS_CHAVE
   })
 
-  async function publicar(): Promise<{ id: string; codigoEdicao: string }> {
-    const { body } = await request(app.getHttpServer()).post('/casos').send(casoValido()).expect(201)
+  async function publicar(sobrescrever: Record<string, unknown> = {}): Promise<{ id: string; codigoEdicao: string }> {
+    const { body } = await request(app.getHttpServer()).post('/casos').send(casoValido(sobrescrever)).expect(201)
     return body
   }
 
@@ -80,20 +81,29 @@ describe('POST /tarefas/ciclo-de-vida', () => {
     expect(caso2.cobradoEm).not.toBeNull()
   })
 
-  it('anonimiza autor, reivindicante e referências de casos encerrados há mais de 30 dias', async () => {
-    const { id, codigoEdicao } = await publicar()
+  it('anonimiza autor, reivindicante, referências, ponto aproximado e perguntas/respostas de casos encerrados há mais de 30 dias', async () => {
+    const pontoOriginal = { latitude: -2.4385, longitude: -54.7155 }
+    const { id, codigoEdicao } = await publicar({ local: { ...casoValido().local, ...pontoOriginal } })
 
-    // Adiciona uma reivindicação
+    // Adiciona uma reivindicação com resposta de verificação
     const reivindicante = await prisma.pessoa.create({
       data: { nome: 'José Silva', telefone: '93991234567' },
     })
-    await prisma.tentativaVerificacao.create({
+    const tentativa = await prisma.tentativaVerificacao.create({
       data: {
         casoId: id,
         pessoaId: reivindicante.id,
         codigoAcompanhamento: 'hash-acompanhamento',
         referencia: 'Perto do mercado São José',
         veredito: 'recusada',
+      },
+    })
+    const perguntas = await prisma.perguntaVerificacao.findMany({ where: { casoId: id } })
+    await prisma.respostaVerificacao.create({
+      data: {
+        tentativaId: tentativa.id,
+        perguntaId: perguntas[0]!.id,
+        texto: 'Ele tem uma mancha branca na pata esquerda',
       },
     })
 
@@ -115,16 +125,102 @@ describe('POST /tarefas/ciclo-de-vida', () => {
     // Confere se autor e reivindicante foram anonimizados
     const caso = await prisma.caso.findUniqueOrThrow({
       where: { id },
-      include: { autor: true, local: true, tentativas: { include: { pessoa: true } } },
+      include: {
+        autor: true,
+        local: true,
+        perguntas: true,
+        tentativas: { include: { pessoa: true, respostas: true } },
+      },
     })
     expect(caso.autor.nome).toBe('Anônimo')
     expect(caso.autor.telefone).toBeNull()
     expect(caso.local.referencia).toBeNull()
 
-    const tentativa = caso.tentativas[0]
-    expect(tentativa.pessoa.nome).toBe('Anônimo')
-    expect(tentativa.pessoa.telefone).toBeNull()
-    expect(tentativa.referencia).toBeNull()
+    // Confere se o ponto passou a ser o centro da área aproximada
+    const { centro } = areaAproximada(id, pontoOriginal, caso.local.raioImprecisaoM)
+    const [pontoNoBanco] = await prisma.$queryRaw<{ latitude: number; longitude: number }[]>`
+      SELECT ST_Y(ponto::geometry) AS latitude, ST_X(ponto::geometry) AS longitude
+        FROM local
+       WHERE id = ${caso.localId}::uuid
+    `
+    expect(pontoNoBanco?.latitude).toBeCloseTo(centro.latitude, 6)
+    expect(pontoNoBanco?.longitude).toBeCloseTo(centro.longitude, 6)
+    // O ponto aproximado difere do original
+    expect(pontoNoBanco?.latitude).not.toBe(pontoOriginal.latitude)
+
+    // Confere se as perguntas foram anonimizadas
+    for (const p of caso.perguntas) {
+      expect(p.respostaEsperada).toBe('anonimizado')
+    }
+
+    // Confere se as respostas e reivindicante foram anonimizados
+    const t = caso.tentativas[0]!
+    expect(t.pessoa.nome).toBe('Anônimo')
+    expect(t.pessoa.telefone).toBeNull()
+    expect(t.referencia).toBeNull()
+    expect(t.respostas[0]!.texto).toBe('anonimizado')
+  })
+
+  it('anonimiza caso expirado há mais de 30 dias', async () => {
+    const { id } = await publicar()
+    await prisma.caso.update({
+      where: { id },
+      data: { estado: 'expirado', cobradoEm: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000) },
+    })
+    await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '31 days' WHERE id = ${id}::uuid`
+
+    const { body } = await executarTarefas().expect(200)
+    expect(body.anonimizados).toBe(1)
+
+    const caso = await prisma.caso.findUniqueOrThrow({
+      where: { id },
+      include: { autor: true, perguntas: true },
+    })
+    expect(caso.autor.nome).toBe('Anônimo')
+    expect(caso.autor.telefone).toBeNull()
+    for (const p of caso.perguntas) {
+      expect(p.respostaEsperada).toBe('anonimizado')
+    }
+  })
+
+  it('não anonimiza caso resolvido há 29 dias', async () => {
+    const { id, codigoEdicao } = await publicar()
+    await request(app.getHttpServer())
+      .post(`/casos/${id}/desfecho`)
+      .set('x-codigo-edicao', codigoEdicao)
+      .send({ tipo: 'voltou_para_casa', ocorridoEm: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() })
+      .expect(201)
+
+    await prisma.$executeRaw`UPDATE desfecho SET registrado_em = now() - interval '29 days' WHERE caso_id = ${id}::uuid`
+    await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '29 days' WHERE id = ${id}::uuid`
+
+    const { body } = await executarTarefas().expect(200)
+    expect(body.anonimizados).toBe(0)
+
+    const caso = await prisma.caso.findUniqueOrThrow({
+      where: { id },
+      include: { autor: true },
+    })
+    expect(caso.autor.nome).not.toBe('Anônimo')
+  })
+
+  it('não anonimiza caso em_contato mesmo com mais de 30 dias', async () => {
+    const { id } = await publicar()
+    await prisma.caso.update({
+      where: { id },
+      data: { estado: 'em_contato' },
+    })
+    await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '35 days' WHERE id = ${id}::uuid`
+
+    const { body } = await executarTarefas().expect(200)
+    expect(body.anonimizados).toBe(0)
+
+    const caso = await prisma.caso.findUniqueOrThrow({
+      where: { id },
+      include: { autor: true },
+    })
+    expect(caso.autor.nome).not.toBe('Anônimo')
+    expect(caso.estado).toBe('em_contato')
   })
 
   it('é idempotente: rodar duas vezes seguidas retorna zeros na segunda', async () => {

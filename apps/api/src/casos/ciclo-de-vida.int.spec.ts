@@ -465,7 +465,7 @@ describe('F8 ciclo de vida', () => {
     })
 
     it('limpa relato e nome gravando null quando enviados como string vazia', async () => {
-      const { id, codigoEdicao } = await publicar({ relato: 'Relato inicial', animal: { nome: 'Rex' } })
+      const { id, codigoEdicao } = await publicar({ relato: 'Relato inicial', animal: { ...casoValido().animal, nome: 'Rex' } })
 
       await request(app.getHttpServer())
         .patch(`/casos/${id}`)
