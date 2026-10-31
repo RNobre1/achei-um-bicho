@@ -241,15 +241,33 @@ export class CasosRepositorio {
           },
         })
 
-        if (tentativa.casoProprioId && tentativa.casoProprio?.estado === 'em_contato') {
+        if (!tentativa.casoProprioId) continue
+
+        await tx.pareamento.updateMany({
+          where: {
+            veredito: 'confirmado',
+            OR: [
+              { casoPerdidoId: id, casoEncontradoId: tentativa.casoProprioId },
+              { casoPerdidoId: tentativa.casoProprioId, casoEncontradoId: id },
+            ],
+          },
+          data: { veredito: 'pendente', decididoEm: null },
+        })
+
+        const outrasReivindicacoesAceitas = await tx.tentativaVerificacao.count({
+          where: {
+            veredito: 'aceita',
+            id: { not: tentativa.id },
+            OR: [{ casoId: tentativa.casoProprioId }, { casoProprioId: tentativa.casoProprioId }],
+          },
+        })
+
+        if (outrasReivindicacoesAceitas === 0 && tentativa.casoProprio?.estado === 'em_contato') {
           const estadoInicialProprio = ESTADO_INICIAL[tentativa.casoProprio.tipo as TipoCaso]
           if (transicaoPermitida('em_contato', estadoInicialProprio, tentativa.casoProprio.tipo as TipoCaso)) {
             await tx.caso.updateMany({
               where: { id: tentativa.casoProprioId, estado: 'em_contato' },
-              data: {
-                estado: estadoInicialProprio,
-                ...dadosDeRenovacao(agora),
-              },
+              data: { estado: estadoInicialProprio },
             })
           }
         }
