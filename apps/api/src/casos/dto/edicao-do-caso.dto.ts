@@ -25,7 +25,7 @@ export class AnimalEdicaoDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(60)
   nome?: string
 
   @IsOptional()
@@ -36,7 +36,7 @@ export class AnimalEdicaoDto {
 export class EdicaoDoCasoDto implements EdicaoDoCaso {
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(600)
   relato?: string
 
   @IsOptional()
