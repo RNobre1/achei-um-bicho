@@ -287,6 +287,48 @@ describe('F8 ciclo de vida', () => {
       expect(pareamentoApos.decididoEm).toBeNull()
     })
 
+    it('mantém caso próprio em contato quando ele é o caso próprio de outra reivindicação aceita', async () => {
+      const perdido = await publicar({ tipo: 'perdido' })
+      await prisma.caso.update({ where: { id: perdido.id }, data: { estado: 'em_contato' } })
+
+      // o dono do perdido reivindicou outro encontrado (Y), apontando o perdido como caso próprio, e Y aceitou
+      const encontradoY = await publicar({ tipo: 'encontrado' })
+      await prisma.caso.update({ where: { id: encontradoY.id }, data: { estado: 'em_contato' } })
+      const pessoaDeT4 = await prisma.pessoa.create({ data: { nome: 'T4', telefone: '93991112225' } })
+      await prisma.tentativaVerificacao.create({
+        data: {
+          casoId: encontradoY.id,
+          pessoaId: pessoaDeT4.id,
+          casoProprioId: perdido.id,
+          codigoAcompanhamento: 'hash-t4-aceita',
+          veredito: 'aceita',
+          decididoEm: new Date(Date.now() - 3600_000),
+        },
+      })
+
+      const encontradoX = await publicar({ tipo: 'encontrado' })
+      await prisma.caso.update({ where: { id: encontradoX.id }, data: { estado: 'em_contato' } })
+      const pessoaDeT1 = await prisma.pessoa.create({ data: { nome: 'T1', telefone: '93991112226' } })
+      await prisma.tentativaVerificacao.create({
+        data: {
+          casoId: encontradoX.id,
+          pessoaId: pessoaDeT1.id,
+          casoProprioId: perdido.id,
+          codigoAcompanhamento: 'hash-t1-aceita-x',
+          veredito: 'aceita',
+          decididoEm: new Date(Date.now() - 1800_000),
+        },
+      })
+
+      await request(app.getHttpServer())
+        .post(`/casos/${encontradoX.id}/reabertura`)
+        .set('x-codigo-edicao', encontradoX.codigoEdicao)
+        .expect(200)
+
+      const casoProprioApos = await prisma.caso.findUniqueOrThrow({ where: { id: perdido.id } })
+      expect(casoProprioApos.estado).toBe('em_contato')
+    })
+
     it('mantém caso próprio em contato quando outra reivindicação aceita ainda o relaciona', async () => {
       const perdido = await publicar({ tipo: 'perdido' })
       const interacaoAnterior = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
