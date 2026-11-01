@@ -7,6 +7,7 @@ import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
 import { areaAproximada } from '../geo/area-aproximada'
 import { PrismaService } from '../prisma/prisma.service'
+import { TarefasService } from './tarefas.service'
 
 const CHAVE_TESTE = 'chave-tarefas-teste'
 
@@ -227,6 +228,39 @@ describe('POST /tarefas/ciclo-de-vida', () => {
     const { centro } = areaAproximada(id, pontoOriginal, caso.local.raioImprecisaoM)
     expect(pontoFinal?.latitude).toBeCloseTo(centro.latitude, 6)
     expect(pontoFinal?.longitude).toBeCloseTo(centro.longitude, 6)
+  })
+
+  it('retorna 500 se uma anonimização falha e ainda anonimiza os outros casos', async () => {
+    const autorA = 'Autor reservado da falha'
+    const autorB = 'Autor reservado processado'
+    const casoA = await publicar({ autor: { nome: autorA, telefone: '93991110001' } })
+    const casoB = await publicar({ autor: { nome: autorB, telefone: '93991110002' } })
+    const ultimaInteracaoAntiga = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000)
+    await prisma.caso.updateMany({
+      where: { id: { in: [casoA.id, casoB.id] } },
+      data: { estado: 'expirado', ultimaInteracaoEm: ultimaInteracaoAntiga },
+    })
+
+    const prismaDaApi = app.get(PrismaService)
+    const transacao = vi.spyOn(prismaDaApi, '$transaction').mockRejectedValueOnce(new Error('falha simulada'))
+    const logger = (app.get(TarefasService) as any).logger
+    const registro = vi.spyOn(logger, 'error')
+
+    const resposta = await executarTarefas()
+    const autores = await prisma.pessoa.findMany({
+      where: { nome: { in: [autorA, autorB, 'Anônimo'] } },
+      select: { nome: true, telefone: true },
+    })
+    const autorAnonimizado = autores.filter((autor) => autor.nome === 'Anônimo')
+    const textoDoLog = registro.mock.calls.flat().map(String).join(' ')
+
+    expect.soft(resposta.status).toBe(500)
+    expect.soft(transacao).toHaveBeenCalledTimes(2)
+    expect.soft(autorAnonimizado).toHaveLength(1)
+    expect.soft(textoDoLog).toMatch(/Error/)
+    expect.soft(textoDoLog).toMatch(new RegExp(`${casoA.id}|${casoB.id}`))
+    expect.soft(textoDoLog).not.toContain(autorA)
+    expect.soft(textoDoLog).not.toContain(autorB)
   })
 
   it('uma segunda rodada sequencial não altera dados já anonimizados', async () => {
