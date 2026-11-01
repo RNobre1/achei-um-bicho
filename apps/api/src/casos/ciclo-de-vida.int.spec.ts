@@ -7,6 +7,7 @@ import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
 import { aoSul, CENTRO_SANTAREM } from '../../test/pontos'
+import { GeradorDePareamentos } from '../pareamento/gerador-de-pareamentos'
 import { CasosRepositorio } from './casos.repositorio'
 
 const UMA_HORA = 60 * 60 * 1000
@@ -673,6 +674,44 @@ describe('F8 ciclo de vida', () => {
 
       const parNoBanco = await prisma.pareamento.findUniqueOrThrow({ where: { id: pistasAposEdicao[0].id } })
       expect(parNoBanco.veredito).toBe('descartado')
+    })
+
+    it('recalcula pistas ao reenviar a mesma edição após uma falha anterior', async () => {
+      const perdido = await publicar(
+        casoValido({ animal: { ...casoValido().animal, corDominante: 'preto', coleira: 'com' } }),
+      )
+      await publicar(
+        casoValido({
+          tipo: 'encontrado',
+          animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'sem' },
+          local: { ...casoValido().local, ...aoSul(CENTRO_SANTAREM, 500) },
+        }),
+      )
+      const gerador = app.get(GeradorDePareamentos)
+      const recalcularOriginal = gerador.recalcularPara.bind(gerador)
+      const recalcular = vi
+        .spyOn(gerador, 'recalcularPara')
+        .mockRejectedValueOnce(new Error('falha simulada'))
+        .mockImplementation((id) => recalcularOriginal(id))
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${perdido.id}`)
+        .set('x-codigo-edicao', perdido.codigoEdicao)
+        .send({ animal: { corDominante: 'caramelo' } })
+        .expect(500)
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${perdido.id}`)
+        .set('x-codigo-edicao', perdido.codigoEdicao)
+        .send({ animal: { corDominante: 'caramelo' } })
+        .expect(200)
+
+      expect(recalcular).toHaveBeenCalledTimes(2)
+      const pistas = (await request(app.getHttpServer())
+        .get(`/casos/${perdido.id}/pistas`)
+        .set('x-codigo-edicao', perdido.codigoEdicao)).body
+      expect(pistas).toHaveLength(1)
+      expect(pistas[0].batem.some((b: { atributo: string }) => b.atributo === 'cor')).toBe(true)
     })
 
     it('recusa sem o código de edição correto (403)', async () => {
