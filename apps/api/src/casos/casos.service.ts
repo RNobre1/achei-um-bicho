@@ -187,19 +187,12 @@ export class CasosService {
       throw new BadRequestException('relato não pode conter telefone, WhatsApp ou links (contato mediado)')
     }
 
-    const mudouAtributosDePareamento =
-      Boolean(dados.animal?.porte && dados.animal.porte !== caso.animal.porte) ||
-      Boolean(dados.animal?.corDominante && dados.animal.corDominante !== caso.animal.corDominante) ||
-      Boolean(dados.animal?.coleira && dados.animal.coleira !== caso.animal.coleira)
-
     const ok = await this.repositorio.editar(id, caso.estado as EstadoCaso, caso.animal.id, dados)
     if (!ok) {
       throw new ConflictException(`caso em estado "${caso.estado}" mudou concorrentemente`)
     }
 
-    if (mudouAtributosDePareamento) {
-      await this.gerador.recalcularPara(id)
-    }
+    await this.gerador.recalcularPara(id)
 
     return { ok: true }
   }
