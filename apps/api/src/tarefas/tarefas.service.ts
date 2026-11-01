@@ -8,6 +8,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common'
@@ -170,6 +171,7 @@ export class TarefasService {
     })
 
     let anonimizados = 0
+    let falhas = 0
 
     for (const candidato of casosParaAnonimizar) {
       try {
@@ -260,9 +262,16 @@ export class TarefasService {
         })
 
         if (anonimizado) anonimizados++
-      } catch {
-        this.logger.error('falha ao anonimizar um caso')
+      } catch (erro) {
+        // o id do caso não identifica ninguém; o erro vai só pelo nome da classe, sem dados
+        falhas++
+        this.logger.error(`falha ao anonimizar o caso ${candidato.id}: ${(erro as Error)?.constructor?.name ?? 'Error'}`)
       }
+    }
+
+    // cobrança, expiração e os demais casos já foram feitos; a falha precisa aparecer na ação agendada
+    if (falhas > 0) {
+      throw new InternalServerErrorException(`${falhas} caso(s) não puderam ser anonimizados`)
     }
 
     return {
