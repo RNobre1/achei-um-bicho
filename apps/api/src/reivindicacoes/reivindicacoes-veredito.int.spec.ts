@@ -274,6 +274,31 @@ describe('POST /casos/:id/reivindicacoes/:rid/veredito', () => {
     expect(parAtualizado.decididoEm).not.toBeNull()
   })
 
+  it('o aceite leva o caso próprio a em contato sem renovar a interação dele, que é de outro autor', async () => {
+    const perdido = await publicar({ tipo: 'perdido' })
+    const encontrado = await publicar({
+      tipo: 'encontrado',
+      local: { ...casoValido().local, ...aoSul(CENTRO_SANTAREM, 500) },
+      animal: { ...casoValido().animal, nome: undefined, castrado: undefined },
+    })
+    const interacaoAntiga = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+    await prisma.caso.update({ where: { id: encontrado.id }, data: { ultimaInteracaoEm: interacaoAntiga } })
+
+    const reiv = await criarReivindicacao(perdido.id, '93991223355', {
+      id: encontrado.id,
+      codigoEdicao: encontrado.codigoEdicao,
+    })
+    await request(app.getHttpServer())
+      .post(`/casos/${perdido.id}/reivindicacoes/${reiv.id}/veredito`)
+      .set('x-codigo-edicao', perdido.codigoEdicao)
+      .send({ veredito: 'aceita' })
+      .expect(200)
+
+    const encontradoAtualizado = await prisma.caso.findUniqueOrThrow({ where: { id: encontrado.id } })
+    expect(encontradoAtualizado.estado).toBe('em_contato')
+    expect(encontradoAtualizado.ultimaInteracaoEm.getTime()).toBe(interacaoAntiga.getTime())
+  })
+
   it('no aceite, se o caso próprio não puder mais transicionar, aceita a reivindicação sem 409 e sem mexer no caso próprio', async () => {
     const perdido = await publicar({ tipo: 'perdido' })
     const encontrado = await publicar({
