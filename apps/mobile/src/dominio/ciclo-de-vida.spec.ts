@@ -84,7 +84,7 @@ describe('ciclo de vida no domínio mobile', () => {
 
     it('calcula momento para hoje, ontem e outro dia', () => {
       expect(momentoDoDesfecho('hoje', undefined, agora)).toBe('2026-10-15T12:00:00.000Z')
-      expect(momentoDoDesfecho('ontem', undefined, agora)).toBe('2026-10-14T12:00:00.000Z')
+      expect(momentoDoDesfecho('ontem', undefined, agora)).toBe('2026-10-14T15:00:00.000Z')
     })
 
     it('interpreta 11/10/2026 como 11 de outubro de 2026 (DD/MM/AAAA)', () => {
@@ -116,8 +116,23 @@ describe('ciclo de vida no domínio mobile', () => {
       const desfecho = montarDesfecho({ tipo: 'foi_adotado', quando: 'ontem' }, agora)
       expect(desfecho).toEqual({
         tipo: 'foi_adotado',
-        ocorridoEm: '2026-10-14T12:00:00.000Z',
+        ocorridoEm: '2026-10-14T15:00:00.000Z',
       })
+    })
+
+    it('aceita a data de hoje às 08 locais e limita ocorridoEm ao instante atual', () => {
+      const hojeAsOito = new Date('2026-10-15T11:00:00.000Z')
+      const rascunho = {
+        tipo: 'voltou_para_casa' as const,
+        quando: 'outro_dia' as const,
+        dataOutroDia: '2026-10-15',
+      }
+
+      expect(pendenciasDoDesfecho(rascunho, hojeAsOito)).not.toContain('Data do desfecho não pode ser no futuro')
+      expect(montarDesfecho(rascunho, hojeAsOito).ocorridoEm).toBe(hojeAsOito.toISOString())
+      expect(
+        validarDesfecho({ tipo: 'voltou_para_casa', ocorridoEm: '2026-10-15T22:00:00.000Z' }, hojeAsOito),
+      ).toEqual([])
     })
 
     it('validação direta rejeita desfecho inválido ou no futuro', () => {
