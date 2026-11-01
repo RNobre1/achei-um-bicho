@@ -121,19 +121,26 @@ interface DataHoraLocal extends DiaLocal {
   segundo: number
 }
 
-const formatoSantarem = new Intl.DateTimeFormat('en-US', {
-  timeZone: TAREFA_DIARIA.fuso,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hourCycle: 'h23',
-})
+// criado na primeira chamada, e não ao importar: se o motor do aparelho recusar o
+// fuso nomeado, só o encerramento falha, e não o aplicativo inteiro
+let formatoSantarem: Intl.DateTimeFormat | undefined
+
+function formatadorSantarem(): Intl.DateTimeFormat {
+  formatoSantarem ??= new Intl.DateTimeFormat('en-US', {
+    timeZone: TAREFA_DIARIA.fuso,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  })
+  return formatoSantarem
+}
 
 function partesDataHoraSantarem(data: Date): DataHoraLocal {
-  const partes = formatoSantarem.formatToParts(data)
+  const partes = formatadorSantarem().formatToParts(data)
   const valor = (tipo: string) => Number(partes.find((parte) => parte.type === tipo)?.value)
   return {
     ano: valor('year'),
