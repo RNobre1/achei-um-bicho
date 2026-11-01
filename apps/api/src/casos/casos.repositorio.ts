@@ -18,6 +18,7 @@ import { PrismaService } from '../prisma/prisma.service'
 import type { CasoNoMural } from './dto/consultar-mural.dto'
 import type { EdicaoDoCasoDto } from './dto/edicao-do-caso.dto'
 import type { PublicarCasoDto } from './dto/publicar-caso.dto'
+import { dadosDeRenovacao } from './renovacao'
 
 /** Quantos casos o mural traz de uma vez; o suficiente para um bairro. */
 const LIMITE_MURAL = 50
@@ -71,13 +72,6 @@ export interface NovoCaso {
   dados: PublicarCasoDto
   estado: EstadoCaso
   codigoEdicaoHash: string
-}
-
-export function dadosDeRenovacao(agora: Date = new Date()) {
-  return {
-    ultimaInteracaoEm: agora,
-    cobradoEm: null,
-  }
 }
 
 @Injectable()

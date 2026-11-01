@@ -12,7 +12,7 @@ import {
 } from '@achei/contratos'
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
-import { dadosDeRenovacao } from '../casos/casos.repositorio'
+import { dadosDeRenovacao } from '../casos/renovacao'
 import { PrismaService } from '../prisma/prisma.service'
 import type { ResultadoDaComparacao } from './comparar'
 
