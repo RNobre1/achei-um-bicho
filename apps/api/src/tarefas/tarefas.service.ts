@@ -8,6 +8,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common'
 import type { Configuracao } from '../configuracao'
@@ -24,8 +25,66 @@ function conferirChave(informada: string | undefined, esperada: string): boolean
   return timingSafeEqual(h1, h2)
 }
 
+interface CasoParaAnonimizacao {
+  id: string
+  autorId: string
+  localId: string
+  raioImprecisaoM: number
+}
+
+function filtroSqlDeAnonimizacao(limite: Date): Prisma.Sql {
+  return Prisma.sql`
+    (
+      (
+        c.estado = 'resolvido'
+        AND EXISTS (
+          SELECT 1
+            FROM desfecho d
+           WHERE d.caso_id = c.id
+             AND d.registrado_em <= ${limite}
+        )
+      )
+      OR (
+        c.estado = 'expirado'
+        AND c.ultima_interacao_em <= ${limite}
+      )
+    )
+    AND (
+      autor.nome <> 'Anônimo'
+      OR autor.telefone IS NOT NULL
+      OR l.referencia IS NOT NULL
+      OR EXISTS (
+        SELECT 1
+          FROM pergunta_verificacao q
+         WHERE q.caso_id = c.id
+           AND q.resposta_esperada <> 'anonimizado'
+      )
+      OR EXISTS (
+        SELECT 1
+          FROM tentativa_verificacao t
+          JOIN pessoa reivindicante ON reivindicante.id = t.pessoa_id
+         WHERE t.caso_id = c.id
+           AND (
+             t.referencia IS NOT NULL
+             OR reivindicante.nome <> 'Anônimo'
+             OR reivindicante.telefone IS NOT NULL
+           )
+      )
+      OR EXISTS (
+        SELECT 1
+          FROM resposta_verificacao r
+          JOIN tentativa_verificacao t ON t.id = r.tentativa_id
+         WHERE t.caso_id = c.id
+           AND r.texto <> 'anonimizado'
+      )
+    )
+  `
+}
+
 @Injectable()
 export class TarefasService {
+  private readonly logger = new Logger(TarefasService.name)
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CONFIGURACAO) private readonly configuracao: Configuracao,
@@ -107,83 +166,103 @@ export class TarefasService {
           },
         ],
       },
-      select: {
-        id: true,
-        autorId: true,
-        localId: true,
-        local: {
-          select: {
-            raioImprecisaoM: true,
-          },
-        },
-        tentativas: {
-          select: {
-            id: true,
-            pessoaId: true,
-          },
-        },
-      },
+      select: { id: true },
     })
 
     let anonimizados = 0
 
-    for (const caso of casosParaAnonimizar) {
-      await this.prisma.$transaction(async (tx) => {
-        // 1. Anonimizar autor
-        await tx.pessoa.update({
-          where: { id: caso.autorId },
-          data: { nome: 'Anônimo', telefone: null },
-        })
-
-        // 2. Anonimizar local (o ponto exato vira centro da área aproximada e referência nula)
-        const [ponto] = await tx.$queryRaw<{ latitude: number; longitude: number }[]>`
-          SELECT ST_Y(ponto::geometry) AS latitude, ST_X(ponto::geometry) AS longitude
-            FROM local
-           WHERE id = ${caso.localId}::uuid
-        `
-        if (ponto) {
-          const { centro } = areaAproximada(
-            caso.id,
-            { latitude: ponto.latitude, longitude: ponto.longitude },
-            caso.local.raioImprecisaoM,
-          )
-          await tx.$executeRaw`
-            UPDATE local
-               SET ponto = ${pontoSql(centro)},
-                   referencia = NULL
-             WHERE id = ${caso.localId}::uuid
+    for (const candidato of casosParaAnonimizar) {
+      try {
+        const anonimizado = await this.prisma.$transaction(async (tx) => {
+          // Serializa execuções que já listaram o mesmo candidato antes de qualquer uma anonimizar.
+          const [bloqueio] = await tx.$queryRaw<{ id: string }[]>`
+            SELECT id
+              FROM caso
+             WHERE id = ${candidato.id}::uuid
+             FOR UPDATE
           `
-        } else {
-          await tx.local.update({
-            where: { id: caso.localId },
-            data: { referencia: null },
+          if (!bloqueio) return false
+
+          // Revalida no banco sob o bloqueio usando o mesmo critério de idade e dados remanescentes.
+          const [caso] = await tx.$queryRaw<CasoParaAnonimizacao[]>`
+            SELECT c.id,
+                   c.autor_id AS "autorId",
+                   c.local_id AS "localId",
+                   l.raio_imprecisao_m AS "raioImprecisaoM"
+              FROM caso c
+              JOIN pessoa autor ON autor.id = c.autor_id
+              JOIN local l ON l.id = c.local_id
+             WHERE c.id = ${candidato.id}::uuid
+               AND ${filtroSqlDeAnonimizacao(limiteAnonimizacao)}
+             FOR UPDATE OF c
+          `
+          if (!caso) return false
+
+          const tentativas = await tx.tentativaVerificacao.findMany({
+            where: { casoId: caso.id },
+            select: { id: true, pessoaId: true },
           })
-        }
 
-        // 3. Anonimizar perguntas de verificação
-        await tx.perguntaVerificacao.updateMany({
-          where: { casoId: caso.id },
-          data: { respostaEsperada: 'anonimizado' },
-        })
-
-        // 4. Anonimizar tentativas, pessoas reivindicantes e respostas
-        for (const t of caso.tentativas) {
+          // 1. Anonimizar autor
           await tx.pessoa.update({
-            where: { id: t.pessoaId },
+            where: { id: caso.autorId },
             data: { nome: 'Anônimo', telefone: null },
           })
-          await tx.tentativaVerificacao.update({
-            where: { id: t.id },
-            data: { referencia: null },
-          })
-          await tx.respostaVerificacao.updateMany({
-            where: { tentativaId: t.id },
-            data: { texto: 'anonimizado' },
-          })
-        }
-      })
 
-      anonimizados++
+          // 2. Anonimizar local (o ponto exato vira centro da área aproximada e referência nula)
+          const [ponto] = await tx.$queryRaw<{ latitude: number; longitude: number }[]>`
+            SELECT ST_Y(ponto::geometry) AS latitude, ST_X(ponto::geometry) AS longitude
+              FROM local
+             WHERE id = ${caso.localId}::uuid
+          `
+          if (ponto) {
+            const { centro } = areaAproximada(
+              caso.id,
+              { latitude: ponto.latitude, longitude: ponto.longitude },
+              caso.raioImprecisaoM,
+            )
+            await tx.$executeRaw`
+              UPDATE local
+                 SET ponto = ${pontoSql(centro)},
+                     referencia = NULL
+               WHERE id = ${caso.localId}::uuid
+            `
+          } else {
+            await tx.local.update({
+              where: { id: caso.localId },
+              data: { referencia: null },
+            })
+          }
+
+          // 3. Anonimizar perguntas de verificação
+          await tx.perguntaVerificacao.updateMany({
+            where: { casoId: caso.id },
+            data: { respostaEsperada: 'anonimizado' },
+          })
+
+          // 4. Anonimizar tentativas, pessoas reivindicantes e respostas
+          for (const tentativa of tentativas) {
+            await tx.pessoa.update({
+              where: { id: tentativa.pessoaId },
+              data: { nome: 'Anônimo', telefone: null },
+            })
+            await tx.tentativaVerificacao.update({
+              where: { id: tentativa.id },
+              data: { referencia: null },
+            })
+            await tx.respostaVerificacao.updateMany({
+              where: { tentativaId: tentativa.id },
+              data: { texto: 'anonimizado' },
+            })
+          }
+
+          return true
+        })
+
+        if (anonimizado) anonimizados++
+      } catch {
+        this.logger.error('falha ao anonimizar um caso')
+      }
     }
 
     return {
