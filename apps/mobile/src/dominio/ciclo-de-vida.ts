@@ -2,6 +2,7 @@ import {
   ESTADO_CASO,
   ESTADOS_ABERTOS,
   ESTADOS_VIGIADOS,
+  TAREFA_DIARIA,
   TIPO_DESFECHO,
   type Coleira,
   type Cor,
@@ -108,6 +109,86 @@ export function parsearDataDesfecho(texto: string): Date | null {
   return null
 }
 
+interface DiaLocal {
+  ano: number
+  mes: number
+  dia: number
+}
+
+interface DataHoraLocal extends DiaLocal {
+  hora: number
+  minuto: number
+  segundo: number
+}
+
+const formatoSantarem = new Intl.DateTimeFormat('en-US', {
+  timeZone: TAREFA_DIARIA.fuso,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+})
+
+function partesDataHoraSantarem(data: Date): DataHoraLocal {
+  const partes = formatoSantarem.formatToParts(data)
+  const valor = (tipo: string) => Number(partes.find((parte) => parte.type === tipo)?.value)
+  return {
+    ano: valor('year'),
+    mes: valor('month'),
+    dia: valor('day'),
+    hora: valor('hour'),
+    minuto: valor('minute'),
+    segundo: valor('second'),
+  }
+}
+
+function diaDaDataParseada(data: Date): DiaLocal {
+  return { ano: data.getUTCFullYear(), mes: data.getUTCMonth() + 1, dia: data.getUTCDate() }
+}
+
+function diaSantarem(data: Date): DiaLocal {
+  const { ano, mes, dia } = partesDataHoraSantarem(data)
+  return { ano, mes, dia }
+}
+
+function compararDias(a: DiaLocal, b: DiaLocal): number {
+  return a.ano - b.ano || a.mes - b.mes || a.dia - b.dia
+}
+
+function somarDias(dia: DiaLocal, quantidade: number): DiaLocal {
+  const data = new Date(Date.UTC(dia.ano, dia.mes - 1, dia.dia + quantidade))
+  return { ano: data.getUTCFullYear(), mes: data.getUTCMonth() + 1, dia: data.getUTCDate() }
+}
+
+/** Converte meio-dia de Santarém para um instante, sem depender do fuso do aparelho. */
+function meioDiaEmSantarem(dia: DiaLocal): Date {
+  const meioDiaLocalComoUtc = Date.UTC(dia.ano, dia.mes - 1, dia.dia, 12)
+  let instanteUtc = meioDiaLocalComoUtc
+
+  // Ajusta pela diferença observada no fuso nomeado; a segunda volta cobre transições de horário.
+  for (let tentativa = 0; tentativa < 2; tentativa++) {
+    const partes = partesDataHoraSantarem(new Date(instanteUtc))
+    const horarioObservadoComoUtc = Date.UTC(
+      partes.ano,
+      partes.mes - 1,
+      partes.dia,
+      partes.hora,
+      partes.minuto,
+      partes.segundo,
+    )
+    instanteUtc += meioDiaLocalComoUtc - horarioObservadoComoUtc
+  }
+
+  return new Date(instanteUtc)
+}
+
+function menorInstante(a: Date, b: Date): Date {
+  return new Date(Math.min(a.getTime(), b.getTime()))
+}
+
 /** Calcula a data e hora ISO do desfecho conforme a opção escolhida. */
 export function momentoDoDesfecho(
   quando: QuandoDesfecho,
@@ -116,16 +197,13 @@ export function momentoDoDesfecho(
 ): string {
   switch (quando) {
     case 'hoje':
-      return agora.toISOString()
-    case 'ontem': {
-      const ontem = new Date(agora)
-      ontem.setDate(agora.getDate() - 1)
-      return ontem.toISOString()
-    }
+      return menorInstante(meioDiaEmSantarem(diaSantarem(agora)), agora).toISOString()
+    case 'ontem':
+      return meioDiaEmSantarem(somarDias(diaSantarem(agora), -1)).toISOString()
     case 'outro_dia': {
       if (dataOutroDia) {
         const parsed = parsearDataDesfecho(dataOutroDia)
-        if (parsed) return parsed.toISOString()
+        if (parsed) return menorInstante(meioDiaEmSantarem(diaDaDataParseada(parsed)), agora).toISOString()
       }
       return agora.toISOString()
     }
@@ -144,7 +222,7 @@ export function pendenciasDoDesfecho(r: RascunhoDesfecho, agora: Date = new Date
       const data = parsearDataDesfecho(r.dataOutroDia)
       if (!data) {
         falta.push('Informe uma data válida para o desfecho (DD/MM/AAAA ou AAAA-MM-DD)')
-      } else if (data > agora) {
+      } else if (compararDias(diaDaDataParseada(data), diaSantarem(agora)) > 0) {
         falta.push('Data do desfecho não pode ser no futuro')
       }
     }
@@ -179,7 +257,7 @@ export function validarDesfecho(desfecho: Partial<NovoDesfecho>, agora: Date = n
     const data = Date.parse(desfecho.ocorridoEm)
     if (isNaN(data)) {
       erros.push('Data do desfecho inválida')
-    } else if (new Date(data) > agora) {
+    } else if (compararDias(diaSantarem(new Date(data)), diaSantarem(agora)) > 0) {
       erros.push('Data do desfecho não pode ser no futuro')
     }
   }
