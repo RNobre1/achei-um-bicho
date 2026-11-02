@@ -1,12 +1,11 @@
+import { CODIGO_EDICAO } from '@achei/contratos'
 import { createHash, randomInt, timingSafeEqual } from 'node:crypto'
-
-// sem 0/O e 1/I/L, que se confundem quando a pessoa anota à mão ou dita o código
-const ALFABETO = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
-const TAMANHO_BLOCO = 4
 
 function bloco(): string {
   let saida = ''
-  for (let i = 0; i < TAMANHO_BLOCO; i++) saida += ALFABETO[randomInt(ALFABETO.length)]
+  for (let i = 0; i < CODIGO_EDICAO.tamanhoBloco; i++) {
+    saida += CODIGO_EDICAO.alfabeto[randomInt(CODIGO_EDICAO.alfabeto.length)]
+  }
   return saida
 }
 

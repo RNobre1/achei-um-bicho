@@ -90,3 +90,15 @@ export const TAREFA_DIARIA = {
  * aplicativo avisa antes de enviar, com o mesmo padrão.
  */
 export const PARECE_CONTATO = /(\d[\s().-]*){8,}|whats|zap\b|wa\.me|https?:\/\/|www\./i
+
+/**
+ * Código de edição de casos publicados sem conta (F9). Sorteado pelo servidor
+ * ou pelo aparelho com gerador criptográfico, no formato XXXX-XXXX.
+ * Sem 0/O e 1/I/L, que se confundem quando a pessoa anota à mão ou dita o código.
+ */
+export const CODIGO_EDICAO = {
+  alfabeto: '23456789ABCDEFGHJKMNPQRSTUVWXYZ',
+  tamanhoBloco: 4,
+  padrao: /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}$/,
+  expressaoRegular: /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}$/,
+} as const
