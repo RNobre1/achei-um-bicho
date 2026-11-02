@@ -35,6 +35,10 @@ describe('POST /casos recusa publicação inválida', () => {
     ['data que não é data', { ocorridoEm: 'sábado passado' }],
     ['data no futuro', { ocorridoEm: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() }],
     ['estado escolhido pelo cliente', { estado: 'resolvido' }],
+    ['só idCliente sem codigoEdicao', { idCliente: 'c4e433a0-1234-4b56-8a90-123456789abc' }],
+    ['só codigoEdicao sem idCliente', { codigoEdicao: '2345-6789' }],
+    ['codigoEdicao fora do formato', { idCliente: 'c4e433a0-1234-4b56-8a90-123456789abc', codigoEdicao: 'INVALIDO' }],
+    ['idCliente que não é uuid', { idCliente: 'nao-e-uuid', codigoEdicao: '2345-6789' }],
   ]
 
   it.each(invalidos)('recusa %s, sem gravar nada', async (_motivo, alteracao) => {
@@ -53,5 +57,14 @@ describe('POST /casos recusa publicação inválida', () => {
       .send(casoValido({ autor: { nome: 'Autor', telefone: '123' } }))
       .expect(400)
     expect(res.body.message.some((m: string) => m.includes('Telefone com DDD: 10 ou 11 dígitos'))).toBe(true)
+  })
+
+  it('aceita idCliente e codigoEdicao válidos juntos', async () => {
+    const idCliente = 'c4e433a0-1234-4b56-8a90-123456789abc'
+    const codigoEdicao = '2345-6789'
+    await request(app.getHttpServer())
+      .post('/casos')
+      .send(casoValido({ idCliente, codigoEdicao }))
+      .expect(201)
   })
 })
