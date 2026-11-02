@@ -11,6 +11,7 @@ import {
   type VereditoVerificacao,
 } from '@achei/contratos'
 import { Prisma } from '@prisma/client'
+import { dadosDeRenovacao } from '../casos/renovacao'
 import { PrismaService } from '../prisma/prisma.service'
 import type { NovaDenunciaDto } from './dto/nova-denuncia.dto'
 import type { NovaReivindicacaoDto } from './dto/nova-reivindicacao.dto'
@@ -301,11 +302,7 @@ export class ReivindicacoesRepositorio {
       if (veredito === 'aceita') {
         const resultadoCaso = await tx.caso.updateMany({
           where: { id: casoId, estado: { in: [...ESTADOS_ABERTOS] } },
-          data: {
-            estado: 'em_contato',
-            ultimaInteracaoEm: agora,
-            cobradoEm: null,
-          },
+          data: { estado: 'em_contato', ...dadosDeRenovacao(agora) },
         })
         if (resultadoCaso.count !== 1) {
           throw new ConflictException('caso não está mais aberto para aceite')
@@ -321,11 +318,8 @@ export class ReivindicacoesRepositorio {
         if (casoProprioId) {
           const resultadoProprio = await tx.caso.updateMany({
             where: { id: casoProprioId, estado: { in: [...ESTADOS_ABERTOS] } },
-            data: {
-              estado: 'em_contato',
-              ultimaInteracaoEm: agora,
-              cobradoEm: null,
-            },
+            // quem decidiu foi o autor deste caso; o relógio do caso próprio é de outro autor
+            data: { estado: 'em_contato' },
           })
 
           if (resultadoProprio.count === 1) {
@@ -346,10 +340,7 @@ export class ReivindicacoesRepositorio {
       } else {
         const resultadoCaso = await tx.caso.updateMany({
           where: { id: casoId, estado: { in: [...ESTADOS_VIGIADOS] } },
-          data: {
-            ultimaInteracaoEm: agora,
-            cobradoEm: null,
-          },
+          data: dadosDeRenovacao(agora),
         })
         if (resultadoCaso.count !== 1) {
           throw new ConflictException('caso fechado')
