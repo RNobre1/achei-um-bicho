@@ -82,3 +82,24 @@ describe('regras de telefone', () => {
     expect(TELEFONE.chave('(93) 99123-4567')).toBe(TELEFONE.chave('93 9123-4567'))
   })
 })
+
+describe('regras do código de edição', () => {
+  it('define o alfabeto sem caracteres ambíguos e tamanho do bloco', () => {
+    // @ts-expect-error CODIGO_EDICAO ainda não definido
+    expect(CODIGO_EDICAO.alfabeto).toBe('23456789ABCDEFGHJKMNPQRSTUVWXYZ')
+    // @ts-expect-error CODIGO_EDICAO ainda não definido
+    expect(CODIGO_EDICAO.tamanhoBloco).toBe(4)
+    // @ts-expect-error CODIGO_EDICAO ainda não definido
+    expect(CODIGO_EDICAO.alfabeto).not.toMatch(/[0O1IL]/)
+  })
+
+  it('valida o formato XXXX-XXXX pela expressão regular', () => {
+    // @ts-expect-error CODIGO_EDICAO ainda não definido
+    const regex = CODIGO_EDICAO.expressaoRegular ?? CODIGO_EDICAO.padrao
+    expect(regex.test('2345-6789')).toBe(true)
+    expect(regex.test('ABCD-EFGH')).toBe(true)
+    expect(regex.test('0123-4567')).toBe(false)
+    expect(regex.test('ABCD-EFG')).toBe(false)
+    expect(regex.test('abcd-efgh')).toBe(false)
+  })
+})
