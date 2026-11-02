@@ -1,4 +1,5 @@
 import {
+  CODIGO_EDICAO,
   COLEIRA,
   COR,
   ESPECIE,
@@ -29,8 +30,10 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator'
 import { NaoNoFuturo } from '../../comum/nao-no-futuro'
@@ -80,6 +83,20 @@ export class PublicarCasoDto implements NovaPublicacao {
   @ValidateNested({ each: true })
   @Type(() => PerguntaDto)
   perguntas!: PerguntaDto[]
+
+  /**
+   * Publicação pela fila sem conexão (F9): idCliente e codigoEdicao vêm sempre juntos
+   * ou nenhum dos dois vem.
+   */
+  @ValidateIf((o: PublicarCasoDto) => o.codigoEdicao !== undefined || o.idCliente !== undefined)
+  @IsNotEmpty({ message: 'idCliente é obrigatório quando codigoEdicao é informado' })
+  @IsUUID(undefined, { message: 'idCliente deve ser um UUID válido' })
+  idCliente?: string
+
+  @ValidateIf((o: PublicarCasoDto) => o.idCliente !== undefined || o.codigoEdicao !== undefined)
+  @IsNotEmpty({ message: 'codigoEdicao é obrigatório quando idCliente é informado' })
+  @Matches(CODIGO_EDICAO.padrao, { message: 'codigoEdicao fora do formato' })
+  codigoEdicao?: string
 }
 
 export type { CasoPublicado } from '@achei/contratos'
