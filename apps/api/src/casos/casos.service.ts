@@ -39,8 +39,23 @@ export class CasosService {
   ) {}
 
   async publicar(dados: PublicarCasoDto): Promise<CasoPublicado> {
+    if (dados.idCliente && dados.codigoEdicao) {
+      const existente = await this.repositorio.buscarPorIdCliente(dados.idCliente)
+      if (existente) {
+        if (conferirCodigoEdicao(dados.codigoEdicao, existente.codigoEdicao)) {
+          return {
+            id: existente.id,
+            tipo: existente.tipo,
+            estado: existente.estado,
+            codigoEdicao: dados.codigoEdicao,
+          }
+        }
+        throw new ConflictException('id de cliente já existe com outro código de edição')
+      }
+    }
+
     const estado = ESTADO_INICIAL[dados.tipo]
-    const codigoEdicao = gerarCodigoEdicao()
+    const codigoEdicao = dados.codigoEdicao ?? gerarCodigoEdicao()
     const id = await this.repositorio.criar({
       dados,
       estado,

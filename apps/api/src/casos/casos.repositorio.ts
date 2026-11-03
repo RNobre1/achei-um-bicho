@@ -104,6 +104,7 @@ export class CasosRepositorio {
           animalId: animal.id,
           localId,
           codigoEdicao: codigoEdicaoHash,
+          idCliente: dados.idCliente ?? null,
           relato: dados.relato ?? null,
           ocorridoEm: new Date(dados.ocorridoEm),
           perguntas: {
@@ -117,6 +118,22 @@ export class CasosRepositorio {
       })
       return caso.id
     })
+  }
+
+  async buscarPorIdCliente(
+    idCliente: string,
+  ): Promise<{ id: string; tipo: TipoCaso; estado: EstadoCaso; codigoEdicao: string | null } | null> {
+    const caso = await this.prisma.caso.findUnique({
+      where: { idCliente },
+      select: { id: true, tipo: true, estado: true, codigoEdicao: true },
+    })
+    if (!caso) return null
+    return {
+      id: caso.id,
+      tipo: caso.tipo as TipoCaso,
+      estado: caso.estado as EstadoCaso,
+      codigoEdicao: caso.codigoEdicao,
+    }
   }
 
   async abertosNoRaio(centro: Ponto, raioM: number, tipo?: TipoCaso): Promise<CasoNoMural[]> {
