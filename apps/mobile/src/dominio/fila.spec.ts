@@ -60,7 +60,7 @@ describe('regras da fila de envio de publicações (F9)', () => {
     })
 
     const primeiroPasso = proximoPassoEnvio(item)
-    expect(primeiroPasso).toEqual({ tipo: 'caso', publicacao: publicacaoExemplo })
+    expect(primeiroPasso).toEqual({ tipo: 'caso', publicacao: { ...publicacaoExemplo, idCliente: 'uuid-1', codigoEdicao: '2345-6789' } })
   })
 
   it('transita para fotos quando o caso é confirmado pelo servidor', () => {
