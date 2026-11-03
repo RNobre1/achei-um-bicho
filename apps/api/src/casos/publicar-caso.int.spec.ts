@@ -73,3 +73,56 @@ describe('POST /casos', () => {
     expect(caso.codigoEdicao).not.toContain(body.codigoEdicao.replace('-', ''))
   })
 })
+
+describe('POST /casos com publicação idempotente (F9)', () => {
+  let app: INestApplication
+  const prisma = new PrismaClient()
+
+  beforeAll(async () => {
+    app = await criarAppDeTeste()
+  })
+
+  beforeEach(async () => {
+    await limparBanco(prisma)
+  })
+
+  afterAll(async () => {
+    await app.close()
+    await prisma.$disconnect()
+  })
+
+  const idCliente = 'a1b2c3d4-e5f6-4a1b-8c2d-123456789abc'
+  const codigoEdicao = '2345-6789'
+
+  it('grava o idCliente e o hash do código quando informados pelo aparelho', async () => {
+    const corpo = casoValido({ idCliente, codigoEdicao })
+    const { body } = await request(app.getHttpServer()).post('/casos').send(corpo).expect(201)
+
+    expect(body.codigoEdicao).toBe(codigoEdicao)
+    const caso = await prisma.caso.findUniqueOrThrow({ where: { id: body.id } })
+    expect(caso.idCliente).toBe(idCliente)
+    expect(caso.codigoEdicao).toBe(hashCodigoEdicao(codigoEdicao))
+  })
+
+  it('devolve o mesmo caso quando reenviado com o mesmo idCliente e código, sem criar outro', async () => {
+    const corpo = casoValido({ idCliente, codigoEdicao })
+    const primeira = await request(app.getHttpServer()).post('/casos').send(corpo).expect(201)
+    const segunda = await request(app.getHttpServer()).post('/casos').send(corpo)
+
+    expect(segunda.status).toBe(201)
+    expect(segunda.body).toEqual(primeira.body)
+    expect(await prisma.caso.count()).toBe(1)
+  })
+
+  it('recusa com 409 quando o mesmo idCliente é enviado com outro código de edição', async () => {
+    const primeiro = casoValido({ idCliente, codigoEdicao })
+    await request(app.getHttpServer()).post('/casos').send(primeiro).expect(201)
+
+    const outroCodigo = 'ABCD-EFGH'
+    const segundo = casoValido({ idCliente, codigoEdicao: outroCodigo })
+    const resposta = await request(app.getHttpServer()).post('/casos').send(segundo)
+
+    expect(resposta.status).toBe(409)
+    expect(await prisma.caso.count()).toBe(1)
+  })
+})
