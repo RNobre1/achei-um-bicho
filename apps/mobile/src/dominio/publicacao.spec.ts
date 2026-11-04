@@ -110,3 +110,34 @@ describe('momento a partir de dia e período', () => {
     expect(momentoDoPeriodo({ dia: 'hoje', periodo: 'noite' }, agora)).toBe(agora.toISOString())
   })
 })
+
+describe('ajustes da publicação: castrado e aviso de contato', () => {
+  it('inclui animal.castrado na publicação apenas quando preenchido', () => {
+    const rSim = rascunhoCompleto()
+    rSim.animal.castrado = true
+    expect(montarPublicacao(rSim, agora).animal.castrado).toBe(true)
+
+    const rNao = rascunhoCompleto()
+    rNao.animal.castrado = false
+    expect(montarPublicacao(rNao, agora).animal.castrado).toBe(false)
+
+    const rNaoSei = rascunhoCompleto()
+    rNaoSei.animal.castrado = undefined
+    expect(montarPublicacao(rNaoSei, agora).animal.castrado).toBeUndefined()
+  })
+
+  it('detecta telefone, zap ou link no relato ou em enunciado de pergunta', () => {
+    // @ts-expect-error ainda não implementado
+    expect(verificarPareceContato(rascunhoCompleto())).toBeUndefined()
+
+    const rComZap = rascunhoCompleto()
+    rComZap.relato = 'Qualquer coisa me chama no zap 93991234567'
+    // @ts-expect-error ainda não implementado
+    expect(verificarPareceContato(rComZap)).toMatch(/telefone, WhatsApp ou link/)
+
+    const rComPergunta = rascunhoCompleto()
+    rComPergunta.perguntas[0]!.enunciado = 'Ligar para 93991234567?'
+    // @ts-expect-error ainda não implementado
+    expect(verificarPareceContato(rComPergunta)).toMatch(/telefone, WhatsApp ou link/)
+  })
+})
