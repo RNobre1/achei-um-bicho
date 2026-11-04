@@ -39,6 +39,7 @@ vi.mock('expo-crypto', () => ({
 vi.mock('expo-network', () => ({
   getNetworkStateAsync: vi.fn(async () => ({ isConnected: true, isInternetReachable: true })),
   addNetworkStateListener: vi.fn(() => ({ remove: vi.fn() })),
+  NetworkStateType: { NONE: 'NONE', CELLULAR: 'CELLULAR', WIFI: 'WIFI', UNKNOWN: 'UNKNOWN' },
 }))
 
 vi.mock('./fotos', () => ({
@@ -94,7 +95,7 @@ describe('serviço de fila de envio (F9)', () => {
       enviarFoto: vi.fn(async () => ({ caminho: '/foto.jpg', largura: 1080, altura: 720 })),
     } as unknown as ClienteApi
 
-    await enfileirarPublicacao(rascunhoExemplo)
+    await enfileirarPublicacao(rascunhoExemplo, apiMock)
     await processarFila(apiMock)
 
     expect(apiMock.publicar).toHaveBeenCalledTimes(1)
@@ -119,7 +120,7 @@ describe('serviço de fila de envio (F9)', () => {
     })
     const apiMock = { publicar: vi.fn() } as unknown as ClienteApi
 
-    await enfileirarPublicacao(rascunhoExemplo)
+    await enfileirarPublicacao(rascunhoExemplo, apiMock)
     await processarFila(apiMock)
 
     expect(apiMock.publicar).not.toHaveBeenCalled()
