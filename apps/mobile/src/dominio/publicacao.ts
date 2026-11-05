@@ -1,4 +1,13 @@
-import { TELEFONE, type Coleira, type Cor, type Especie, type NovaPublicacao, type Porte, type TipoCaso } from '@achei/contratos'
+import {
+  type Coleira,
+  type Cor,
+  type Especie,
+  type NovaPublicacao,
+  PARECE_CONTATO,
+  type Porte,
+  TELEFONE,
+  type TipoCaso,
+} from '@achei/contratos'
 
 export type IdPasso = 'tipo' | 'animal' | 'ondeQuando' | 'verificacao'
 
@@ -31,6 +40,7 @@ export interface RascunhoPublicacao {
     corDominante?: Cor
     coleira?: Coleira
     nome: string
+    castrado?: boolean
   }
   local: {
     latitude?: number
@@ -140,6 +150,7 @@ export function montarPublicacao(r: RascunhoPublicacao, agora: Date = new Date()
       corDominante: r.animal.corDominante!,
       coleira: r.animal.coleira!,
       ...(preenchido(r.animal.nome) && { nome: preenchido(r.animal.nome) }),
+      ...(r.animal.castrado !== undefined && { castrado: r.animal.castrado }),
     },
     local: {
       latitude: r.local.latitude!,
@@ -157,4 +168,20 @@ export function montarPublicacao(r: RascunhoPublicacao, agora: Date = new Date()
   const relato = preenchido(r.relato)
   if (relato) corpo.relato = relato
   return corpo
+}
+
+/**
+ * Alerta sobre telefone, WhatsApp ou links digitados no relato ou enunciados (RNF4).
+ * O contato mediado só é liberado depois que o tutor aceita a verificação.
+ */
+export function verificarPareceContato(r: RascunhoPublicacao): string | undefined {
+  if (r.relato && PARECE_CONTATO.test(r.relato)) {
+    return 'O relato ou uma das perguntas parece conter telefone, WhatsApp ou link. Lembre-se que o contato só é liberado após a verificação.'
+  }
+  for (const p of r.perguntas) {
+    if (p.enunciado && PARECE_CONTATO.test(p.enunciado)) {
+      return 'O relato ou uma das perguntas parece conter telefone, WhatsApp ou link. Lembre-se que o contato só é liberado após a verificação.'
+    }
+  }
+  return undefined
 }

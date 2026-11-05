@@ -6,6 +6,7 @@ import {
   pendenciasDoPasso,
   perguntasSugeridas,
   rascunhoVazio,
+  verificarPareceContato,
   type RascunhoPublicacao,
 } from './publicacao'
 
@@ -127,17 +128,14 @@ describe('ajustes da publicação: castrado e aviso de contato', () => {
   })
 
   it('detecta telefone, zap ou link no relato ou em enunciado de pergunta', () => {
-    // @ts-expect-error ainda não implementado
     expect(verificarPareceContato(rascunhoCompleto())).toBeUndefined()
 
     const rComZap = rascunhoCompleto()
     rComZap.relato = 'Qualquer coisa me chama no zap 93991234567'
-    // @ts-expect-error ainda não implementado
     expect(verificarPareceContato(rComZap)).toMatch(/telefone, WhatsApp ou link/)
 
     const rComPergunta = rascunhoCompleto()
     rComPergunta.perguntas[0]!.enunciado = 'Ligar para 93991234567?'
-    // @ts-expect-error ainda não implementado
     expect(verificarPareceContato(rComPergunta)).toMatch(/telefone, WhatsApp ou link/)
   })
 })
