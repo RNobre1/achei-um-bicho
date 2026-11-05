@@ -191,6 +191,7 @@ export function MeusCasos() {
           )
         })
       )}
+      <Pressable onPress={() => router.push('/fila')} style={{ alignItems: 'center', marginTop: 22 }}><Text style={{ fontFamily: fontes.dado, fontSize: 11, color: cores.apagado }}>Fila de envio sem conexão</Text></Pressable>
     </ScrollView>
   )
 }

@@ -8,6 +8,8 @@ import {
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { useEffect } from 'react'
+import { iniciarObservadorDeFila } from '../servicos/fila-de-envio'
 import { cores } from '../tema'
 
 export default function Layout() {
@@ -20,6 +22,11 @@ export default function Layout() {
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
   })
+
+  useEffect(() => {
+    return iniciarObservadorDeFila()
+  }, [])
+
   if (!fontesProntas) return null
 
   return (
