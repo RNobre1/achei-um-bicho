@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { CODIGO_EDICAO, FOTO, PAREAMENTO, RAIO, REIVINDICACAO, TAREFA_DIARIA, TELEFONE } from './regras'
+import {
+  CODIGO_EDICAO,
+  FOTO,
+  gerarCodigoEdicao,
+  MENSAGEM_AVISO_CONTATO,
+  PAREAMENTO,
+  RAIO,
+  REIVINDICACAO,
+  TAREFA_DIARIA,
+  TELEFONE,
+} from './regras'
 
 describe('regras do raio do mural', () => {
   it('parte de 1,6 km, a distância em que 7 de cada 10 cães recuperados apareceram', () => {
@@ -97,21 +107,17 @@ describe('regras do código de edição', () => {
   })
 
   it("expõe o formato e deriva o regex de alfabeto, tamanho e quantidade de blocos", () => {
-    // @ts-expect-error novos campos
     expect(CODIGO_EDICAO.formato).toBe("XXXX-XXXX")
-    // @ts-expect-error novos campos
     expect(CODIGO_EDICAO.quantidadeBlocos).toBe(2)
   })
 
   it("gerarCodigoEdicao usa a função de sorteio passada", () => {
-    // @ts-expect-error nova funcao em contratos
     const codigo = gerarCodigoEdicao((max) => 0)
     expect(codigo).toBe("2222-2222")
     expect(CODIGO_EDICAO.padrao.test(codigo)).toBe(true)
   })
 
   it("exporta a mensagem única para o aviso de contato", () => {
-    // @ts-expect-error nova constante
     expect(MENSAGEM_AVISO_CONTATO).toMatch(/telefone, WhatsApp ou link/)
   })
 

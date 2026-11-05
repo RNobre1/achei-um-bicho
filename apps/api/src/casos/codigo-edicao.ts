@@ -1,20 +1,12 @@
-import { CODIGO_EDICAO } from '@achei/contratos'
+import { CODIGO_EDICAO, gerarCodigoEdicao as gerarCodigoEdicaoContratos } from '@achei/contratos'
 import { createHash, randomInt, timingSafeEqual } from 'node:crypto'
-
-function bloco(): string {
-  let saida = ''
-  for (let i = 0; i < CODIGO_EDICAO.tamanhoBloco; i++) {
-    saida += CODIGO_EDICAO.alfabeto[randomInt(CODIGO_EDICAO.alfabeto.length)]
-  }
-  return saida
-}
 
 /**
  * Código que permite editar e encerrar um caso publicado sem conta. São 31^8
  * combinações (cerca de 850 bilhões), sorteadas com gerador criptográfico.
  */
 export function gerarCodigoEdicao(): string {
-  return `${bloco()}-${bloco()}`
+  return gerarCodigoEdicaoContratos(randomInt)
 }
 
 /** O banco guarda só isto. O código em claro sai uma vez, na resposta da publicação. */

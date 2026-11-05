@@ -92,13 +92,45 @@ export const TAREFA_DIARIA = {
 export const PARECE_CONTATO = /(\d[\s().-]*){8,}|whats|zap\b|wa\.me|https?:\/\/|www\./i
 
 /**
+ * Mensagem única mostrada antes do envio quando o relato ou enunciado contém
+ * telefone, WhatsApp ou link (RNF4).
+ */
+export const MENSAGEM_AVISO_CONTATO =
+  'O relato ou uma das perguntas parece conter telefone, WhatsApp ou link. Lembre-se que o contato só é liberado após a verificação.'
+
+const ALFABETO_EDICAO = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+const TAMANHO_BLOCO_EDICAO = 4
+const QUANTIDADE_BLOCOS_EDICAO = 2
+const PADRAO_BLOCO_EDICAO = `[${ALFABETO_EDICAO}]{${TAMANHO_BLOCO_EDICAO}}`
+const EXPRESSAO_CODIGO_EDICAO = new RegExp(
+  `^${Array.from({ length: QUANTIDADE_BLOCOS_EDICAO }, () => PADRAO_BLOCO_EDICAO).join('-')}$`
+)
+
+/**
  * Código de edição de casos publicados sem conta (F9). Sorteado pelo servidor
  * ou pelo aparelho com gerador criptográfico, no formato XXXX-XXXX.
  * Sem 0/O e 1/I/L, que se confundem quando a pessoa anota à mão ou dita o código.
  */
 export const CODIGO_EDICAO = {
-  alfabeto: '23456789ABCDEFGHJKMNPQRSTUVWXYZ',
-  tamanhoBloco: 4,
-  padrao: /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}$/,
-  expressaoRegular: /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}$/,
+  alfabeto: ALFABETO_EDICAO,
+  tamanhoBloco: TAMANHO_BLOCO_EDICAO,
+  quantidadeBlocos: QUANTIDADE_BLOCOS_EDICAO,
+  formato: 'XXXX-XXXX',
+  padrao: EXPRESSAO_CODIGO_EDICAO,
+  expressaoRegular: EXPRESSAO_CODIGO_EDICAO,
 } as const
+
+/**
+ * Gera um código de edição sorteando os caracteres do alfabeto com o gerador fornecido.
+ */
+export function gerarCodigoEdicao(sortear: (maximoExclusivo: number) => number): string {
+  const blocos: string[] = []
+  for (let b = 0; b < CODIGO_EDICAO.quantidadeBlocos; b++) {
+    let bloco = ''
+    for (let i = 0; i < CODIGO_EDICAO.tamanhoBloco; i++) {
+      bloco += CODIGO_EDICAO.alfabeto[sortear(CODIGO_EDICAO.alfabeto.length)]
+    }
+    blocos.push(bloco)
+  }
+  return blocos.join('-')
+}
