@@ -8,6 +8,7 @@ import { Etiqueta } from '../../componentes/Etiqueta'
 import { MapaArea } from '../../componentes/MapaArea'
 import { Placa } from '../../componentes/Placa'
 import { Voltar } from '../../componentes/Voltar'
+import { formatarAvisoSemConexao } from '../../dominio/cache-offline'
 import { atributosDoCaso, descreverQuando, fraseDoLocal, TITULO_DO_LOCAL } from '../../dominio/caso-aberto'
 import { formatarTempoDesde } from '../../dominio/formatar'
 import { enderecoNoGoogleMaps } from '../../dominio/mapa'
@@ -16,6 +17,7 @@ import { nomeDoAnimal } from '../../dominio/mural'
 import { rotuloBotaoReivindicar } from '../../dominio/reivindicacao'
 import { api, ErroApi } from '../../servicos/api'
 import { meuCaso } from '../../servicos/meus-casos'
+import { obterCasoDoCache, salvarCasoNoCache } from '../../servicos/cache-offline'
 import { cores, fontes } from '../../tema'
 import { AvisosDoAutor } from './AvisosDoAutor'
 import { ReivindicacoesDoAutor } from './ReivindicacoesDoAutor'
@@ -30,19 +32,29 @@ export function CasoAberto() {
   const [meu, setMeu] = useState<MeuCaso>()
   const [avisos, setAvisos] = useState<AvistamentoParaAutor[]>()
   const [erroAvisos, setErroAvisos] = useState<string>()
+  const [avisoOffline, setAvisoOffline] = useState<string>()
 
   const carregar = useCallback(async () => {
     setErro(undefined)
     try {
-      setCaso(await api.abrirCaso(id))
+      const resultado = await api.abrirCaso(id)
+      setCaso(resultado)
+      setAvisoOffline(undefined)
+      void salvarCasoNoCache(resultado)
     } catch (e) {
-      setErro(
-        e instanceof ErroApi && e.status === 404
-          ? 'Este caso não existe mais ou o link está errado.'
-          : e instanceof ErroApi
-            ? e.message
-            : 'Não deu para abrir o caso.',
-      )
+      const cache = await obterCasoDoCache(id)
+      if (cache) {
+        setCaso(cache.caso)
+        setAvisoOffline(formatarAvisoSemConexao(cache.carregadoEm))
+      } else {
+        setErro(
+          e instanceof ErroApi && e.status === 404
+            ? 'Este caso não existe mais ou o link está errado.'
+            : e instanceof ErroApi
+              ? e.message
+              : 'Não deu para abrir o caso.',
+        )
+      }
     }
   }, [id])
 
@@ -79,6 +91,11 @@ export function CasoAberto() {
         <ActivityIndicator style={{ marginTop: 40 }} color={cores.tapajos} />
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: margens.bottom + 24 }}>
+          {avisoOffline ? (
+            <View style={{ paddingHorizontal: 22, paddingBottom: 10 }}>
+              <Aviso texto={avisoOffline} />
+            </View>
+          ) : null}
           <View>
             {caso.fotos.length > 0 ? (
               <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>

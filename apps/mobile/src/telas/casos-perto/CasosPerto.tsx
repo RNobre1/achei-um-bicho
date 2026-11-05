@@ -3,10 +3,13 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Share, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
+import { formatarAvisoSemConexao } from '../../dominio/cache-offline'
 import { formatarDistancia } from '../../dominio/formatar'
 import { proximoRaio, textoDoConvite } from '../../dominio/mural'
 import { api, ErroApi } from '../../servicos/api'
+import { obterMuralDoCache, salvarMuralNoCache } from '../../servicos/cache-offline'
 import type { Posicao } from '../../dominio/posicao'
 import { obterPosicao } from '../../servicos/localizacao'
 import { cores, fontes } from '../../tema'
@@ -28,6 +31,7 @@ export function CasosPerto() {
   const [mural, setMural] = useState<Mural>()
   const [erro, setErro] = useState<string>()
   const [carregando, setCarregando] = useState(true)
+  const [avisoOffline, setAvisoOffline] = useState<string>()
 
   useEffect(() => {
     void obterPosicao().then(setPosicao)
@@ -38,15 +42,22 @@ export function CasosPerto() {
     setCarregando(true)
     setErro(undefined)
     try {
-      setMural(
-        await api.mural({
-          ...posicao.ponto,
-          raio,
-          tipo: filtro === 'tudo' ? undefined : filtro,
-        }),
-      )
+      const resultado = await api.mural({
+        ...posicao.ponto,
+        raio,
+        tipo: filtro === 'tudo' ? undefined : filtro,
+      })
+      setMural(resultado)
+      setAvisoOffline(undefined)
+      void salvarMuralNoCache(resultado)
     } catch (e) {
-      setErro(e instanceof ErroApi ? e.message : 'Não deu para carregar os casos.')
+      const cache = await obterMuralDoCache()
+      if (cache) {
+        setMural(cache.mural)
+        setAvisoOffline(formatarAvisoSemConexao(cache.carregadoEm))
+      } else {
+        setErro(e instanceof ErroApi ? e.message : 'Não deu para carregar os casos.')
+      }
     } finally {
       setCarregando(false)
     }
@@ -98,6 +109,12 @@ export function CasosPerto() {
           </Pressable>
         ))}
       </View>
+
+      {avisoOffline ? (
+        <View style={{ marginHorizontal: 22, marginTop: 10 }}>
+          <Aviso texto={avisoOffline} />
+        </View>
+      ) : null}
 
       {erro ? (
         <View style={estilos.estado}>
