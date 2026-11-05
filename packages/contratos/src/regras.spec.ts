@@ -84,6 +84,37 @@ describe('regras de telefone', () => {
 })
 
 describe('regras do código de edição', () => {
+  it("casa todo caractere do alfabeto e recusa qualquer caractere fora", () => {
+    for (const char of CODIGO_EDICAO.alfabeto) {
+      const codigo = `${char.repeat(4)}-${char.repeat(4)}`
+      expect(CODIGO_EDICAO.padrao.test(codigo)).toBe(true)
+    }
+    const fora = ["0", "1", "O", "I", "L", "a", "b", "!", "@", " "]
+    for (const char of fora) {
+      const codigo = `${char.repeat(4)}-2345`
+      expect(CODIGO_EDICAO.padrao.test(codigo)).toBe(false)
+    }
+  })
+
+  it("expõe o formato e deriva o regex de alfabeto, tamanho e quantidade de blocos", () => {
+    // @ts-expect-error novos campos
+    expect(CODIGO_EDICAO.formato).toBe("XXXX-XXXX")
+    // @ts-expect-error novos campos
+    expect(CODIGO_EDICAO.quantidadeBlocos).toBe(2)
+  })
+
+  it("gerarCodigoEdicao usa a função de sorteio passada", () => {
+    // @ts-expect-error nova funcao em contratos
+    const codigo = gerarCodigoEdicao((max) => 0)
+    expect(codigo).toBe("2222-2222")
+    expect(CODIGO_EDICAO.padrao.test(codigo)).toBe(true)
+  })
+
+  it("exporta a mensagem única para o aviso de contato", () => {
+    // @ts-expect-error nova constante
+    expect(MENSAGEM_AVISO_CONTATO).toMatch(/telefone, WhatsApp ou link/)
+  })
+
   it('define o alfabeto sem caracteres ambíguos e tamanho do bloco', () => {
     expect(CODIGO_EDICAO.alfabeto).toBe('23456789ABCDEFGHJKMNPQRSTUVWXYZ')
     expect(CODIGO_EDICAO.tamanhoBloco).toBe(4)
