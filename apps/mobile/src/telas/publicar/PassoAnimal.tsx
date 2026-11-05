@@ -11,10 +11,25 @@ interface Props {
   mudar: (alterar: (r: RascunhoPublicacao) => RascunhoPublicacao) => void
 }
 
+const OPCOES_CASTRADO = [
+  { valor: 'sim', rotulo: 'Sim' },
+  { valor: 'nao', rotulo: 'Não' },
+  { valor: 'nao_sei', rotulo: 'Não sei' },
+] as const
+
 export function PassoAnimal({ rascunho, mudar }: Props) {
   const animal = rascunho.animal
   const mudarAnimal = (parte: Partial<RascunhoPublicacao['animal']>) =>
     mudar((r) => ({ ...r, animal: { ...r.animal, ...parte } }))
+
+  const marcadoCastrado =
+    animal.castrado === true
+      ? 'sim'
+      : animal.castrado === false
+        ? 'nao'
+        : animal.castrado === 'nao_sei'
+          ? 'nao_sei'
+          : undefined
 
   return (
     <View style={{ gap: 16 }}>
@@ -28,6 +43,12 @@ export function PassoAnimal({ rascunho, mudar }: Props) {
         aoEscolher={(corDominante) => mudarAnimal({ corDominante })}
       />
       <GrupoDeChips rotulo="Coleira" opcoes={opcoes(COLEIRA)} marcado={animal.coleira} aoEscolher={(coleira) => mudarAnimal({ coleira })} />
+      <GrupoDeChips
+        rotulo="Castrado"
+        opcoes={OPCOES_CASTRADO}
+        marcado={marcadoCastrado}
+        aoEscolher={(v) => mudarAnimal({ castrado: v === 'sim' ? true : v === 'nao' ? false : 'nao_sei' })}
+      />
       {rascunho.tipo === 'perdido' ? (
         <Campo rotulo="Nome que ele atende" valor={animal.nome} aoMudar={(nome) => mudarAnimal({ nome })} maxLength={60} />
       ) : null}

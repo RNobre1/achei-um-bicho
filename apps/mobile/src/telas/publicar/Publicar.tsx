@@ -6,11 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
 import { Passos } from '../../componentes/Passos'
-import { nomeDoAnimal } from '../../dominio/mural'
-import { montarPublicacao, PASSOS, pendenciasDoPasso, rascunhoVazio, type RascunhoPublicacao } from '../../dominio/publicacao'
-import { api, ErroApi } from '../../servicos/api'
-import { arquivoDaFoto } from '../../servicos/fotos'
-import { guardarMeuCaso } from '../../servicos/meus-casos'
+import {
+  PASSOS,
+  pendenciasDoPasso,
+  rascunhoVazio,
+  verificarPareceContato,
+  type RascunhoPublicacao,
+} from '../../dominio/publicacao'
+import { ErroApi } from '../../servicos/api'
+import { enfileirarPublicacao, listarFila, processarFila } from '../../servicos/fila-de-envio'
 import { cores, fontes } from '../../tema'
 import { CodigoDeEdicao } from './CodigoDeEdicao'
 import { PassoAnimal } from './PassoAnimal'
@@ -29,68 +33,70 @@ export function Publicar() {
   const [pendencias, setPendencias] = useState<string[]>([])
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string>()
+  const [avisoContato, setAvisoContato] = useState<string>()
+  const [confirmouContato, setConfirmouContato] = useState(false)
   const [publicado, setPublicado] = useState<{ id: string; codigo: string }>()
+  const [guardadoOffline, setGuardadoOffline] = useState<{ id: string; codigo: string }>()
   const [fotosPendentes, setFotosPendentes] = useState<string[]>([])
   const [reenviando, setReenviando] = useState(false)
 
   const passo = PASSOS[indice]!
   const mudar = (alterar: (r: RascunhoPublicacao) => RascunhoPublicacao) => {
     setPendencias([])
+    setAvisoContato(undefined)
+    setConfirmouContato(false)
     setRascunho((r) => (r ? alterar(r) : r))
   }
 
   function irPara(novo: number) {
     setPendencias([])
     setErro(undefined)
+    setAvisoContato(undefined)
+    setConfirmouContato(false)
     setIndice(novo)
     rolagem.current?.scrollTo({ y: 0, animated: false })
   }
 
   function escolherTipo(tipo: TipoCaso) {
-    // trocar de lado recomeça o rascunho: as perguntas sugeridas são outras
     if (rascunho?.tipo !== tipo) setRascunho(rascunhoVazio(tipo))
     irPara(1)
-  }
-
-  /** Sobe as fotos uma a uma e devolve as que não subiram, para tentar de novo. */
-  async function enviarFotos(id: string, codigo: string, fotos: string[]): Promise<string[]> {
-    const falharam: string[] = []
-    for (const uri of fotos) {
-      try {
-        await api.enviarFoto(id, codigo, await arquivoDaFoto(uri))
-      } catch {
-        falharam.push(uri)
-      }
-    }
-    return falharam
   }
 
   async function reenviarFotos() {
     if (!publicado) return
     setReenviando(true)
-    setFotosPendentes(await enviarFotos(publicado.id, publicado.codigo, fotosPendentes))
+    await processarFila()
+    const fila = await listarFila()
+    const item = fila.find((f) => f.casoId === publicado.id)
+    if (item) {
+      setFotosPendentes(item.fotos.filter((f) => f.estado !== 'enviado').map((f) => f.uri))
+    }
     setReenviando(false)
   }
 
+  /**
+   * Publicar passa sempre pela fila (F9): o rascunho fica seguro em disco primeiro.
+   * Com conexão, confirma em poucos segundos; sem conexão, avisa que ficou guardado.
+   */
   async function publicar(r: RascunhoPublicacao) {
     setEnviando(true)
     setErro(undefined)
     try {
-      const corpo = montarPublicacao(r)
-      const resposta = await api.publicar(corpo)
-      await guardarMeuCaso({
-        id: resposta.id,
-        tipo: resposta.tipo,
-        codigoEdicao: resposta.codigoEdicao,
-        nome: nomeDoAnimal({ especie: corpo.animal.especie, nome: corpo.animal.nome ?? null }),
-        publicadoEm: new Date().toISOString(),
-      })
-      // o caso já existe: foto que falhar não desfaz a publicação, fica para tentar de novo
-      setFotosPendentes(await enviarFotos(resposta.id, resposta.codigoEdicao, r.fotos))
-      setPublicado({ id: resposta.id, codigo: resposta.codigoEdicao })
+      const item = await enfileirarPublicacao(r)
+      await processarFila()
+      const fila = await listarFila()
+      const atualizado = fila.find((f) => f.id === item.id) ?? item
+
+      if (atualizado.casoId) {
+        const fotosRestantes = atualizado.fotos.filter((f) => f.estado !== 'enviado').map((f) => f.uri)
+        setFotosPendentes(fotosRestantes)
+        setPublicado({ id: atualizado.casoId, codigo: atualizado.codigoEdicao })
+      } else {
+        setGuardadoOffline({ id: item.id, codigo: item.codigoEdicao })
+      }
       rolagem.current?.scrollTo({ y: 0, animated: false })
     } catch (e) {
-      setErro(e instanceof ErroApi ? e.message : 'Não deu para publicar. Tente de novo.')
+      setErro(e instanceof ErroApi ? e.message : 'Não deu para salvar o caso. Tente de novo.')
     } finally {
       setEnviando(false)
     }
@@ -103,14 +109,31 @@ export function Publicar() {
       setPendencias(falta)
       return
     }
-    if (indice < PASSOS.length - 1) irPara(indice + 1)
-    else void publicar(rascunho)
+    if (indice < PASSOS.length - 1) {
+      irPara(indice + 1)
+      return
+    }
+
+    // No último passo, verifica se há dados de contato antes de publicar
+    if (!confirmouContato) {
+      const alertaContato = verificarPareceContato(rascunho)
+      if (alertaContato) {
+        setAvisoContato(alertaContato)
+        setConfirmouContato(true)
+        return
+      }
+    }
+
+    void publicar(rascunho)
   }
 
   function recomecar() {
     setPublicado(undefined)
+    setGuardadoOffline(undefined)
     setFotosPendentes([])
     setRascunho(undefined)
+    setAvisoContato(undefined)
+    setConfirmouContato(false)
     irPara(0)
   }
 
@@ -130,6 +153,30 @@ export function Publicar() {
             aoVerCaso={() => router.push(`/caso/${publicado.id}`)}
             aoPublicarOutro={recomecar}
           />
+        ) : guardadoOffline ? (
+          <View style={{ gap: 18 }}>
+            <Text style={estilos.titulo}>Guardado no celular: sobe sozinho quando a internet voltar</Text>
+            <Text style={estilos.texto}>
+              O caso e as fotos já estão salvos neste aparelho. Quando o sinal voltar, o envio acontece
+              automaticamente sem você precisar preencher nada de novo.
+            </Text>
+            <View style={estilos.caixa}>
+              <Text style={estilos.rotulo}>SEU CÓDIGO DE EDIÇÃO (GERADO NO CELULAR)</Text>
+              <Text
+                style={estilos.codigo}
+                selectable
+                accessibilityLabel={`Código ${guardadoOffline.codigo.split('').join(' ')}`}
+              >
+                {guardadoOffline.codigo}
+              </Text>
+            </View>
+            <Aviso
+              titulo="Anote ou tire um print."
+              texto="O código já foi gerado de forma segura no aparelho e será o mesmo registrado no servidor assim que o envio confirmar."
+            />
+            <Botao rotulo="Ver fila de envio" variante="escuro" aoTocar={() => router.push('/fila')} />
+            <Botao rotulo="Publicar outro caso" variante="fraco" aoTocar={recomecar} />
+          </View>
         ) : (
           <>
             {indice > 0 ? (
@@ -152,11 +199,23 @@ export function Publicar() {
             {rascunho && passo.id === 'verificacao' ? <PassoVerificacao rascunho={rascunho} mudar={mudar} /> : null}
 
             {pendencias.length > 0 ? <Aviso titulo="Falta pouco:" texto={pendencias.join('\n')} /> : null}
+            {avisoContato ? (
+              <Aviso
+                titulo="Atenção: contato direto detectado"
+                texto={`${avisoContato}\n\nToque em Publicar novamente para confirmar o envio assim mesmo.`}
+              />
+            ) : null}
             {erro ? <Aviso titulo="Não deu para publicar." texto={erro} /> : null}
 
             {passo.id !== 'tipo' ? (
               <Botao
-                rotulo={indice === PASSOS.length - 1 ? 'Publicar' : 'Continuar'}
+                rotulo={
+                  indice === PASSOS.length - 1
+                    ? avisoContato && confirmouContato
+                      ? 'Confirmar e Publicar'
+                      : 'Publicar'
+                    : 'Continuar'
+                }
                 variante={indice === PASSOS.length - 1 ? 'acento' : 'escuro'}
                 carregando={enviando}
                 aoTocar={continuar}
@@ -175,4 +234,7 @@ const estilos = StyleSheet.create({
   voltar: { fontFamily: fontes.textoMedio, fontSize: 15, color: cores.apagado },
   rotulo: { fontFamily: fontes.dado, fontSize: 10.5, letterSpacing: 1.1, color: cores.apagado },
   titulo: { fontFamily: fontes.tituloForte, fontSize: 25, color: cores.tapajos, letterSpacing: -0.6 },
+  texto: { fontFamily: fontes.texto, fontSize: 14.5, lineHeight: 22, color: '#33474D' },
+  caixa: { borderWidth: 1.6, borderColor: cores.tapajos, backgroundColor: cores.branco, padding: 18, gap: 8, alignItems: 'center' },
+  codigo: { fontFamily: fontes.dadoMedio, fontSize: 32, letterSpacing: 4, color: cores.tapajos },
 })

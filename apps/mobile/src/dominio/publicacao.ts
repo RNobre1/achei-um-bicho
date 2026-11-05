@@ -40,7 +40,7 @@ export interface RascunhoPublicacao {
     corDominante?: Cor
     coleira?: Coleira
     nome: string
-    castrado?: boolean
+    castrado?: boolean | 'nao_sei'
   }
   local: {
     latitude?: number
@@ -150,7 +150,7 @@ export function montarPublicacao(r: RascunhoPublicacao, agora: Date = new Date()
       corDominante: r.animal.corDominante!,
       coleira: r.animal.coleira!,
       ...(preenchido(r.animal.nome) && { nome: preenchido(r.animal.nome) }),
-      ...(r.animal.castrado !== undefined && { castrado: r.animal.castrado }),
+      ...(typeof r.animal.castrado === 'boolean' && { castrado: r.animal.castrado }),
     },
     local: {
       latitude: r.local.latitude!,

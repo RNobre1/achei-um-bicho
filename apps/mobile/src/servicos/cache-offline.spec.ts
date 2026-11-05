@@ -35,10 +35,10 @@ const muralFake: Mural = {
 const casoFake: CasoAberto = {
   id: 'caso-1',
   tipo: 'perdido',
-  estado: 'procurando',
+  estado: 'procurando', relato: null,
   ocorridoEm: '2026-10-10T10:00:00.000Z',
   publicadoEm: '2026-10-10T12:00:00.000Z',
-  animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'com', nome: 'Pipoca' },
+  animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'com', nome: 'Pipoca', castrado: null },
   fotos: [],
   area: { latitude: -2.4385, longitude: -54.7085, raioM: 1600, bairro: 'Aparecida' },
 }

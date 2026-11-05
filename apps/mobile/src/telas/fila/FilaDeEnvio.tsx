@@ -106,7 +106,7 @@ const estilos = StyleSheet.create({
   nome: { fontFamily: fontes.titulo, fontSize: 17, color: cores.tapajos },
   linhaDetalhe: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   estado: { fontFamily: fontes.textoMedio, fontSize: 13, color: cores.apagado },
-  estadoVerde: { color: cores.verde },
+  estadoVerde: { color: cores.perdi },
   estadoVermelho: { color: cores.perdi },
   horario: { fontFamily: fontes.dado, fontSize: 11, color: cores.apagado },
   fotosTexto: { fontFamily: fontes.dado, fontSize: 11, color: cores.apagado },

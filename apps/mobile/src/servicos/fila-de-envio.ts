@@ -130,11 +130,12 @@ export async function processarFila(clienteApi: ClienteApi = api): Promise<void>
         }
 
         if (item.etapa === 'fotos' && item.casoId) {
+          const casoId = item.casoId
           for (const foto of item.fotos) {
             if (foto.estado === 'enviado') continue
             try {
               const arquivo = await arquivoDaFoto(foto.uri)
-              await clienteApi.enviarFoto(item.casoId, item.codigoEdicao, arquivo)
+              await clienteApi.enviarFoto(casoId, item.codigoEdicao, arquivo)
               item = marcarFotoEnviada(item, foto.uri)
               itens[i] = item
               await salvarFila(itens)

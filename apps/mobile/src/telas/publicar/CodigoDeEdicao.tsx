@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Share, StyleSheet, Text, View } from 'react-native'
 import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
 import { cores, fontes } from '../../tema'
@@ -13,6 +13,12 @@ interface Props {
 }
 
 export function CodigoDeEdicao({ codigo, fotosPendentes, reenviando, aoReenviarFotos, aoVerCaso, aoPublicarOutro }: Props) {
+  function compartilhar() {
+    void Share.share({
+      message: `Código de edição do meu caso no Achei um Bicho: ${codigo}`,
+    }).catch(() => undefined)
+  }
+
   return (
     <View style={{ gap: 18 }}>
       <Text style={estilos.titulo}>Publicado.</Text>
@@ -23,6 +29,7 @@ export function CodigoDeEdicao({ codigo, fotosPendentes, reenviando, aoReenviarF
           {codigo}
         </Text>
       </View>
+      <Botao rotulo="Compartilhar código" variante="fraco" aoTocar={compartilhar} />
       <Aviso
         titulo="Anote ou tire um print."
         texto="É com este código que você edita ou encerra o caso sem criar conta. Ele fica guardado neste celular, mas não aparece de novo em lugar nenhum."
