@@ -1,4 +1,6 @@
 import {
+  MENSAGEM_AVISO_CONTATO,
+  PARECE_CONTATO,
   type Coleira,
   type Cor,
   type Especie,
@@ -40,7 +42,7 @@ export interface RascunhoPublicacao {
     corDominante?: Cor
     coleira?: Coleira
     nome: string
-    castrado?: boolean | 'nao_sei'
+    castrado?: boolean
   }
   local: {
     latitude?: number
@@ -54,6 +56,20 @@ export interface RascunhoPublicacao {
   perguntas: PerguntaDoRascunho[]
   /** Endereços locais das fotos já reduzidas; sobem depois que o caso é criado. */
   fotos: string[]
+}
+
+export type OpcaoChipCastrado = 'sim' | 'nao' | 'nao_sei'
+
+export function converterChipParaCastrado(chip: OpcaoChipCastrado | undefined): boolean | undefined {
+  if (chip === 'sim') return true
+  if (chip === 'nao') return false
+  return undefined
+}
+
+export function converterCastradoParaChip(castrado: boolean | undefined): OpcaoChipCastrado | undefined {
+  if (castrado === true) return 'sim'
+  if (castrado === false) return 'nao'
+  return undefined
 }
 
 // Quem perdeu responde sobre o que só o tutor sabe; quem achou, sobre o que só
@@ -107,10 +123,11 @@ export function pendenciasDoPasso(r: RascunhoPublicacao, passo: IdPasso): string
       if (!r.quando) falta.push('Diga quando aconteceu')
       break
     case 'verificacao':
-      r.perguntas.forEach((p, i) => {
-        if (!p.enunciado.trim()) falta.push(`Escreva a pergunta ${i + 1}`)
-        else if (!p.resposta.trim()) falta.push(`Responda a pergunta ${i + 1}`)
-      })
+      if (r.perguntas.some((p, i) => !p.resposta.trim() && i < 3)) {
+        r.perguntas.forEach((p, i) => {
+          if (!p.resposta.trim() && i < 3) falta.push(`Responda a pergunta ${i + 1}`)
+        })
+      }
       if (!r.autor.nome.trim()) falta.push('Diga seu nome')
       if (r.autor.telefone.trim()) {
         const digitos = TELEFONE.normalizar(r.autor.telefone)
@@ -123,7 +140,11 @@ export function pendenciasDoPasso(r: RascunhoPublicacao, passo: IdPasso): string
   return falta
 }
 
-/** Hora aproximada a partir de dia e período, sem nunca cair no futuro. */
+/**
+ * Ponto no tempo a partir do dia e período aproximados do rascunho. Usa as horas
+ * centrais de cada período em Santarém (9h manhã, 16h tarde, 20h noite) e nunca
+ * projeta para o futuro: hoje à noite, preenchido à tarde, vira a hora atual.
+ */
 export function momentoDoPeriodo(quando: Quando, agora: Date = new Date()): string {
   const momento = new Date(agora)
   if (quando.dia === 'ontem') momento.setDate(momento.getDate() - 1)
@@ -136,12 +157,18 @@ function preenchido(texto: string): string | undefined {
   return limpo === '' ? undefined : limpo
 }
 
-/** Corpo de POST /casos. Só monta com todos os passos completos. */
+/**
+ * Converte o rascunho para o corpo esperado pelo POST /casos da API. Limpa
+ * pontuação de telefone e espaços soltos. Devolve o objeto pronto para o JSON.
+ */
 export function montarPublicacao(r: RascunhoPublicacao, agora: Date = new Date()): NovaPublicacao {
-  const pendencias = PASSOS.flatMap((passo) => pendenciasDoPasso(r, passo.id))
-  if (pendencias.length > 0) throw new Error(pendencias.join('\n'))
+  for (const passo of PASSOS) {
+    const pendencias = pendenciasDoPasso(r, passo.id)
+    if (pendencias.length > 0) {
+      throw new Error(`Não dá para publicar com pendências: ${pendencias.join(', ')}`)
+    }
+  }
 
-  const telefone = r.autor.telefone.replace(/\D/g, '')
   const corpo: NovaPublicacao = {
     tipo: r.tipo,
     animal: {
@@ -149,18 +176,17 @@ export function montarPublicacao(r: RascunhoPublicacao, agora: Date = new Date()
       porte: r.animal.porte!,
       corDominante: r.animal.corDominante!,
       coleira: r.animal.coleira!,
-      ...(preenchido(r.animal.nome) && { nome: preenchido(r.animal.nome) }),
+      nome: preenchido(r.animal.nome) ?? null,
       ...(typeof r.animal.castrado === 'boolean' && { castrado: r.animal.castrado }),
     },
     local: {
       latitude: r.local.latitude!,
       longitude: r.local.longitude!,
-      ...(preenchido(r.local.bairro) && { bairro: preenchido(r.local.bairro) }),
-      ...(preenchido(r.local.referencia) && { referencia: preenchido(r.local.referencia) }),
+      bairro: preenchido(r.local.bairro) ?? null,
     },
     autor: {
       nome: r.autor.nome.trim(),
-      ...(telefone && { telefone }),
+      telefone: r.autor.telefone.replace(/\D/g, ''),
     },
     ocorridoEm: momentoDoPeriodo(r.quando!, agora),
     perguntas: r.perguntas.map((p) => ({ enunciado: p.enunciado.trim(), respostaEsperada: p.resposta.trim() })),
@@ -176,12 +202,32 @@ export function montarPublicacao(r: RascunhoPublicacao, agora: Date = new Date()
  */
 export function verificarPareceContato(r: RascunhoPublicacao): string | undefined {
   if (r.relato && PARECE_CONTATO.test(r.relato)) {
-    return 'O relato ou uma das perguntas parece conter telefone, WhatsApp ou link. Lembre-se que o contato só é liberado após a verificação.'
+    return MENSAGEM_AVISO_CONTATO
   }
   for (const p of r.perguntas) {
     if (p.enunciado && PARECE_CONTATO.test(p.enunciado)) {
-      return 'O relato ou uma das perguntas parece conter telefone, WhatsApp ou link. Lembre-se que o contato só é liberado após a verificação.'
+      return MENSAGEM_AVISO_CONTATO
     }
   }
   return undefined
+}
+
+/**
+ * Confirmação em dois toques do aviso de contato:
+ * - No primeiro toque, se houver indício de contato, bloqueia a publicação e retorna o aviso.
+ * - No segundo toque (jaConfirmou = true), libera a publicação mesmo com indício.
+ * - Sem indício de contato, libera imediatamente.
+ */
+export function verificarConfirmacaoContato(
+  rascunho: RascunhoPublicacao,
+  jaConfirmou: boolean,
+): { podePublicar: boolean; aviso?: string } {
+  if (jaConfirmou) {
+    return { podePublicar: true }
+  }
+  const aviso = verificarPareceContato(rascunho)
+  if (aviso) {
+    return { podePublicar: false, aviso }
+  }
+  return { podePublicar: true }
 }
