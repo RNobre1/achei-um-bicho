@@ -276,4 +276,18 @@ describe('cliente da API', () => {
     expect(headers).toEqual({ 'Content-Type': 'application/json', 'x-codigo-edicao': 'ABCD-EFGH' })
     expect(JSON.parse(body as string)).toEqual(edicao)
   })
+
+  it("estoura tempo limite de 60 s com AbortController e vira erro passageiro status 0", async () => {
+    const buscar = vi.fn().mockImplementation(() => {
+      const erro = new Error("The operation was aborted")
+      erro.name = "AbortError"
+      return Promise.reject(erro)
+    })
+
+    await expect(criarClienteApi("http://api.teste", buscar).abrirCaso("x")).rejects.toMatchObject({
+      status: 0,
+      message: "Sem conexão com o servidor. Confira a internet e tente de novo.",
+    })
+    expect(buscar.mock.calls[0]![1]?.signal).toBeInstanceOf(AbortSignal)
+  })
 })
