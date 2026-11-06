@@ -18,6 +18,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import type { Configuracao } from '../configuracao'
 import { CONFIGURACAO } from '../configuracao.module'
 import { areaAproximada } from '../geo/area-aproximada'
@@ -56,13 +57,36 @@ export class CasosService {
 
     const estado = ESTADO_INICIAL[dados.tipo]
     const codigoEdicao = dados.codigoEdicao ?? gerarCodigoEdicao()
-    const id = await this.repositorio.criar({
-      dados,
-      estado,
-      codigoEdicaoHash: hashCodigoEdicao(codigoEdicao),
-    })
-    await this.gerador.gerarPara(id)
-    return { id, tipo: dados.tipo, estado, codigoEdicao }
+    try {
+      const id = await this.repositorio.criar({
+        dados,
+        estado,
+        codigoEdicaoHash: hashCodigoEdicao(codigoEdicao),
+      })
+      await this.gerador.gerarPara(id)
+      return { id, tipo: dados.tipo, estado, codigoEdicao }
+    } catch (e) {
+      if (
+        dados.idCliente &&
+        dados.codigoEdicao &&
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        const existente = await this.repositorio.buscarPorIdCliente(dados.idCliente)
+        if (existente) {
+          if (conferirCodigoEdicao(dados.codigoEdicao, existente.codigoEdicao)) {
+            return {
+              id: existente.id,
+              tipo: existente.tipo,
+              estado: existente.estado,
+              codigoEdicao: dados.codigoEdicao,
+            }
+          }
+          throw new ConflictException('id de cliente já existe com outro código de edição')
+        }
+      }
+      throw e
+    }
   }
 
   async mural({ latitude, longitude, raio, tipo }: ConsultarMuralDto): Promise<Mural> {
