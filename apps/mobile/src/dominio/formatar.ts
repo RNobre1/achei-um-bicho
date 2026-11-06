@@ -25,3 +25,11 @@ export function formatarTempoDesde(iso: string, agora: Date = new Date()): strin
   if (passado < 14 * DIA) return `há ${Math.floor(passado / DIA)} dias`
   return `há ${Math.floor(passado / SEMANA)} semanas`
 }
+
+/** Formato de relógio HH:mm ("14:35", "09:05"). Único no app. */
+export function formatarHora(quando: Date | string): string {
+  const data = typeof quando === 'string' ? new Date(quando) : quando
+  const hora = String(data.getHours()).padStart(2, '0')
+  const minuto = String(data.getMinutes()).padStart(2, '0')
+  return `${hora}:${minuto}`
+}
