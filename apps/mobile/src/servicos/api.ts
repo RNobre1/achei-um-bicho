@@ -86,12 +86,21 @@ async function mensagemDoErro(resposta: Response): Promise<string> {
 export function criarClienteApi(urlBase: string, buscar: Buscar = fetch): ClienteApi {
   const base = urlBase.replace(/\/+$/, '')
 
+  const TEMPO_LIMITE_MS = 60_000
+
   async function pedir<T>(caminho: string, opcoes?: RequestInit): Promise<T> {
+    const controlador = new AbortController()
+    const timer = setTimeout(() => controlador.abort(), TEMPO_LIMITE_MS)
     let resposta: Response
     try {
-      resposta = await buscar(`${base}${caminho}`, opcoes)
+      resposta = await buscar(`${base}${caminho}`, {
+        ...opcoes,
+        signal: opcoes?.signal ?? controlador.signal,
+      })
     } catch {
       throw new ErroApi(0, SEM_CONEXAO)
+    } finally {
+      clearTimeout(timer)
     }
     if (!resposta.ok) throw new ErroApi(resposta.status, await mensagemDoErro(resposta))
     return (await resposta.json()) as T
