@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatarDistancia, formatarTempoDesde } from './formatar'
+import { formatarDistancia, formatarHora, formatarTempoDesde } from './formatar'
 
 describe('distância como aparece no card do mural', () => {
   it.each([
@@ -31,5 +31,17 @@ describe('tempo desde a publicação', () => {
     [60 * 24 * 21, 'há 3 semanas'],
   ])('%i minutos atrás vira "%s"', (minutos, texto) => {
     expect(formatarTempoDesde(antes(minutos), agora)).toBe(texto)
+  })
+})
+
+describe('formatador único de horário HH:mm', () => {
+  it('formata Date com preenchimento de zero', () => {
+    const data = new Date(2026, 9, 10, 9, 5)
+    expect(formatarHora(data)).toBe('09:05')
+  })
+
+  it('formata string ISO', () => {
+    const data = new Date(2026, 9, 10, 14, 30)
+    expect(formatarHora(data.toISOString())).toBe('14:30')
   })
 })
