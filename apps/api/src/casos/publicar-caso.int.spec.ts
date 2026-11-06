@@ -1,7 +1,10 @@
 import type { INestApplication } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import request from 'supertest'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Prisma } from '@prisma/client'
+import { CasosService } from './casos.service'
+import { CasosRepositorio } from './casos.repositorio'
 import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
@@ -124,5 +127,43 @@ describe('POST /casos com publicação idempotente (F9)', () => {
 
     expect(resposta.status).toBe(409)
     expect(await prisma.caso.count()).toBe(1)
+  })
+  it("trata corrida com dois POSTs simultâneos para o mesmo idCliente", async () => {
+    const corpo = casoValido({ idCliente, codigoEdicao })
+    const [res1, res2] = await Promise.all([
+      request(app.getHttpServer()).post("/casos").send(corpo),
+      request(app.getHttpServer()).post("/casos").send(corpo),
+    ])
+
+    expect(res1.status).toBe(201)
+    expect(res2.status).toBe(201)
+    expect(res1.body.id).toBe(res2.body.id)
+    expect(res1.body.codigoEdicao).toBe(codigoEdicao)
+    expect(await prisma.caso.count()).toBe(1)
+  })
+  it("recupera de erro P2002 em corrida relendo por idCliente", async () => {
+    const corpo = casoValido({ idCliente, codigoEdicao })
+    const primeira = await request(app.getHttpServer()).post("/casos").send(corpo).expect(201)
+
+    const service = app.get(CasosService)
+    const repositorio = app.get(CasosRepositorio)
+    vi.spyOn(repositorio, "buscarPorIdCliente")
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: primeira.body.id,
+        tipo: "perdido",
+        estado: "procurando",
+        codigoEdicao: hashCodigoEdicao(codigoEdicao),
+      })
+    vi.spyOn(repositorio, "criar").mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "5.0.0",
+      })
+    )
+
+    const resultado = await service.publicar(corpo as any)
+    expect(resultado.id).toBe(primeira.body.id)
+    expect(resultado.codigoEdicao).toBe(codigoEdicao)
   })
 })
