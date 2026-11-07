@@ -1,6 +1,7 @@
 import { COLEIRA, COR, ESPECIE, PORTE, opcoes } from '@achei/contratos'
 import { useState } from 'react'
 import { View } from 'react-native'
+import { Aviso } from '../../componentes/Aviso'
 import { Campo } from '../../componentes/Campo'
 import { FotosDoRascunho } from '../../componentes/FotosDoRascunho'
 import { GrupoDeChips } from '../../componentes/GrupoDeChips'
@@ -64,7 +65,11 @@ export function PassoAnimal({ rascunho, mudar }: Props) {
         aoMudar={(relato) => mudar((r) => ({ ...r, relato }))}
         multiline
         maxLength={600}
+        placeholder={rascunho.tipo === 'perdido' ? 'Como ele sumiu, jeito, medo de moto…' : 'Onde estava, como está, se está machucado…'}
       />
+      {rascunho.tipo === 'encontrado' ? (
+        <Aviso texto="Porte, cor e coleira são o que o aplicativo compara com os casos de quem perdeu. Só o que dá para ver já ajuda." />
+      ) : null}
     </View>
   )
 }

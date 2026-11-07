@@ -1,16 +1,7 @@
-import type { AvistamentoParaAutor, CasoAberto as TipoCasoAberto } from '@achei/contratos'
+import type { AvistamentoParaAutor, CasoAberto as Caso } from '@achei/contratos'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
-import {
-  ActivityIndicator,
-  Image,
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native'
+import { ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
@@ -37,7 +28,7 @@ export function CasoAberto() {
   const router = useRouter()
   const margens = useSafeAreaInsets()
   const { width: larguraDaTela } = useWindowDimensions()
-  const [caso, setCaso] = useState<TipoCasoAberto>()
+  const [caso, setCaso] = useState<Caso>()
   const [erro, setErro] = useState<string>()
   const [meu, setMeu] = useState<MeuCaso>()
   const [avisos, setAvisos] = useState<AvistamentoParaAutor[]>()

@@ -122,11 +122,11 @@ export function pendenciasDoPasso(r: RascunhoPublicacao, passo: IdPasso): string
       if (!r.quando) falta.push('Diga quando aconteceu')
       break
     case 'verificacao':
-      if (r.perguntas.some((p, i) => !p.resposta.trim() && i < 3)) {
-        r.perguntas.forEach((p, i) => {
-          if (!p.resposta.trim() && i < 3) falta.push(`Responda a pergunta ${i + 1}`)
-        })
-      }
+      r.perguntas.forEach((p, i) => {
+        if (i >= 3) return
+        if (!p.enunciado.trim()) falta.push(`Escreva a pergunta ${i + 1}`)
+        else if (!p.resposta.trim()) falta.push(`Responda a pergunta ${i + 1}`)
+      })
       if (!r.autor.nome.trim()) falta.push('Diga seu nome')
       if (r.autor.telefone.trim()) {
         const digitos = TELEFONE.normalizar(r.autor.telefone)
