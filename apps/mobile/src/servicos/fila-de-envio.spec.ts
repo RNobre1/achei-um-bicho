@@ -221,16 +221,21 @@ describe('serviço de fila de envio (F9)', () => {
     expect(fila[0]?.estado).toBe('enviado')
   })
 
-  it('enfileirar durante um passe em andamento não perde o item novo nem o item em envio', async () => {
-    let resolverPublicacao1: () => void
-    const promessaPublicacao1 = new Promise<void>((resolve) => {
-      resolverPublicacao1 = resolve
+  it('grava novo item antes de terminar o passe de publicação em andamento', async () => {
+    let iniciarPrimeiraPublicacao: () => void = () => {}
+    const primeiraPublicacaoIniciada = new Promise<void>((resolve) => {
+      iniciarPrimeiraPublicacao = resolve
+    })
+    let liberarPrimeiraPublicacao: () => void = () => {}
+    const primeiraPublicacaoLiberada = new Promise<void>((resolve) => {
+      liberarPrimeiraPublicacao = resolve
     })
 
     const apiMock = {
       publicar: vi.fn(async (dados: NovaPublicacao) => {
         if (dados.idCliente === 'primeiro') {
-          await promessaPublicacao1
+          iniciarPrimeiraPublicacao()
+          await primeiraPublicacaoLiberada
           return { id: 'caso-1', tipo: dados.tipo, estado: 'procurando' as const, codigoEdicao: dados.codigoEdicao! }
         }
         return { id: 'caso-2', tipo: dados.tipo, estado: 'procurando' as const, codigoEdicao: dados.codigoEdicao! }
@@ -241,17 +246,21 @@ describe('serviço de fila de envio (F9)', () => {
     vi.mocked(Crypto.randomUUID).mockReturnValueOnce('primeiro').mockReturnValueOnce('segundo')
 
     const p1 = enfileirarPublicacao(rascunhoExemplo, apiMock)
-    const p2 = enfileirarPublicacao({ ...rascunhoExemplo, animal: { ...rascunhoExemplo.animal, nome: 'Segundo' } }, apiMock)
+    await primeiraPublicacaoIniciada
+    const p2 = enfileirarPublicacao(
+      { ...rascunhoExemplo, animal: { ...rascunhoExemplo.animal, nome: 'Segundo' } },
+      apiMock,
+    )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const dadosGravadosAntesDoFim = JSON.parse(
+      (await AsyncStorage.getItem('achei-um-bicho:fila-de-envio')) ?? '[]',
+    ) as { id: string }[]
 
-    resolverPublicacao1!()
+    liberarPrimeiraPublicacao()
     await Promise.all([p1, p2])
 
-    const fila = await listarFila()
-    expect(fila).toHaveLength(2)
-    expect(fila.some((i) => i.id === 'primeiro')).toBe(true)
-    expect(fila.some((i) => i.id === 'segundo')).toBe(true)
-    expect(fila[0]?.estado).toBe('enviado')
-    expect(fila[1]?.estado).toBe('enviado')
+    expect(dadosGravadosAntesDoFim).toHaveLength(2)
+    expect(dadosGravadosAntesDoFim.some((item) => item.id === 'segundo')).toBe(true)
   })
 
   it('copia fotos para diretório durável ao enfileirar e apaga ao finalizar', async () => {
