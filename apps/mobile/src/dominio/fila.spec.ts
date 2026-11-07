@@ -185,6 +185,25 @@ describe('regras da fila de envio de publicações (F9)', () => {
     expect(falhaPermanente.proximaTentativaEm).toBeUndefined()
   })
 
+  it('trata 413 e 415 como erros permanentes sem agendar tentativa', () => {
+    for (const status of [413, 415]) {
+      const item = criarItemFila({
+        idCliente: `uuid-${status}`,
+        codigoEdicao: '2345-6789',
+        publicacao: publicacaoExemplo,
+        fotos: [],
+        nomeAnimal: 'Pipoca',
+        agora,
+      })
+
+      const falha = marcarFalhaEnvio(item, { status, mensagem: `Erro ${status}` }, agora)
+
+      expect(falha.estado).toBe('falhou')
+      expect(falha.tentativas).toBe(0)
+      expect(falha.proximaTentativaEm).toBeUndefined()
+    }
+  })
+
   it('recupera itens presos em enviando voltando-os para esperando', () => {
     const item1 = marcarEnviando(
       criarItemFila({
