@@ -327,11 +327,22 @@ describe('serviço de fila de envio (F9)', () => {
     expect(FileSystem.deleteAsync).toHaveBeenCalled()
   })
 
-  it('reenviarItem zera tentativas e dispara novo passe', async () => {
-    let falhar = true
+  it('reenviarItem aguarda a conclusão do passe iniciado', async () => {
+    let chamadas = 0
+    let sinalizarSegundaPublicacao: () => void = () => {}
+    const segundaPublicacaoIniciada = new Promise<void>((resolve) => {
+      sinalizarSegundaPublicacao = resolve
+    })
+    let liberarSegundaPublicacao: () => void = () => {}
+    const segundaPublicacaoLiberada = new Promise<void>((resolve) => {
+      liberarSegundaPublicacao = resolve
+    })
     const apiMock = {
       publicar: vi.fn(async (dados: NovaPublicacao) => {
-        if (falhar) throw new ErroApi(500, 'Servidor fora')
+        chamadas += 1
+        if (chamadas === 1) throw new ErroApi(500, 'Servidor fora')
+        sinalizarSegundaPublicacao()
+        await segundaPublicacaoLiberada
         return { id: 'caso-ok', tipo: dados.tipo, estado: 'procurando' as const, codigoEdicao: dados.codigoEdicao! }
       }),
       enviarFoto: vi.fn(async () => ({ caminho: '/f.jpg', largura: 1, altura: 1 })),
@@ -342,9 +353,19 @@ describe('serviço de fila de envio (F9)', () => {
     expect(fila[0]?.estado).toBe('esperando')
     expect(fila[0]?.tentativas).toBe(1)
 
-    falhar = false
-    await reenviarItem(item.id, apiMock)
+    let reenvioTerminou = false
+    const reenvio = reenviarItem(item.id, apiMock).then(() => {
+      reenvioTerminou = true
+    })
+    await segundaPublicacaoIniciada
+    await Promise.resolve()
+    const aguardouPasse = !reenvioTerminou
+    liberarSegundaPublicacao()
+    await reenvio
+    await processarFila(apiMock)
+
     fila = await listarFila()
+    expect(aguardouPasse).toBe(true)
     expect(fila[0]?.estado).toBe('enviado')
   })
 
