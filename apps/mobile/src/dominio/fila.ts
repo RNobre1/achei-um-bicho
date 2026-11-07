@@ -51,7 +51,7 @@ export type ResultadoPublicacao =
   | { tipo: 'recusado'; mensagem: string }
 
 export function ehErroPermanente(status: number): boolean {
-  return status === 400 || status === 404 || status === 409 || status === 422
+  return status === 400 || status === 404 || status === 409 || status === 413 || status === 415 || status === 422
 }
 
 /** Cria um item novo pronto para entrar na fila em disco. */
