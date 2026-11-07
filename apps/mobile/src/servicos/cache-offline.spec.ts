@@ -35,7 +35,8 @@ const muralFake: Mural = {
 const casoFake: CasoAberto = {
   id: 'caso-1',
   tipo: 'perdido',
-  estado: 'procurando', relato: null,
+  estado: 'procurando',
+  relato: null,
   ocorridoEm: '2026-10-10T10:00:00.000Z',
   publicadoEm: '2026-10-10T12:00:00.000Z',
   animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'com', nome: 'Pipoca', castrado: null },
@@ -49,14 +50,16 @@ describe('serviço de cache offline (RNF3)', () => {
     vi.clearAllMocks()
   })
 
-  it('guarda e recupera a última resposta do mural', async () => {
+  it('guarda e recupera a última resposta do mural com os parâmetros da consulta', async () => {
     expect(await obterMuralDoCache()).toBeNull()
 
     const agora = new Date('2026-10-10T14:30:00.000Z')
-    await salvarMuralNoCache(muralFake, agora)
+    const consulta = { centro: { latitude: -2.4385, longitude: -54.7085 }, raio: 1600, tipo: 'perdido' as const }
+    await salvarMuralNoCache(muralFake, consulta, agora)
 
     const cache = await obterMuralDoCache()
     expect(cache?.mural).toEqual(muralFake)
+    expect(cache?.consulta).toEqual(consulta)
     expect(cache?.carregadoEm).toBe('2026-10-10T14:30:00.000Z')
   })
 

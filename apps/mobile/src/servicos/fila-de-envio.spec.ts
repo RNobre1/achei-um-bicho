@@ -18,6 +18,10 @@ import {
 } from './fila-de-envio'
 import * as meusCasosServico from './meus-casos'
 
+vi.mock('react-native', () => ({
+  Platform: { OS: 'android' },
+}))
+
 vi.mock('@react-native-async-storage/async-storage', () => {
   let memoria: Record<string, string> = {}
   return {

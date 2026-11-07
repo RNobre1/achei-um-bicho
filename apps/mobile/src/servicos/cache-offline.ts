@@ -5,13 +5,18 @@ import {
   buscarCasoNoCache,
   type CasoEmCache,
   type MuralEmCache,
+  type ParametrosConsultaMural,
 } from '../dominio/cache-offline'
 
 const CHAVE_MURAL = 'achei-um-bicho:cache-mural'
 const CHAVE_CASOS = 'achei-um-bicho:cache-casos'
 
-export async function salvarMuralNoCache(mural: Mural, agora: Date = new Date()): Promise<void> {
-  const dados: MuralEmCache = { mural, carregadoEm: agora.toISOString() }
+export async function salvarMuralNoCache(
+  mural: Mural,
+  consulta: ParametrosConsultaMural,
+  agora: Date = new Date(),
+): Promise<void> {
+  const dados: MuralEmCache = { mural, consulta, carregadoEm: agora.toISOString() }
   await AsyncStorage.setItem(CHAVE_MURAL, JSON.stringify(dados))
 }
 
