@@ -3,8 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Crypto from 'expo-crypto'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Network from 'expo-network'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { criarItemFila } from '../dominio/fila'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { criarItemFila, marcarFalhaEnvio } from '../dominio/fila'
+import { montarPublicacao } from '../dominio/publicacao'
 import { ErroApi, type ClienteApi } from './api'
 import {
   descartarItem,
@@ -18,8 +19,19 @@ import {
 } from './fila-de-envio'
 import * as meusCasosServico from './meus-casos'
 
+const appStateMock = vi.hoisted(() => ({
+  ouvinte: undefined as ((estado: string) => void) | undefined,
+  remover: vi.fn(),
+}))
+
 vi.mock('react-native', () => ({
   Platform: { OS: 'android' },
+  AppState: {
+    addEventListener: vi.fn((_evento: string, ouvinte: (estado: string) => void) => {
+      appStateMock.ouvinte = ouvinte
+      return { remove: appStateMock.remover }
+    }),
+  },
 }))
 
 vi.mock('@react-native-async-storage/async-storage', () => {
@@ -76,10 +88,26 @@ const rascunhoExemplo = {
   fotos: ['file:///foto1.jpg'],
 }
 
+function itemParaFila(id: string, agora: Date) {
+  return criarItemFila({
+    idCliente: id,
+    codigoEdicao: '2345-6789',
+    publicacao: montarPublicacao(rascunhoExemplo, agora),
+    fotos: [],
+    nomeAnimal: 'Pipoca',
+    agora,
+  })
+}
+
 describe('serviço de fila de envio (F9)', () => {
   beforeEach(async () => {
     await AsyncStorage.clear()
     vi.clearAllMocks()
+    appStateMock.ouvinte = undefined
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('gera código de edição no formato XXXX-XXXX com caracteres válidos', () => {
@@ -397,5 +425,74 @@ describe('serviço de fila de envio (F9)', () => {
     expect(Network.addNetworkStateListener).toHaveBeenCalledTimes(1)
     expect(ouvinte).toBeDefined()
     limpar()
+  })
+
+  it('agenda o menor horário de retentativa pendente', async () => {
+    vi.useFakeTimers()
+    const agora = new Date('2026-11-12T21:00:00.000Z')
+    vi.setSystemTime(agora)
+    const maisTarde = marcarFalhaEnvio(
+      marcarFalhaEnvio(itemParaFila('mais-tarde', agora), { status: 500, mensagem: 'Falha 1' }, agora),
+      { status: 500, mensagem: 'Falha 2' },
+      agora,
+    )
+    const maisCedo = marcarFalhaEnvio(itemParaFila('mais-cedo', agora), { status: 500, mensagem: 'Falha' }, agora)
+    await salvarFila([maisTarde, maisCedo])
+
+    const publicados: string[] = []
+    const apiMock = {
+      publicar: vi.fn(async (dados: NovaPublicacao) => {
+        publicados.push(dados.idCliente!)
+        return { id: `caso-${dados.idCliente}`, tipo: dados.tipo, estado: 'procurando' as const, codigoEdicao: dados.codigoEdicao! }
+      }),
+      enviarFoto: vi.fn(),
+    } as unknown as ClienteApi
+
+    const limpar = iniciarObservadorDeFila(apiMock)
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(29_999)
+    expect(publicados).toEqual([])
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(publicados).toEqual(['mais-cedo'])
+    await vi.advanceTimersByTimeAsync(29_999)
+    expect(publicados).toEqual(['mais-cedo'])
+    await vi.advanceTimersByTimeAsync(1)
+    expect(publicados).toEqual(['mais-cedo', 'mais-tarde'])
+    limpar()
+  })
+
+  it('ao voltar a active tenta de novo e limpa timer e observadores', async () => {
+    vi.useFakeTimers()
+    const agora = new Date('2026-11-12T21:00:00.000Z')
+    vi.setSystemTime(agora)
+    const item = marcarFalhaEnvio(itemParaFila('pausado', agora), { status: 500, mensagem: 'Falha' }, agora)
+    await salvarFila([item])
+    vi.mocked(Network.getNetworkStateAsync).mockResolvedValueOnce({
+      isConnected: false,
+      isInternetReachable: false,
+      type: Network.NetworkStateType.NONE,
+    })
+    const removerRede = vi.fn()
+    vi.mocked(Network.addNetworkStateListener).mockImplementationOnce(() => ({ remove: removerRede }))
+    const apiMock = {
+      publicar: vi.fn(),
+      enviarFoto: vi.fn(),
+    } as unknown as ClienteApi
+
+    const limpar = iniciarObservadorDeFila(apiMock)
+    await vi.advanceTimersByTimeAsync(0)
+    const chamadasAntes = vi.mocked(Network.getNetworkStateAsync).mock.calls.length
+    const ouvinte = appStateMock.ouvinte
+    ouvinte?.('active')
+    await vi.advanceTimersByTimeAsync(0)
+    const passeAoRetomar = vi.mocked(Network.getNetworkStateAsync).mock.calls.length > chamadasAntes
+    limpar()
+
+    expect(ouvinte).toBeDefined()
+    expect(passeAoRetomar).toBe(true)
+    expect(appStateMock.remover).toHaveBeenCalledOnce()
+    expect(removerRede).toHaveBeenCalledOnce()
+    expect(vi.getTimerCount()).toBe(0)
   })
 })
