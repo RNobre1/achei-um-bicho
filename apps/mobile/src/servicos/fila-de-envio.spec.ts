@@ -87,6 +87,15 @@ describe('serviço de fila de envio (F9)', () => {
     expect(CODIGO_EDICAO.padrao.test(codigo)).toBe(true)
   })
 
+  it('rejeita bytes fora do intervalo uniforme ao sortear o código de edição', () => {
+    for (const byte of [248, 0, 1, 2, 3, 4, 5, 6, 7]) {
+      vi.mocked(Crypto.getRandomBytes).mockReturnValueOnce(new Uint8Array([byte]))
+    }
+
+    expect(gerarCodigoEdicaoNoAparelho()).toBe('2345-6789')
+    expect(Crypto.getRandomBytes).toHaveBeenCalledTimes(9)
+  })
+
   it('enfileira uma publicação gerando idCliente e código de edição no aparelho', async () => {
     const item = await enfileirarPublicacao(rascunhoExemplo)
     expect(item.idCliente).toBe('c4e433a0-1234-4b56-8a90-123456789abc')
