@@ -78,6 +78,13 @@ describe('publicação em quatro passos', () => {
     expect(pendenciasDoPasso(r, 'verificacao')).not.toContain('Telefone com DDD: 10 ou 11 dígitos')
   })
 
+  it('exige escrever a pergunta quando o enunciado está vazio', () => {
+    const r = rascunhoCompleto()
+    r.perguntas[1]!.enunciado = '  '
+
+    expect(pendenciasDoPasso(r, 'verificacao')).toContain('Escreva a pergunta 2')
+  })
+
   it('não tem pendência nenhuma com o rascunho completo', () => {
     const r = rascunhoCompleto()
     for (const passo of PASSOS) expect(pendenciasDoPasso(r, passo.id)).toEqual([])
