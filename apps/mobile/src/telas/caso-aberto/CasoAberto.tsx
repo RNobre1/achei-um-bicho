@@ -1,14 +1,24 @@
-import type { AvistamentoParaAutor, CasoAberto as Caso } from '@achei/contratos'
+import type { AvistamentoParaAutor, CasoAberto as TipoCasoAberto } from '@achei/contratos'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import {
+  ActivityIndicator,
+  Image,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
 import { Etiqueta } from '../../componentes/Etiqueta'
 import { MapaArea } from '../../componentes/MapaArea'
 import { Placa } from '../../componentes/Placa'
 import { Voltar } from '../../componentes/Voltar'
-import { formatarAvisoSemConexao } from '../../dominio/cache-offline'
+import { decidirCacheCaso } from '../../dominio/cache-offline'
 import { atributosDoCaso, descreverQuando, fraseDoLocal, TITULO_DO_LOCAL } from '../../dominio/caso-aberto'
 import { formatarTempoDesde } from '../../dominio/formatar'
 import { enderecoNoGoogleMaps } from '../../dominio/mapa'
@@ -27,7 +37,7 @@ export function CasoAberto() {
   const router = useRouter()
   const margens = useSafeAreaInsets()
   const { width: larguraDaTela } = useWindowDimensions()
-  const [caso, setCaso] = useState<Caso>()
+  const [caso, setCaso] = useState<TipoCasoAberto>()
   const [erro, setErro] = useState<string>()
   const [meu, setMeu] = useState<MeuCaso>()
   const [avisos, setAvisos] = useState<AvistamentoParaAutor[]>()
@@ -42,18 +52,15 @@ export function CasoAberto() {
       setAvisoOffline(undefined)
       void salvarCasoNoCache(resultado)
     } catch (e) {
+      const status = e instanceof ErroApi ? e.status : 0
+      const mensagem = e instanceof ErroApi ? e.message : 'Não deu para abrir o caso.'
       const cache = await obterCasoDoCache(id)
-      if (cache) {
-        setCaso(cache.caso)
-        setAvisoOffline(formatarAvisoSemConexao(cache.carregadoEm))
+      const decisao = decidirCacheCaso({ status, mensagem }, id, cache)
+      if (decisao.usarCache) {
+        setCaso(decisao.caso)
+        setAvisoOffline(decisao.aviso)
       } else {
-        setErro(
-          e instanceof ErroApi && e.status === 404
-            ? 'Este caso não existe mais ou o link está errado.'
-            : e instanceof ErroApi
-              ? e.message
-              : 'Não deu para abrir o caso.',
-        )
+        setErro(decisao.erro)
       }
     }
   }, [id])

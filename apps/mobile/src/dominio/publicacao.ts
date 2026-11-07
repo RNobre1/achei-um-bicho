@@ -5,7 +5,6 @@ import {
   type Cor,
   type Especie,
   type NovaPublicacao,
-  PARECE_CONTATO,
   type Porte,
   TELEFONE,
   type TipoCaso,
@@ -169,6 +168,12 @@ export function montarPublicacao(r: RascunhoPublicacao, agora: Date = new Date()
     }
   }
 
+  const telefone = r.autor.telefone.replace(/\D/g, '')
+  const nome = preenchido(r.animal.nome)
+  const bairro = preenchido(r.local.bairro)
+  const referencia = preenchido(r.local.referencia)
+  const relato = preenchido(r.relato)
+
   const corpo: NovaPublicacao = {
     tipo: r.tipo,
     animal: {
@@ -176,23 +181,23 @@ export function montarPublicacao(r: RascunhoPublicacao, agora: Date = new Date()
       porte: r.animal.porte!,
       corDominante: r.animal.corDominante!,
       coleira: r.animal.coleira!,
-      nome: preenchido(r.animal.nome) ?? null,
+      ...(nome && { nome }),
       ...(typeof r.animal.castrado === 'boolean' && { castrado: r.animal.castrado }),
     },
     local: {
       latitude: r.local.latitude!,
       longitude: r.local.longitude!,
-      bairro: preenchido(r.local.bairro) ?? null,
+      ...(bairro && { bairro }),
+      ...(referencia && { referencia }),
     },
     autor: {
       nome: r.autor.nome.trim(),
-      telefone: r.autor.telefone.replace(/\D/g, ''),
+      ...(telefone && { telefone }),
     },
     ocorridoEm: momentoDoPeriodo(r.quando!, agora),
     perguntas: r.perguntas.map((p) => ({ enunciado: p.enunciado.trim(), respostaEsperada: p.resposta.trim() })),
+    ...(relato && { relato }),
   }
-  const relato = preenchido(r.relato)
-  if (relato) corpo.relato = relato
   return corpo
 }
 

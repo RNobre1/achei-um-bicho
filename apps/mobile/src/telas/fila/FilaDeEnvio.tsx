@@ -5,8 +5,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Botao } from '../../componentes/Botao'
 import { Etiqueta } from '../../componentes/Etiqueta'
 import { Voltar } from '../../componentes/Voltar'
-import { descreverEstadoItem, formatarHorarioFila, type ItemFilaEnvio } from '../../dominio/fila'
-import { listarFila, processarFila } from '../../servicos/fila-de-envio'
+import {
+  descreverEstadoItem,
+  formatarHorarioFila,
+  temItensPendentes,
+  type ItemFilaEnvio,
+} from '../../dominio/fila'
+import { descartarItem, listarFila, processarFila, reenviarItem } from '../../servicos/fila-de-envio'
 import { cores, fontes } from '../../tema'
 
 export function FilaDeEnvio() {
@@ -14,6 +19,7 @@ export function FilaDeEnvio() {
   const margens = useSafeAreaInsets()
   const [itens, setItens] = useState<ItemFilaEnvio[]>()
   const [atualizando, setAtualizando] = useState(false)
+  const [confirmandoDescarteId, setConfirmandoDescarteId] = useState<string>()
 
   const carregar = useCallback(async () => {
     setAtualizando(true)
@@ -27,6 +33,19 @@ export function FilaDeEnvio() {
       void carregar()
     }, [carregar]),
   )
+
+  const reenviar = async (id: string) => {
+    await reenviarItem(id)
+    await carregar()
+  }
+
+  const descartar = async (id: string) => {
+    await descartarItem(id)
+    setConfirmandoDescarteId(undefined)
+    await carregar()
+  }
+
+  const filaVazia = !itens || itens.length === 0 || !temItensPendentes(itens)
 
   return (
     <View style={[estilos.tela, { paddingTop: margens.top + 10 }]}>
@@ -43,7 +62,7 @@ export function FilaDeEnvio() {
 
       {!itens ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={cores.tapajos} />
-      ) : itens.length === 0 ? (
+      ) : filaVazia ? (
         <View style={estilos.vazio}>
           <Text style={estilos.vazioTitulo}>Fila vazia</Text>
           <Text style={estilos.vazioTexto}>
@@ -53,7 +72,7 @@ export function FilaDeEnvio() {
         </View>
       ) : (
         <FlatList
-          data={itens}
+          data={itens.filter((item) => item.estado !== 'enviado')}
           keyExtractor={(item) => item.id}
           refreshControl={<RefreshControl refreshing={atualizando} onRefresh={() => void carregar()} />}
           contentContainerStyle={{ paddingBottom: 32 }}
@@ -67,8 +86,8 @@ export function FilaDeEnvio() {
                 <Text
                   style={[
                     estilos.estado,
-                    item.estado === 'enviado' && estilos.estadoVerde,
-                    item.estado === 'falhou' && estilos.estadoVermelho,
+                    item.estado === 'enviado' && estilos.estadoPublicado,
+                    item.estado === 'falhou' && estilos.estadoFalhou,
                   ]}
                 >
                   {descreverEstadoItem(item)}
@@ -81,7 +100,40 @@ export function FilaDeEnvio() {
                 </Text>
               ) : null}
               {item.estado === 'falhou' ? (
-                <Botao rotulo="Tentar enviar de novo" variante="fraco" aoTocar={() => void carregar()} />
+                <View style={estilos.acoesFalha}>
+                  <Botao
+                    rotulo="Tentar enviar de novo"
+                    variante="fraco"
+                    aoTocar={() => void reenviar(item.id)}
+                  />
+                  {confirmandoDescarteId === item.id ? (
+                    <View style={estilos.confirmacaoDescarte}>
+                      <Text style={estilos.confirmacaoTexto}>Descartar este caso da fila?</Text>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <View style={{ flex: 1 }}>
+                          <Botao
+                            rotulo="Sim, descartar"
+                            variante="escuro"
+                            aoTocar={() => void descartar(item.id)}
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Botao
+                            rotulo="Cancelar"
+                            variante="fraco"
+                            aoTocar={() => setConfirmandoDescarteId(undefined)}
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  ) : (
+                    <Botao
+                      rotulo="Descartar"
+                      variante="fraco"
+                      aoTocar={() => setConfirmandoDescarteId(item.id)}
+                    />
+                  )}
+                </View>
               ) : null}
             </View>
           )}
@@ -106,9 +158,19 @@ const estilos = StyleSheet.create({
   nome: { fontFamily: fontes.titulo, fontSize: 17, color: cores.tapajos },
   linhaDetalhe: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   estado: { fontFamily: fontes.textoMedio, fontSize: 13, color: cores.apagado },
-  estadoVerde: { color: cores.perdi },
-  estadoVermelho: { color: cores.perdi },
+  estadoPublicado: { color: cores.achei },
+  estadoFalhou: { color: cores.perdi },
   horario: { fontFamily: fontes.dado, fontSize: 11, color: cores.apagado },
   fotosTexto: { fontFamily: fontes.dado, fontSize: 11, color: cores.apagado },
+  acoesFalha: { gap: 8, marginTop: 4 },
+  confirmacaoDescarte: {
+    backgroundColor: cores.branco,
+    borderWidth: 1,
+    borderColor: cores.traco,
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  confirmacaoTexto: { fontFamily: fontes.texto, fontSize: 13, color: cores.tapajos },
   divisa: { height: 1, backgroundColor: cores.traco },
 })

@@ -1,35 +1,37 @@
 import { COLEIRA, COR, ESPECIE, PORTE, opcoes } from '@achei/contratos'
+import { useState } from 'react'
 import { View } from 'react-native'
-import { Aviso } from '../../componentes/Aviso'
 import { Campo } from '../../componentes/Campo'
 import { FotosDoRascunho } from '../../componentes/FotosDoRascunho'
 import { GrupoDeChips } from '../../componentes/GrupoDeChips'
-import type { RascunhoPublicacao } from '../../dominio/publicacao'
+import {
+  converterCastradoParaChip,
+  converterChipParaCastrado,
+  type OpcaoChipCastrado,
+  type RascunhoPublicacao,
+} from '../../dominio/publicacao'
 
 interface Props {
   rascunho: RascunhoPublicacao
   mudar: (alterar: (r: RascunhoPublicacao) => RascunhoPublicacao) => void
 }
 
-const OPCOES_CASTRADO = [
+const OPCOES_CASTRADO: readonly { valor: OpcaoChipCastrado; rotulo: string }[] = [
   { valor: 'sim', rotulo: 'Sim' },
   { valor: 'nao', rotulo: 'Não' },
   { valor: 'nao_sei', rotulo: 'Não sei' },
-] as const
+]
 
 export function PassoAnimal({ rascunho, mudar }: Props) {
   const animal = rascunho.animal
   const mudarAnimal = (parte: Partial<RascunhoPublicacao['animal']>) =>
     mudar((r) => ({ ...r, animal: { ...r.animal, ...parte } }))
 
-  const marcadoCastrado =
-    animal.castrado === true
-      ? 'sim'
-      : animal.castrado === false
-        ? 'nao'
-        : animal.castrado === 'nao_sei'
-          ? 'nao_sei'
-          : undefined
+  const [chipCastrado, setChipCastrado] = useState<OpcaoChipCastrado | undefined>(
+    converterCastradoParaChip(animal.castrado),
+  )
+
+  const marcadoCastrado = chipCastrado ?? converterCastradoParaChip(animal.castrado)
 
   return (
     <View style={{ gap: 16 }}>
@@ -47,7 +49,11 @@ export function PassoAnimal({ rascunho, mudar }: Props) {
         rotulo="Castrado"
         opcoes={OPCOES_CASTRADO}
         marcado={marcadoCastrado}
-        aoEscolher={(v) => mudarAnimal({ castrado: v === 'sim' ? true : v === 'nao' ? false : 'nao_sei' })}
+        aoEscolher={(v) => {
+          const opcao = v as OpcaoChipCastrado
+          setChipCastrado(opcao)
+          mudarAnimal({ castrado: converterChipParaCastrado(opcao) })
+        }}
       />
       {rascunho.tipo === 'perdido' ? (
         <Campo rotulo="Nome que ele atende" valor={animal.nome} aoMudar={(nome) => mudarAnimal({ nome })} maxLength={60} />
@@ -58,11 +64,7 @@ export function PassoAnimal({ rascunho, mudar }: Props) {
         aoMudar={(relato) => mudar((r) => ({ ...r, relato }))}
         multiline
         maxLength={600}
-        placeholder={rascunho.tipo === 'perdido' ? 'Como ele sumiu, jeito, medo de moto…' : 'Onde estava, como está, se está machucado…'}
       />
-      {rascunho.tipo === 'encontrado' ? (
-        <Aviso texto="Porte, cor e coleira são o que o aplicativo compara com os casos de quem perdeu. Só o que dá para ver já ajuda." />
-      ) : null}
     </View>
   )
 }

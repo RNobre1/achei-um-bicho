@@ -6,11 +6,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
 import { Passos } from '../../componentes/Passos'
+import { resultadoDaPublicacao } from '../../dominio/fila'
 import {
   PASSOS,
   pendenciasDoPasso,
   rascunhoVazio,
-  verificarPareceContato,
+  verificarConfirmacaoContato,
   type RascunhoPublicacao,
 } from '../../dominio/publicacao'
 import { ErroApi } from '../../servicos/api'
@@ -37,7 +38,7 @@ export function Publicar() {
   const [confirmouContato, setConfirmouContato] = useState(false)
   const [publicado, setPublicado] = useState<{ id: string; codigo: string }>()
   const [guardadoOffline, setGuardadoOffline] = useState<{ id: string; codigo: string }>()
-  const [fotosPendentes, setFotosPendentes] = useState<string[]>([])
+  const [fotosPendentes, setFotosPendentes] = useState<number>(0)
   const [reenviando, setReenviando] = useState(false)
 
   const passo = PASSOS[indice]!
@@ -65,36 +66,47 @@ export function Publicar() {
   async function reenviarFotos() {
     if (!publicado) return
     setReenviando(true)
-    await processarFila()
-    const fila = await listarFila()
-    const item = fila.find((f) => f.casoId === publicado.id)
-    if (item) {
-      setFotosPendentes(item.fotos.filter((f) => f.estado !== 'enviado').map((f) => f.uri))
+    try {
+      await processarFila()
+      const fila = await listarFila()
+      const item = fila.find((f) => f.casoId === publicado.id)
+      if (item) {
+        const resultado = resultadoDaPublicacao(item)
+        if (resultado.tipo === 'publicado') {
+          setFotosPendentes(resultado.fotosPendentes)
+        }
+      } else {
+        setFotosPendentes(0)
+      }
+    } finally {
+      setReenviando(false)
     }
-    setReenviando(false)
   }
 
   /**
    * Publicar passa sempre pela fila (F9): o rascunho fica seguro em disco primeiro.
    * Com conexão, confirma em poucos segundos; sem conexão, avisa que ficou guardado.
+   * Erros permanentes mantêm o formulário preenchido.
    */
   async function publicar(r: RascunhoPublicacao) {
     setEnviando(true)
     setErro(undefined)
     try {
       const item = await enfileirarPublicacao(r)
-      await processarFila()
-      const fila = await listarFila()
-      const atualizado = fila.find((f) => f.id === item.id) ?? item
+      const resultado = resultadoDaPublicacao(item)
 
-      if (atualizado.casoId) {
-        const fotosRestantes = atualizado.fotos.filter((f) => f.estado !== 'enviado').map((f) => f.uri)
-        setFotosPendentes(fotosRestantes)
-        setPublicado({ id: atualizado.casoId, codigo: atualizado.codigoEdicao })
+      if (resultado.tipo === 'publicado') {
+        setFotosPendentes(resultado.fotosPendentes)
+        setPublicado({ id: resultado.casoId, codigo: resultado.codigoEdicao })
+        rolagem.current?.scrollTo({ y: 0, animated: false })
+      } else if (resultado.tipo === 'guardado') {
+        setFotosPendentes(resultado.fotosPendentes)
+        setGuardadoOffline({ id: resultado.idCliente, codigo: resultado.codigoEdicao })
+        rolagem.current?.scrollTo({ y: 0, animated: false })
       } else {
-        setGuardadoOffline({ id: item.id, codigo: item.codigoEdicao })
+        // resultado.tipo === 'recusado' (erro permanente)
+        setErro(resultado.mensagem)
       }
-      rolagem.current?.scrollTo({ y: 0, animated: false })
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Não deu para salvar o caso. Tente de novo.')
     } finally {
@@ -115,13 +127,11 @@ export function Publicar() {
     }
 
     // No último passo, verifica se há dados de contato antes de publicar
-    if (!confirmouContato) {
-      const alertaContato = verificarPareceContato(rascunho)
-      if (alertaContato) {
-        setAvisoContato(alertaContato)
-        setConfirmouContato(true)
-        return
-      }
+    const confirmacao = verificarConfirmacaoContato(rascunho, confirmouContato)
+    if (!confirmacao.podePublicar) {
+      setAvisoContato(confirmacao.aviso)
+      setConfirmouContato(true)
+      return
     }
 
     void publicar(rascunho)
@@ -130,7 +140,7 @@ export function Publicar() {
   function recomecar() {
     setPublicado(undefined)
     setGuardadoOffline(undefined)
-    setFotosPendentes([])
+    setFotosPendentes(0)
     setRascunho(undefined)
     setAvisoContato(undefined)
     setConfirmouContato(false)
@@ -147,7 +157,7 @@ export function Publicar() {
         {publicado ? (
           <CodigoDeEdicao
             codigo={publicado.codigo}
-            fotosPendentes={fotosPendentes.length}
+            fotosPendentes={fotosPendentes}
             reenviando={reenviando}
             aoReenviarFotos={() => void reenviarFotos()}
             aoVerCaso={() => router.push(`/caso/${publicado.id}`)}
@@ -205,7 +215,7 @@ export function Publicar() {
                 texto={`${avisoContato}\n\nToque em Publicar novamente para confirmar o envio assim mesmo.`}
               />
             ) : null}
-            {erro ? <Aviso titulo="Não deu para publicar." texto={erro} /> : null}
+            {erro ? <Aviso titulo="Não deu para salvar o caso" texto={erro} /> : null}
 
             {passo.id !== 'tipo' ? (
               <Botao

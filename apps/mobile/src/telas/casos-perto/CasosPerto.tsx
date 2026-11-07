@@ -1,16 +1,17 @@
-import { RAIO, TIPO_CASO, type Mural, type TipoCaso } from '@achei/contratos'
+import type { Mural, TipoCaso } from '@achei/contratos'
+import { RAIO, TIPO_CASO } from '@achei/contratos'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Share, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
-import { formatarAvisoSemConexao } from '../../dominio/cache-offline'
 import { formatarDistancia } from '../../dominio/formatar'
 import { proximoRaio, textoDoConvite } from '../../dominio/mural'
+import { decidirCacheMural } from '../../dominio/cache-offline'
+import type { Posicao } from '../../dominio/posicao'
 import { api, ErroApi } from '../../servicos/api'
 import { obterMuralDoCache, salvarMuralNoCache } from '../../servicos/cache-offline'
-import type { Posicao } from '../../dominio/posicao'
 import { obterPosicao } from '../../servicos/localizacao'
 import { cores, fontes } from '../../tema'
 import { CardCaso } from './CardCaso'
@@ -41,22 +42,32 @@ export function CasosPerto() {
     if (!posicao) return
     setCarregando(true)
     setErro(undefined)
+    const tipoConsulta = filtro === 'tudo' ? undefined : filtro
+    const consultaAtual = {
+      tipo: tipoConsulta,
+      raio,
+      centro: posicao.ponto,
+    }
     try {
       const resultado = await api.mural({
         ...posicao.ponto,
         raio,
-        tipo: filtro === 'tudo' ? undefined : filtro,
+        tipo: tipoConsulta,
       })
       setMural(resultado)
       setAvisoOffline(undefined)
-      void salvarMuralNoCache(resultado)
+      void salvarMuralNoCache(resultado, consultaAtual)
     } catch (e) {
+      const status = e instanceof ErroApi ? e.status : 0
+      const mensagem = e instanceof ErroApi ? e.message : 'Não deu para carregar os casos.'
       const cache = await obterMuralDoCache()
-      if (cache) {
-        setMural(cache.mural)
-        setAvisoOffline(formatarAvisoSemConexao(cache.carregadoEm))
+      const decisao = decidirCacheMural({ status, mensagem }, consultaAtual, cache)
+      if (decisao.usarCache) {
+        setMural(decisao.mural)
+        setAvisoOffline(decisao.aviso)
       } else {
-        setErro(e instanceof ErroApi ? e.message : 'Não deu para carregar os casos.')
+        setMural(undefined)
+        setErro(decisao.erro)
       }
     } finally {
       setCarregando(false)
