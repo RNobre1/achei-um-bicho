@@ -91,19 +91,26 @@ export function criarClienteApi(urlBase: string, buscar: Buscar = fetch): Client
   async function pedir<T>(caminho: string, opcoes?: RequestInit): Promise<T> {
     const controlador = new AbortController()
     const timer = setTimeout(() => controlador.abort(), TEMPO_LIMITE_MS)
-    let resposta: Response
     try {
-      resposta = await buscar(`${base}${caminho}`, {
-        ...opcoes,
-        signal: opcoes?.signal ?? controlador.signal,
-      })
-    } catch {
-      throw new ErroApi(0, SEM_CONEXAO)
+      let resposta: Response
+      try {
+        resposta = await buscar(`${base}${caminho}`, {
+          ...opcoes,
+          signal: opcoes?.signal ?? controlador.signal,
+        })
+      } catch {
+        throw new ErroApi(0, SEM_CONEXAO)
+      }
+
+      if (!resposta.ok) throw new ErroApi(resposta.status, await mensagemDoErro(resposta))
+      return (await resposta.json()) as T
+    } catch (e) {
+      if (controlador.signal.aborted) throw new ErroApi(0, SEM_CONEXAO)
+      if (e instanceof ErroApi) throw e
+      throw e
     } finally {
       clearTimeout(timer)
     }
-    if (!resposta.ok) throw new ErroApi(resposta.status, await mensagemDoErro(resposta))
-    return (await resposta.json()) as T
   }
 
   return {
