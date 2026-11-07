@@ -369,6 +369,7 @@ describe('regras da fila de envio de publicações (F9)', () => {
     itemFalhou.estado = 'falhou'
     expect(descreverEstadoItem(itemFalhou)).toBe('Erro no servidor')
 
-    expect(formatarHorarioFila('2026-10-10T14:05:00.000Z')).toBe('14:05')
+    const dataLocal = new Date(2026, 9, 10, 14, 5)
+    expect(formatarHorarioFila(dataLocal.toISOString())).toBe('14:05')
   })
 })
