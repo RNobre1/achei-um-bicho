@@ -3,10 +3,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Crypto from 'expo-crypto'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Network from 'expo-network'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import {
   criarItemFila,
   ehErroPermanente,
+  MAXIMO_TENTATIVAS,
   marcarCasoEnviado,
   marcarEnviando,
   marcarFalhaEnvio,
@@ -318,37 +319,72 @@ export async function descartarItem(id: string): Promise<void> {
  * Protege chamadas na web onde addNetworkStateListener pode lançar ou não existir.
  */
 export function iniciarObservadorDeFila(clienteApi: ClienteApi = api): () => void {
-  void processarFila(clienteApi)
+  let encerrado = false
+  let timer: ReturnType<typeof setTimeout> | undefined
+
+  async function agendarProximaTentativa() {
+    if (encerrado) return
+    if (timer !== undefined) clearTimeout(timer)
+    timer = undefined
+
+    const agora = Date.now()
+    const horarios = (await listarFila())
+      .filter((item) => item.estado === 'esperando' && item.tentativas < MAXIMO_TENTATIVAS && item.proximaTentativaEm)
+      .map((item) => new Date(item.proximaTentativaEm!).getTime())
+      .filter((horario) => Number.isFinite(horario) && horario > agora)
+    if (encerrado || horarios.length === 0) return
+
+    const proximaTentativa = Math.min(...horarios)
+    timer = setTimeout(() => {
+      timer = undefined
+      void processarFila(clienteApi)
+        .catch(() => undefined)
+        .finally(() => {
+          void agendarProximaTentativa().catch(() => undefined)
+        })
+    }, proximaTentativa - agora)
+  }
+
+  function processarEAgendar() {
+    void processarFila(clienteApi)
+      .catch(() => undefined)
+      .finally(() => {
+        void agendarProximaTentativa().catch(() => undefined)
+      })
+  }
+
+  const inscricaoAppState = AppState.addEventListener('change', (estado) => {
+    if (estado === 'active') processarEAgendar()
+  })
+  const aoFicarOnline = () => processarEAgendar()
+  let inscricaoRede: ReturnType<typeof Network.addNetworkStateListener> | undefined
+  let ouvirOnline = false
 
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const aoFicarOnline = () => {
-      void processarFila(clienteApi)
-    }
     window.addEventListener('online', aoFicarOnline)
-    return () => {
-      window.removeEventListener('online', aoFicarOnline)
+    ouvirOnline = true
+  } else {
+    try {
+      inscricaoRede = Network.addNetworkStateListener((estado) => {
+        if (estado.isConnected && estado.isInternetReachable !== false) processarEAgendar()
+      })
+    } catch {
+      if (typeof window !== 'undefined') {
+        window.addEventListener('online', aoFicarOnline)
+        ouvirOnline = true
+      }
     }
   }
 
-  try {
-    const inscricao = Network.addNetworkStateListener((estado) => {
-      if (estado.isConnected && estado.isInternetReachable !== false) {
-        void processarFila(clienteApi)
-      }
-    })
-    return () => {
-      inscricao.remove()
+  processarEAgendar()
+
+  return () => {
+    encerrado = true
+    if (timer !== undefined) clearTimeout(timer)
+    inscricaoAppState.remove()
+    inscricaoRede?.remove()
+    if (ouvirOnline && typeof window !== 'undefined') {
+      window.removeEventListener('online', aoFicarOnline)
     }
-  } catch {
-    if (typeof window !== 'undefined') {
-      const aoFicarOnline = () => {
-        void processarFila(clienteApi)
-      }
-      window.addEventListener('online', aoFicarOnline)
-      return () => {
-        window.removeEventListener('online', aoFicarOnline)
-      }
-    }
-    return () => {}
   }
 }
