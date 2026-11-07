@@ -33,8 +33,12 @@ const CHAVE_STORAGE = 'achei-um-bicho:fila-de-envio'
  */
 export function gerarCodigoEdicaoNoAparelho(): string {
   return gerarCodigoEdicao((max) => {
-    const bytes = Crypto.getRandomBytes(1)
-    return bytes[0]! % max
+    const limite = 256 - (256 % max)
+    let byte: number
+    do {
+      byte = Crypto.getRandomBytes(1)[0]!
+    } while (byte >= limite)
+    return byte % max
   })
 }
 
