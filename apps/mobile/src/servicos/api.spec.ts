@@ -6,7 +6,7 @@ import type {
   NovoDesfecho,
   SituacaoDoCaso,
 } from '@achei/contratos'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { criarClienteApi, ErroApi } from './api'
 
 function respostaJson(corpo: unknown, status = 200): Response {
@@ -277,17 +277,74 @@ describe('cliente da API', () => {
     expect(JSON.parse(body as string)).toEqual(edicao)
   })
 
-  it("estoura tempo limite de 60 s com AbortController e vira erro passageiro status 0", async () => {
-    const buscar = vi.fn().mockImplementation(() => {
-      const erro = new Error("The operation was aborted")
-      erro.name = "AbortError"
-      return Promise.reject(erro)
+  describe('tempo limite e status do erro', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
     })
 
-    await expect(criarClienteApi("http://api.teste", buscar).abrirCaso("x")).rejects.toMatchObject({
-      status: 0,
-      message: "Sem conexão com o servidor. Confira a internet e tente de novo.",
+    afterEach(() => {
+      vi.useRealTimers()
     })
-    expect(buscar.mock.calls[0]![1]?.signal).toBeInstanceOf(AbortSignal)
+
+    it('estoura tempo limite de 60 s com AbortController usando timers falsos', async () => {
+      const buscar = vi.fn().mockImplementation((_url: string, opcoes?: RequestInit) => {
+        return new Promise<Response>((_, reject) => {
+          opcoes?.signal?.addEventListener('abort', () => {
+            const erro = new Error('The operation was aborted')
+            erro.name = 'AbortError'
+            reject(erro)
+          })
+        })
+      })
+
+      const promessa = criarClienteApi('http://api.teste', buscar).abrirCaso('x')
+      let erro: unknown
+      void promessa.catch((e: unknown) => {
+        erro = e
+      })
+
+      await vi.advanceTimersByTimeAsync(59_999)
+      expect(erro).toBeUndefined()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(erro).toMatchObject({
+        status: 0,
+        message: 'Sem conexão com o servidor. Confira a internet e tente de novo.',
+      })
+    })
+
+    it('mantém a leitura do corpo da resposta dentro do tempo limite', async () => {
+      let json: ReturnType<typeof vi.fn>
+      const buscar = vi.fn().mockImplementation((_url: string, opcoes?: RequestInit) => {
+        json = vi.fn(
+          () =>
+            new Promise<unknown>((_, reject) => {
+              opcoes?.signal?.addEventListener('abort', () => {
+                const erro = new Error('The operation was aborted')
+                erro.name = 'AbortError'
+                reject(erro)
+              })
+            }),
+        )
+        return Promise.resolve({ ok: true, status: 200, json } as unknown as Response)
+      })
+
+      const promessa = criarClienteApi('http://api.teste', buscar).abrirCaso('x')
+      let erro: unknown
+      void promessa.catch((e: unknown) => {
+        erro = e
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+      expect(json!).toHaveBeenCalledOnce()
+      await vi.advanceTimersByTimeAsync(59_999)
+      expect(erro).toBeUndefined()
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(erro).toMatchObject({
+        status: 0,
+        message: 'Sem conexão com o servidor. Confira a internet e tente de novo.',
+      })
+    })
   })
 })
