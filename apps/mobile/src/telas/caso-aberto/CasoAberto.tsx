@@ -25,7 +25,7 @@ import { enderecoNoGoogleMaps } from '../../dominio/mapa'
 import type { MeuCaso } from '../../dominio/meus-casos'
 import { nomeDoAnimal } from '../../dominio/mural'
 import { rotuloBotaoReivindicar } from '../../dominio/reivindicacao'
-import { api, ErroApi } from '../../servicos/api'
+import { api, ErroApi, statusDoErro } from '../../servicos/api'
 import { meuCaso } from '../../servicos/meus-casos'
 import { obterCasoDoCache, salvarCasoNoCache } from '../../servicos/cache-offline'
 import { cores, fontes } from '../../tema'
@@ -52,7 +52,7 @@ export function CasoAberto() {
       setAvisoOffline(undefined)
       void salvarCasoNoCache(resultado)
     } catch (e) {
-      const status = e instanceof ErroApi ? e.status : 0
+      const status = statusDoErro(e)
       const mensagem = e instanceof ErroApi ? e.message : 'Não deu para abrir o caso.'
       const cache = await obterCasoDoCache(id)
       const decisao = decidirCacheCaso({ status, mensagem }, id, cache)

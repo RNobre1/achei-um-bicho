@@ -38,6 +38,10 @@ export class ErroApi extends Error {
   }
 }
 
+export function statusDoErro(erro: unknown): number {
+  return erro instanceof ErroApi ? erro.status : 0
+}
+
 export interface ClienteApi {
   mural(consulta: ConsultaMural): Promise<Mural>
   abrirCaso(id: string): Promise<CasoAberto>

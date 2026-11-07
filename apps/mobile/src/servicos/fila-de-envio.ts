@@ -20,7 +20,7 @@ import {
 } from '../dominio/fila'
 import { nomeDoAnimal } from '../dominio/mural'
 import { montarPublicacao, type RascunhoPublicacao } from '../dominio/publicacao'
-import { ErroApi, api, type ClienteApi } from './api'
+import { api, statusDoErro, type ClienteApi } from './api'
 import { arquivoDaFoto } from './fotos'
 import { guardarMeuCaso } from './meus-casos'
 
@@ -186,7 +186,7 @@ export async function processarFila(clienteApi: ClienteApi = api): Promise<void>
           itens[i] = item
           await salvarFilaInterno(itens)
         } catch (e) {
-          const status = e instanceof ErroApi ? e.status : 0
+          const status = statusDoErro(e)
           const mensagem = e instanceof Error ? e.message : 'Erro ao publicar caso'
           item = marcarFalhaEnvio(item, { status, mensagem })
           itens[i] = item
@@ -206,7 +206,7 @@ export async function processarFila(clienteApi: ClienteApi = api): Promise<void>
             itens[i] = item
             await salvarFilaInterno(itens)
           } catch (e) {
-            const status = e instanceof ErroApi ? e.status : 0
+            const status = statusDoErro(e)
             const mensagem = e instanceof Error ? e.message : 'Erro ao enviar foto'
             if (ehErroPermanente(status)) {
               item = marcarFotoFalhaPermanente(item, foto.uri, mensagem)

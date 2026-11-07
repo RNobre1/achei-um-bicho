@@ -10,7 +10,7 @@ import { formatarDistancia } from '../../dominio/formatar'
 import { proximoRaio, textoDoConvite } from '../../dominio/mural'
 import { decidirCacheMural } from '../../dominio/cache-offline'
 import type { Posicao } from '../../dominio/posicao'
-import { api, ErroApi } from '../../servicos/api'
+import { api, ErroApi, statusDoErro } from '../../servicos/api'
 import { obterMuralDoCache, salvarMuralNoCache } from '../../servicos/cache-offline'
 import { obterPosicao } from '../../servicos/localizacao'
 import { cores, fontes } from '../../tema'
@@ -58,7 +58,7 @@ export function CasosPerto() {
       setAvisoOffline(undefined)
       void salvarMuralNoCache(resultado, consultaAtual)
     } catch (e) {
-      const status = e instanceof ErroApi ? e.status : 0
+      const status = statusDoErro(e)
       const mensagem = e instanceof ErroApi ? e.message : 'Não deu para carregar os casos.'
       const cache = await obterMuralDoCache()
       const decisao = decidirCacheMural({ status, mensagem }, consultaAtual, cache)
