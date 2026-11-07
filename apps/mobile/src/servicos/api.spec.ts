@@ -14,6 +14,20 @@ function respostaJson(corpo: unknown, status = 200): Response {
 }
 
 describe('cliente da API', () => {
+  it('statusDoErro extrai o status de ErroApi e devolve 0 para outros valores', async () => {
+    const modulo = (await import('./api')) as unknown as Record<string, unknown>
+    expect(modulo.statusDoErro).toBeTypeOf('function')
+
+    const statusDoErro = modulo.statusDoErro as (erro: unknown) => number
+    expect(statusDoErro(new ErroApi(404, 'Não encontrado'))).toBe(404)
+    expect(statusDoErro(new ErroApi(500, 'Servidor'))).toBe(500)
+    expect(statusDoErro(new ErroApi(0, 'Sem conexão'))).toBe(0)
+    expect(statusDoErro(new Error('Outro erro'))).toBe(0)
+    expect(statusDoErro('texto')).toBe(0)
+    expect(statusDoErro(null)).toBe(0)
+    expect(statusDoErro(undefined)).toBe(0)
+  })
+
   it('pede o mural com as coordenadas e só os filtros informados', async () => {
     const buscar = vi.fn().mockResolvedValue(respostaJson({ raioM: 1600, casos: [], totalNoRaioMaximo: 0 }))
     const api = criarClienteApi('http://api.teste/', buscar)
