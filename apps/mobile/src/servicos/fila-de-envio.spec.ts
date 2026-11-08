@@ -483,6 +483,17 @@ describe('serviço de fila de envio (F9)', () => {
     limpar()
   })
 
+  it('trata rejeição do passe disparado pelo observador', async () => {
+    vi.mocked(AsyncStorage.getItem).mockRejectedValueOnce(new Error('Falha local de armazenamento'))
+    const apiMock = { publicar: vi.fn(), enviarFoto: vi.fn() } as unknown as ClienteApi
+
+    const limpar = iniciarObservadorDeFila(apiMock)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    limpar()
+
+    expect(AsyncStorage.getItem).toHaveBeenCalled()
+  })
+
   it('agenda o menor horário de retentativa pendente', async () => {
     vi.useFakeTimers()
     const agora = new Date('2026-11-12T21:00:00.000Z')
