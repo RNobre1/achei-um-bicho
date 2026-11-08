@@ -16,6 +16,7 @@ import {
   processarFila,
   reenviarItem,
   salvarFila,
+  serializarOperacaoFila,
 } from './fila-de-envio'
 import * as meusCasosServico from './meus-casos'
 import * as fotosServico from './fotos'
@@ -114,6 +115,16 @@ describe('serviço de fila de envio (F9)', () => {
   it('gera código de edição no formato XXXX-XXXX com caracteres válidos', () => {
     const codigo = gerarCodigoEdicaoNoAparelho()
     expect(CODIGO_EDICAO.padrao.test(codigo)).toBe(true)
+  })
+
+  it('operação da fila que lança não impede a seguinte', async () => {
+    const primeira = serializarOperacaoFila(async () => {
+      throw new Error('Falha local')
+    })
+    const segunda = serializarOperacaoFila(async () => 'seguinte')
+
+    await expect(primeira).rejects.toThrow('Falha local')
+    await expect(segunda).resolves.toBe('seguinte')
   })
 
   it('rejeita bytes fora do intervalo uniforme ao sortear o código de edição', () => {
