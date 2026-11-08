@@ -39,6 +39,7 @@ export function Publicar() {
   const [publicado, setPublicado] = useState<{ id: string; codigo: string }>()
   const [guardadoOffline, setGuardadoOffline] = useState<{ id: string; codigo: string }>()
   const [fotosPendentes, setFotosPendentes] = useState<number>(0)
+  const [fotosRecusadas, setFotosRecusadas] = useState<number>(0)
   const [reenviando, setReenviando] = useState(false)
 
   const passo = PASSOS[indice]!
@@ -74,6 +75,7 @@ export function Publicar() {
         const resultado = resultadoDaPublicacao(item)
         if (resultado.tipo === 'publicado') {
           setFotosPendentes(resultado.fotosPendentes)
+          setFotosRecusadas(resultado.fotosRecusadas)
         }
       } else {
         setFotosPendentes(0)
@@ -96,10 +98,12 @@ export function Publicar() {
 
       if (resultado.tipo === 'publicado') {
         setFotosPendentes(resultado.fotosPendentes)
+        setFotosRecusadas(resultado.fotosRecusadas)
         setPublicado({ id: resultado.casoId, codigo: resultado.codigoEdicao })
         rolagem.current?.scrollTo({ y: 0, animated: false })
       } else if (resultado.tipo === 'guardado') {
         setFotosPendentes(resultado.fotosPendentes)
+        setFotosRecusadas(resultado.fotosRecusadas)
         setGuardadoOffline({ id: resultado.idCliente, codigo: resultado.codigoEdicao })
         rolagem.current?.scrollTo({ y: 0, animated: false })
       } else {
@@ -140,6 +144,7 @@ export function Publicar() {
     setPublicado(undefined)
     setGuardadoOffline(undefined)
     setFotosPendentes(0)
+    setFotosRecusadas(0)
     setRascunho(undefined)
     setAvisoContato(undefined)
     setConfirmouContato(false)
@@ -157,6 +162,7 @@ export function Publicar() {
           <CodigoDeEdicao
             codigo={publicado.codigo}
             fotosPendentes={fotosPendentes}
+            fotosRecusadas={fotosRecusadas}
             reenviando={reenviando}
             aoReenviarFotos={() => void reenviarFotos()}
             aoVerCaso={() => router.push(`/caso/${publicado.id}`)}

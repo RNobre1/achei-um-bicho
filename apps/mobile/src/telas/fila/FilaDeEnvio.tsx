@@ -8,6 +8,8 @@ import { Voltar } from '../../componentes/Voltar'
 import {
   descreverEstadoItem,
   formatarHorarioFila,
+  mensagemFotosRecusadas,
+  quantidadeFotosRecusadas,
   temItensPendentes,
   type ItemFilaEnvio,
 } from '../../dominio/fila'
@@ -98,6 +100,9 @@ export function FilaDeEnvio() {
                 <Text style={estilos.fotosTexto}>
                   {item.fotos.filter((f) => f.estado === 'enviado').length} de {item.fotos.length} fotos enviadas
                 </Text>
+              ) : null}
+              {quantidadeFotosRecusadas(item) > 0 ? (
+                <Text style={estilos.fotosTexto}>{mensagemFotosRecusadas(quantidadeFotosRecusadas(item))}</Text>
               ) : null}
               {item.estado === 'falhou' ? (
                 <View style={estilos.acoesFalha}>

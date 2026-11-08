@@ -1,18 +1,28 @@
 import { Share, StyleSheet, Text, View } from 'react-native'
 import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
+import { mensagemFotosRecusadas } from '../../dominio/fila'
 import { cores, fontes } from '../../tema'
 
 interface Props {
   codigo: string
   fotosPendentes: number
+  fotosRecusadas: number
   reenviando: boolean
   aoReenviarFotos: () => void
   aoVerCaso: () => void
   aoPublicarOutro: () => void
 }
 
-export function CodigoDeEdicao({ codigo, fotosPendentes, reenviando, aoReenviarFotos, aoVerCaso, aoPublicarOutro }: Props) {
+export function CodigoDeEdicao({
+  codigo,
+  fotosPendentes,
+  fotosRecusadas,
+  reenviando,
+  aoReenviarFotos,
+  aoVerCaso,
+  aoPublicarOutro,
+}: Props) {
   function compartilhar() {
     void Share.share({
       message: `Código de edição do meu caso no Achei um Bicho: ${codigo}`,
@@ -34,6 +44,7 @@ export function CodigoDeEdicao({ codigo, fotosPendentes, reenviando, aoReenviarF
         titulo="Anote ou tire um print."
         texto="É com este código que você edita ou encerra o caso sem criar conta. Ele fica guardado neste celular, mas não aparece de novo em lugar nenhum."
       />
+      {fotosRecusadas > 0 ? <Aviso texto={mensagemFotosRecusadas(fotosRecusadas)} /> : null}
       {fotosPendentes > 0 ? (
         <>
           <Aviso

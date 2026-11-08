@@ -29,6 +29,7 @@ export interface ItemFilaEnvio {
   criadoEm: string
   atualizadoEm: string
   tentativas: number
+  fotosRecusadas: number
   ultimoErro?: string
   casoId?: string
   proximaTentativaEm?: string
@@ -46,8 +47,8 @@ export interface ParametrosNovoItem {
 export type ErroEnvio = string | { status: number; mensagem: string }
 
 export type ResultadoPublicacao =
-  | { tipo: 'publicado'; casoId: string; codigoEdicao: string; fotosPendentes: number }
-  | { tipo: 'guardado'; idCliente: string; codigoEdicao: string; fotosPendentes: number }
+  | { tipo: 'publicado'; casoId: string; codigoEdicao: string; fotosPendentes: number; fotosRecusadas: number }
+  | { tipo: 'guardado'; idCliente: string; codigoEdicao: string; fotosPendentes: number; fotosRecusadas: number }
   | { tipo: 'recusado'; mensagem: string }
 
 export function ehErroPermanente(status: number): boolean {
@@ -81,6 +82,7 @@ export function criarItemFila({
     criadoEm: agoraIso,
     atualizadoEm: agoraIso,
     tentativas: 0,
+    fotosRecusadas: 0,
   }
 }
 
@@ -139,6 +141,7 @@ export function marcarFotoEnviada(
   return {
     ...item,
     fotos: fotosAtualizadas,
+    fotosRecusadas: fotosAtualizadas.filter((foto) => foto.estado === 'falhou').length,
     etapa: todasConcluidas ? 'concluido' : 'fotos',
     estado: todasConcluidas ? 'enviado' : 'esperando',
     atualizadoEm: agoraIso,
@@ -263,13 +266,15 @@ export function reiniciarItemFalho(item: ItemFilaEnvio, agora: Date = new Date()
  * - 'guardado': salvo localmente aguardando conexão
  */
 export function resultadoDaPublicacao(item: ItemFilaEnvio): ResultadoPublicacao {
+  const fotosRecusadas = Math.max(item.fotosRecusadas ?? 0, item.fotos.filter((foto) => foto.estado === 'falhou').length)
   if (item.casoId) {
-    const fotosPendentes = item.fotos.filter((f) => f.estado !== 'enviado').length
+    const fotosPendentes = item.fotos.filter((foto) => foto.estado === 'esperando' || foto.estado === 'enviando').length
     return {
       tipo: 'publicado',
       casoId: item.casoId,
       codigoEdicao: item.codigoEdicao,
       fotosPendentes,
+      fotosRecusadas,
     }
   }
   if (item.estado === 'falhou') {
@@ -283,7 +288,16 @@ export function resultadoDaPublicacao(item: ItemFilaEnvio): ResultadoPublicacao 
     idCliente: item.idCliente,
     codigoEdicao: item.codigoEdicao,
     fotosPendentes: item.fotos.filter((f) => f.estado !== 'enviado').length,
+    fotosRecusadas,
   }
+}
+
+export function quantidadeFotosRecusadas(item: ItemFilaEnvio): number {
+  return Math.max(item.fotosRecusadas ?? 0, item.fotos.filter((foto) => foto.estado === 'falhou').length)
+}
+
+export function mensagemFotosRecusadas(quantidade: number): string {
+  return quantidade === 1 ? '1 foto não foi aceita.' : `${quantidade} fotos não foram aceitas.`
 }
 
 /**
@@ -296,6 +310,7 @@ export function podarItemEnviado(item: ItemFilaEnvio): ItemFilaEnvio {
     ...item,
     publicacao: undefined,
     fotos: [],
+    fotosRecusadas: quantidadeFotosRecusadas(item),
   }
 }
 
