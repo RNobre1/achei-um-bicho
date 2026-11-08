@@ -185,12 +185,14 @@ export async function enfileirarPublicacao(
   }))
 
   // Depois de enfileirar, espera um passe que inclua o item novo
-  const resultadosDoPasse = await processarFila(clienteApi)
+  await processarFila(clienteApi)
 
   const fila = await listarFila()
   const itemAtual = fila.find((item) => item.id === novoItem.id)
-  if (itemAtual) return resultadoDaPublicacao(itemAtual)
-  return resultadosDoPasse.get(novoItem.id) ?? resultadoDaPublicacao(novoItem)
+  const resultado = resultadoDaPublicacao(itemAtual ?? novoItem)
+  // quem está na tela vê a recusa e corrige o formulário: o item não fica na fila
+  if (resultado.tipo === 'recusado') await descartarItem(novoItem.id)
+  return resultado
 }
 
 async function temConexao(): Promise<boolean> {
@@ -203,9 +205,8 @@ async function temConexao(): Promise<boolean> {
 }
 
 /** Processa um snapshot de ids; cada alteração relê e grava a fila sob trava curta. */
-async function executarPasse(clienteApi: ClienteApi): Promise<Map<string, ResultadoPublicacao>> {
-  const recusas = new Map<string, ResultadoPublicacao>()
-  if (!(await temConexao())) return recusas
+async function executarPasse(clienteApi: ClienteApi): Promise<void> {
+  if (!(await temConexao())) return
 
   await alterarFila((filaAtual) => ({
     itens: recuperarItensPresosEmEnviando(filaAtual),
@@ -249,18 +250,9 @@ async function executarPasse(clienteApi: ClienteApi): Promise<Map<string, Result
       } catch (e) {
         const status = statusDoErro(e)
         const mensagem = e instanceof Error ? e.message : 'Erro ao publicar caso'
-        const falha = marcarFalhaEnvio(item, { status, mensagem })
-        if (ehErroPermanente(status)) {
-          const resultado = resultadoDaPublicacao(falha)
-          if (resultado.tipo === 'recusado') recusas.set(id, resultado)
-          await apagarFotosDoItem(falha)
-          await alterarFila((filaAtual) => ({
-            itens: filaAtual.filter((atual) => atual.id !== id),
-            resultado: undefined,
-          }))
-        } else {
-          await atualizarItemFila(id, (atual) => marcarFalhaEnvio(atual, { status, mensagem }))
-        }
+        // o passe nunca remove: recusa vista em segundo plano fica em "falhou", com a
+        // mensagem, para quem publicou corrigir ou descartar na tela da fila
+        await atualizarItemFila(id, (atual) => marcarFalhaEnvio(atual, { status, mensagem }))
         continue
       }
     }
@@ -329,27 +321,24 @@ async function executarPasse(clienteApi: ClienteApi): Promise<Map<string, Result
       }
     }
   }
-  return recusas
 }
 
 /** Mantém um passe de rede por vez; novos pedidos durante um passe solicitam outro. */
-let passeEmAndamento: Promise<Map<string, ResultadoPublicacao>> | undefined
+let passeEmAndamento: Promise<void> | undefined
 let passeSolicitado = false
 
-export function processarFila(clienteApi: ClienteApi = api): Promise<Map<string, ResultadoPublicacao>> {
+export function processarFila(clienteApi: ClienteApi = api): Promise<void> {
   if (passeEmAndamento) {
     passeSolicitado = true
     return passeEmAndamento
   }
 
-  let promessa: Promise<Map<string, ResultadoPublicacao>>
+  let promessa: Promise<void>
   const execucao = (async () => {
-    const recusas = new Map<string, ResultadoPublicacao>()
     do {
       passeSolicitado = false
-      for (const [id, resultado] of await executarPasse(clienteApi)) recusas.set(id, resultado)
+      await executarPasse(clienteApi)
     } while (passeSolicitado)
-    return recusas
   })()
   promessa = execucao.finally(() => {
     if (passeEmAndamento === promessa) passeEmAndamento = undefined
