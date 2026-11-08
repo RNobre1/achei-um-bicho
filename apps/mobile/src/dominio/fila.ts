@@ -30,6 +30,7 @@ export interface ItemFilaEnvio {
   atualizadoEm: string
   tentativas: number
   fotosRecusadas: number
+  tentouEnviarFotos: boolean
   ultimoErro?: string
   casoId?: string
   proximaTentativaEm?: string
@@ -83,6 +84,7 @@ export function criarItemFila({
     atualizadoEm: agoraIso,
     tentativas: 0,
     fotosRecusadas: 0,
+    tentouEnviarFotos: false,
   }
 }
 

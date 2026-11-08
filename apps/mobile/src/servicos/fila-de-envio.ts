@@ -102,6 +102,25 @@ async function atualizarItemFila(
   })
 }
 
+function reconciliarFotosDoServidor(item: ItemFilaEnvio, fotosNoServidor: number): ItemFilaEnvio {
+  const jaConfirmadas = item.fotos.filter((foto) => foto.estado === 'enviado').length
+  let aindaExistem = Math.max(0, fotosNoServidor - jaConfirmadas)
+  const fotos = item.fotos.map((foto) => {
+    if (foto.estado !== 'esperando' || aindaExistem === 0) return foto
+    aindaExistem -= 1
+    return { ...foto, estado: 'enviado' as const }
+  })
+  const todasConcluidas = fotos.every((foto) => foto.estado === 'enviado' || foto.estado === 'falhou')
+  return {
+    ...item,
+    fotos,
+    fotosRecusadas: Math.max(item.fotosRecusadas ?? 0, fotos.filter((foto) => foto.estado === 'falhou').length),
+    etapa: todasConcluidas ? 'concluido' : 'fotos',
+    estado: todasConcluidas ? 'enviado' : 'esperando',
+    atualizadoEm: new Date().toISOString(),
+  }
+}
+
 export async function listarFila(): Promise<ItemFilaEnvio[]> {
   return serializarOperacaoFila(async () => {
     return listarFilaInterno()
@@ -248,11 +267,40 @@ async function executarPasse(clienteApi: ClienteApi): Promise<Map<string, Result
 
     if (item.etapa === 'fotos' && item.casoId) {
       const casoId = item.casoId
+      if (item.tentouEnviarFotos) {
+        try {
+          const caso = await clienteApi.abrirCaso(casoId)
+          const reconciliado = await atualizarItemFila(id, (atual) =>
+            reconciliarFotosDoServidor(atual, caso.fotos.length),
+          )
+          if (!reconciliado) continue
+          item = reconciliado
+        } catch (e) {
+          const status = statusDoErro(e)
+          const mensagem = e instanceof Error ? e.message : 'Erro ao conferir fotos do caso'
+          await atualizarItemFila(id, (atual) => marcarFalhaEnvio(atual, { status, mensagem }))
+          continue
+        }
+
+        if (item.estado === 'enviado') {
+          await apagarFotosDoItem(item)
+          await atualizarItemFila(id, podarItemEnviado)
+          continue
+        }
+      }
+
       for (const fotoOriginal of item.fotos) {
         const foto = item.fotos.find((candidata) => candidata.uri === fotoOriginal.uri)
         if (!foto || foto.estado === 'enviado' || foto.estado === 'falhou') continue
         try {
           const arquivo = await arquivoDaFoto(foto.uri)
+          const atualizouTentativa = await atualizarItemFila(id, (atual) => ({
+            ...atual,
+            tentouEnviarFotos: true,
+            atualizadoEm: new Date().toISOString(),
+          }))
+          if (!atualizouTentativa) break
+          item = atualizouTentativa
           await clienteApi.enviarFoto(casoId, item.codigoEdicao, arquivo)
           const atualizado = await atualizarItemFila(id, (atual) => marcarFotoEnviada(atual, foto.uri))
           if (!atualizado) break
