@@ -125,14 +125,21 @@ describe('serviço de fila de envio (F9)', () => {
   })
 
   it('enfileira uma publicação gerando idCliente e código de edição no aparelho', async () => {
-    const item = await enfileirarPublicacao(rascunhoExemplo)
-    expect(item.idCliente).toBe('c4e433a0-1234-4b56-8a90-123456789abc')
-    expect(CODIGO_EDICAO.padrao.test(item.codigoEdicao)).toBe(true)
-    expect(item.nomeAnimal).toBe('Pipoca')
+    vi.mocked(Network.getNetworkStateAsync).mockResolvedValueOnce({
+      isConnected: false,
+      isInternetReachable: false,
+      type: Network.NetworkStateType.NONE,
+    })
+
+    const resultado = await enfileirarPublicacao(rascunhoExemplo)
+    expect(resultado).toMatchObject({ tipo: 'guardado', idCliente: 'c4e433a0-1234-4b56-8a90-123456789abc' })
+    if (resultado.tipo !== 'guardado') throw new Error('A publicação deveria estar guardada no aparelho')
+    expect(CODIGO_EDICAO.padrao.test(resultado.codigoEdicao)).toBe(true)
 
     const fila = await listarFila()
     expect(fila).toHaveLength(1)
-    expect(fila[0]?.id).toBe(item.id)
+    expect(fila[0]?.id).toBe(resultado.idCliente)
+    expect(fila[0]?.nomeAnimal).toBe('Pipoca')
   })
 
   it('envia caso antes da foto na ordem real das chamadas', async () => {
@@ -201,18 +208,21 @@ describe('serviço de fila de envio (F9)', () => {
     expect(guardarSpy).not.toHaveBeenCalled()
   })
 
-  it('erro 4xx permanente vai direto a falhou sem agendar tentativa', async () => {
+  it('publicação recusada é retirada da fila e apaga as cópias das fotos', async () => {
     const apiMock = {
       publicar: vi.fn(async () => {
-        throw new ErroApi(409, 'Código de edição já utilizado em outro caso')
+        throw new ErroApi(400, 'Dados inválidos')
       }),
     } as unknown as ClienteApi
 
-    await enfileirarPublicacao(rascunhoExemplo, apiMock)
+    const resultado = await enfileirarPublicacao(rascunhoExemplo, apiMock)
     const fila = await listarFila()
-    expect(fila[0]?.estado).toBe('falhou')
-    expect(fila[0]?.ultimoErro).toBe('Código de edição já utilizado em outro caso')
-    expect(fila[0]?.proximaTentativaEm).toBeUndefined()
+    expect(resultado).toEqual({ tipo: 'recusado', mensagem: 'Dados inválidos' })
+    expect(fila).toEqual([])
+    expect(FileSystem.deleteAsync).toHaveBeenCalledWith(
+      expect.stringContaining('file:///app/documents/'),
+      { idempotent: true },
+    )
   })
 
   it('recupera item preso em enviando ao iniciar processamento', async () => {
@@ -340,16 +350,17 @@ describe('serviço de fila de envio (F9)', () => {
   it('descartar remove o item da fila e apaga as fotos locais', async () => {
     const apiMock = {
       publicar: vi.fn(async () => {
-        throw new ErroApi(400, 'Dados inválidos')
+        throw new ErroApi(500, 'Servidor fora')
       }),
     } as unknown as ClienteApi
 
-    const item = await enfileirarPublicacao(rascunhoExemplo, apiMock)
+    const resultado = await enfileirarPublicacao(rascunhoExemplo, apiMock)
+    if (resultado.tipo !== 'guardado') throw new Error('A publicação deveria continuar na fila')
     let fila = await listarFila()
     expect(fila).toHaveLength(1)
-    expect(fila[0]?.estado).toBe('falhou')
+    expect(fila[0]?.estado).toBe('esperando')
 
-    await descartarItem(item.id)
+    await descartarItem(resultado.idCliente)
     fila = await listarFila()
     expect(fila).toHaveLength(0)
     expect(FileSystem.deleteAsync).toHaveBeenCalled()
@@ -376,13 +387,14 @@ describe('serviço de fila de envio (F9)', () => {
       enviarFoto: vi.fn(async () => ({ caminho: '/f.jpg', largura: 1, altura: 1 })),
     } as unknown as ClienteApi
 
-    const item = await enfileirarPublicacao(rascunhoExemplo, apiMock)
+    const resultado = await enfileirarPublicacao(rascunhoExemplo, apiMock)
+    if (resultado.tipo !== 'guardado') throw new Error('A publicação deveria continuar na fila')
     let fila = await listarFila()
     expect(fila[0]?.estado).toBe('esperando')
     expect(fila[0]?.tentativas).toBe(1)
 
     let reenvioTerminou = false
-    const reenvio = reenviarItem(item.id, apiMock).then(() => {
+    const reenvio = reenviarItem(resultado.idCliente, apiMock).then(() => {
       reenvioTerminou = true
     })
     await segundaPublicacaoIniciada
