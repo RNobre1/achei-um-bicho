@@ -57,14 +57,13 @@ export class CasosService {
 
     const estado = ESTADO_INICIAL[dados.tipo]
     const codigoEdicao = dados.codigoEdicao ?? gerarCodigoEdicao()
+    let id: string
     try {
-      const id = await this.repositorio.criar({
+      id = await this.repositorio.criar({
         dados,
         estado,
         codigoEdicaoHash: hashCodigoEdicao(codigoEdicao),
       })
-      await this.gerador.gerarPara(id)
-      return { id, tipo: dados.tipo, estado, codigoEdicao }
     } catch (e) {
       if (
         dados.idCliente &&
@@ -87,6 +86,9 @@ export class CasosService {
       }
       throw e
     }
+
+    await this.gerador.gerarPara(id)
+    return { id, tipo: dados.tipo, estado, codigoEdicao }
   }
 
   async mural({ latitude, longitude, raio, tipo }: ConsultarMuralDto): Promise<Mural> {
