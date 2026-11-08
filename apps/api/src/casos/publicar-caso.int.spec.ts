@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { Prisma } from '@prisma/client'
 import { CasosService } from './casos.service'
 import { CasosRepositorio } from './casos.repositorio'
+import { GeradorDePareamentos } from '../pareamento/gerador-de-pareamentos'
 import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
@@ -165,5 +166,17 @@ describe('POST /casos com publicação idempotente (F9)', () => {
     const resultado = await service.publicar(corpo as any)
     expect(resultado.id).toBe(primeira.body.id)
     expect(resultado.codigoEdicao).toBe(codigoEdicao)
+  })
+
+  it('não trata P2002 do gerador de pareamentos como colisão do idCliente', async () => {
+    const service = app.get(CasosService)
+    const gerador = app.get(GeradorDePareamentos)
+    const erro = new Prisma.PrismaClientKnownRequestError('Erro do gerador', {
+      code: 'P2002',
+      clientVersion: '5.0.0',
+    })
+    vi.spyOn(gerador, 'gerarPara').mockRejectedValueOnce(erro)
+
+    await expect(service.publicar(casoValido({ idCliente, codigoEdicao }) as any)).rejects.toBe(erro)
   })
 })
