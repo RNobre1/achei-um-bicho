@@ -1,5 +1,6 @@
 import type { NovaPublicacao } from '@achei/contratos'
 import { describe, expect, it } from 'vitest'
+import * as dominioFila from './fila'
 import {
   MAXIMO_TENTATIVAS,
   TEMPOS_ESPERA_MS,
@@ -292,6 +293,7 @@ describe('regras da fila de envio de publicações (F9)', () => {
       idCliente: 'uuid-1',
       codigoEdicao: '2345-6789',
       fotosPendentes: 2,
+      fotosRecusadas: 0,
     })
 
     // Item com casoId -> publicado
@@ -302,6 +304,7 @@ describe('regras da fila de envio de publicações (F9)', () => {
       casoId: 'caso-456',
       codigoEdicao: '2345-6789',
       fotosPendentes: 2,
+      fotosRecusadas: 0,
     })
 
     // Item que falhou definitivamente -> recusado
@@ -332,6 +335,35 @@ describe('regras da fila de envio de publicações (F9)', () => {
     expect(comFotoFalha.etapa).toBe('concluido')
   })
 
+  it('preserva fotos recusadas ao podar e não as conta como pendentes', () => {
+    const item = criarItemFila({
+      idCliente: 'uuid-fotos',
+      codigoEdicao: '2345-6789',
+      publicacao: publicacaoExemplo,
+      fotos: ['file:///foto1.jpg', 'file:///foto2.jpg'],
+      nomeAnimal: 'Pipoca',
+      agora,
+    })
+    const comCaso = marcarCasoEnviado(item, 'caso-fotos', agora)
+    const comRecusa = marcarFotoFalhaPermanente(comCaso, 'file:///foto1.jpg', 'Formato inválido', agora)
+    const completo = marcarFotoEnviada(comRecusa, 'file:///foto2.jpg', agora)
+    const resultado = resultadoDaPublicacao(completo)
+    const podado = podarItemEnviado(completo)
+
+    expect(resultado).toMatchObject({ tipo: 'publicado', fotosPendentes: 0, fotosRecusadas: 1 })
+    expect(Reflect.get(podado, 'fotosRecusadas')).toBe(1)
+    expect(podado.fotos).toEqual([])
+  })
+
+  it('forma o aviso singular e plural de fotos não aceitas', () => {
+    const mensagem = Reflect.get(dominioFila, 'mensagemFotosRecusadas')
+    expect(mensagem).toBeTypeOf('function')
+    if (typeof mensagem !== 'function') return
+
+    expect(mensagem(1)).toBe('1 foto não foi aceita.')
+    expect(mensagem(2)).toBe('2 fotos não foram aceitas.')
+  })
+
   it('poda item enviado removendo dados confidenciais e URIs', () => {
     const item = criarItemFila({
       idCliente: 'uuid-1',
@@ -350,6 +382,7 @@ describe('regras da fila de envio de publicações (F9)', () => {
     expect(podado.estado).toBe('enviado')
     expect(podado.publicacao).toBeUndefined()
     expect(podado.fotos).toEqual([])
+    expect(Reflect.get(podado, 'fotosRecusadas')).toBe(0)
   })
 
   it('identifica se existem itens pendentes na fila', () => {
