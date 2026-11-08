@@ -16,8 +16,10 @@ import {
   podeTentar,
   podarItemEnviado,
   recuperarItensPresosEmEnviando,
+  resultadoDaPublicacao,
   reiniciarItemFalho,
   type ItemFilaEnvio,
+  type ResultadoPublicacao,
 } from '../dominio/fila'
 import { nomeDoAnimal } from '../dominio/mural'
 import { montarPublicacao, type RascunhoPublicacao } from '../dominio/publicacao'
@@ -138,7 +140,7 @@ async function apagarFotosDoItem(item: ItemFilaEnvio): Promise<void> {
 export async function enfileirarPublicacao(
   rascunho: RascunhoPublicacao,
   clienteApi: ClienteApi = api,
-): Promise<ItemFilaEnvio> {
+): Promise<ResultadoPublicacao> {
   const fotosDuraveis: string[] = []
   for (const fotoUri of rascunho.fotos) {
     const salva = await copiarFotoParaDocumentos(fotoUri)
@@ -164,10 +166,12 @@ export async function enfileirarPublicacao(
   }))
 
   // Depois de enfileirar, espera um passe que inclua o item novo
-  await processarFila(clienteApi)
+  const resultadosDoPasse = await processarFila(clienteApi)
 
   const fila = await listarFila()
-  return fila.find((f) => f.id === novoItem.id) ?? novoItem
+  const itemAtual = fila.find((item) => item.id === novoItem.id)
+  if (itemAtual) return resultadoDaPublicacao(itemAtual)
+  return resultadosDoPasse.get(novoItem.id) ?? resultadoDaPublicacao(novoItem)
 }
 
 async function temConexao(): Promise<boolean> {
@@ -180,8 +184,9 @@ async function temConexao(): Promise<boolean> {
 }
 
 /** Processa um snapshot de ids; cada alteração relê e grava a fila sob trava curta. */
-async function executarPasse(clienteApi: ClienteApi): Promise<void> {
-  if (!(await temConexao())) return
+async function executarPasse(clienteApi: ClienteApi): Promise<Map<string, ResultadoPublicacao>> {
+  const recusas = new Map<string, ResultadoPublicacao>()
+  if (!(await temConexao())) return recusas
 
   await alterarFila((filaAtual) => ({
     itens: recuperarItensPresosEmEnviando(filaAtual),
@@ -225,7 +230,18 @@ async function executarPasse(clienteApi: ClienteApi): Promise<void> {
       } catch (e) {
         const status = statusDoErro(e)
         const mensagem = e instanceof Error ? e.message : 'Erro ao publicar caso'
-        await atualizarItemFila(id, (atual) => marcarFalhaEnvio(atual, { status, mensagem }))
+        const falha = marcarFalhaEnvio(item, { status, mensagem })
+        if (ehErroPermanente(status)) {
+          const resultado = resultadoDaPublicacao(falha)
+          if (resultado.tipo === 'recusado') recusas.set(id, resultado)
+          await apagarFotosDoItem(falha)
+          await alterarFila((filaAtual) => ({
+            itens: filaAtual.filter((atual) => atual.id !== id),
+            resultado: undefined,
+          }))
+        } else {
+          await atualizarItemFila(id, (atual) => marcarFalhaEnvio(atual, { status, mensagem }))
+        }
         continue
       }
     }
@@ -265,24 +281,27 @@ async function executarPasse(clienteApi: ClienteApi): Promise<void> {
       }
     }
   }
+  return recusas
 }
 
 /** Mantém um passe de rede por vez; novos pedidos durante um passe solicitam outro. */
-let passeEmAndamento: Promise<void> | undefined
+let passeEmAndamento: Promise<Map<string, ResultadoPublicacao>> | undefined
 let passeSolicitado = false
 
-export function processarFila(clienteApi: ClienteApi = api): Promise<void> {
+export function processarFila(clienteApi: ClienteApi = api): Promise<Map<string, ResultadoPublicacao>> {
   if (passeEmAndamento) {
     passeSolicitado = true
     return passeEmAndamento
   }
 
-  let promessa: Promise<void>
+  let promessa: Promise<Map<string, ResultadoPublicacao>>
   const execucao = (async () => {
+    const recusas = new Map<string, ResultadoPublicacao>()
     do {
       passeSolicitado = false
-      await executarPasse(clienteApi)
+      for (const [id, resultado] of await executarPasse(clienteApi)) recusas.set(id, resultado)
     } while (passeSolicitado)
+    return recusas
   })()
   promessa = execucao.finally(() => {
     if (passeEmAndamento === promessa) passeEmAndamento = undefined

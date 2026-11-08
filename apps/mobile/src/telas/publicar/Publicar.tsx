@@ -92,8 +92,7 @@ export function Publicar() {
     setEnviando(true)
     setErro(undefined)
     try {
-      const item = await enfileirarPublicacao(r)
-      const resultado = resultadoDaPublicacao(item)
+      const resultado = await enfileirarPublicacao(r)
 
       if (resultado.tipo === 'publicado') {
         setFotosPendentes(resultado.fotosPendentes)
