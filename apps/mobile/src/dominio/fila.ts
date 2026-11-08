@@ -321,6 +321,16 @@ export function temItensPendentes(itens: ItemFilaEnvio[]): boolean {
   return itens.some((item) => item.estado !== 'enviado')
 }
 
+export function separarItensFila(itens: ItemFilaEnvio[]): {
+  pendentes: ItemFilaEnvio[]
+  enviados: ItemFilaEnvio[]
+} {
+  return {
+    pendentes: itens.filter((item) => item.estado !== 'enviado'),
+    enviados: itens.filter((item) => item.estado === 'enviado'),
+  }
+}
+
 export function descreverEstadoItem(item: ItemFilaEnvio): string {
   if (item.estado === 'enviado') return 'Publicado'
   if (item.estado === 'enviando') {

@@ -10,7 +10,7 @@ import {
   formatarHorarioFila,
   mensagemFotosRecusadas,
   quantidadeFotosRecusadas,
-  temItensPendentes,
+  separarItensFila,
   type ItemFilaEnvio,
 } from '../../dominio/fila'
 import { descartarItem, listarFila, processarFila, reenviarItem } from '../../servicos/fila-de-envio'
@@ -47,7 +47,8 @@ export function FilaDeEnvio() {
     await carregar()
   }
 
-  const filaVazia = !itens || itens.length === 0 || !temItensPendentes(itens)
+  const grupos = itens ? separarItensFila(itens) : undefined
+  const filaVazia = !itens || itens.length === 0
 
   return (
     <View style={[estilos.tela, { paddingTop: margens.top + 10 }]}>
@@ -74,10 +75,40 @@ export function FilaDeEnvio() {
         </View>
       ) : (
         <FlatList
-          data={itens.filter((item) => item.estado !== 'enviado')}
+          data={grupos?.pendentes ?? []}
           keyExtractor={(item) => item.id}
           refreshControl={<RefreshControl refreshing={atualizando} onRefresh={() => void carregar()} />}
           contentContainerStyle={{ paddingBottom: 32 }}
+          ListEmptyComponent={
+            grupos?.pendentes.length === 0 ? (
+              <View style={estilos.vazioPendente}>
+                <Text style={estilos.vazioTexto}>Nenhum caso aguardando envio.</Text>
+                <Botao rotulo="Publicar um caso" aoTocar={() => router.push('/publicar')} />
+              </View>
+            ) : null
+          }
+          ListFooterComponent={
+            grupos && grupos.enviados.length > 0 ? (
+              <View style={estilos.secaoEnviados}>
+                <Text style={estilos.tituloEnviados}>Enviados</Text>
+                {grupos.enviados.map((item) => (
+                  <View key={item.id} style={estilos.item}>
+                    <View style={estilos.linhaTopo}>
+                      <Text style={estilos.nome}>{item.nomeAnimal}</Text>
+                      <Etiqueta tipo={item.tipo} />
+                    </View>
+                    <View style={estilos.linhaDetalhe}>
+                      <Text style={[estilos.estado, estilos.estadoPublicado]}>{descreverEstadoItem(item)}</Text>
+                      <Text style={estilos.horario}>{formatarHorarioFila(item.atualizadoEm)}</Text>
+                    </View>
+                    {quantidadeFotosRecusadas(item) > 0 ? (
+                      <Text style={estilos.fotosTexto}>{mensagemFotosRecusadas(quantidadeFotosRecusadas(item))}</Text>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => (
             <View style={estilos.item}>
               <View style={estilos.linhaTopo}>
@@ -156,8 +187,11 @@ const estilos = StyleSheet.create({
   titulo: { fontFamily: fontes.tituloForte, fontSize: 28, color: cores.tapajos, letterSpacing: -0.8 },
   subtitulo: { fontFamily: fontes.texto, fontSize: 13, color: cores.apagado, marginTop: 4 },
   vazio: { paddingHorizontal: 26, paddingTop: 40, gap: 14 },
+  vazioPendente: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 16, gap: 14 },
   vazioTitulo: { fontFamily: fontes.titulo, fontSize: 21, color: cores.tapajos, letterSpacing: -0.5 },
   vazioTexto: { fontFamily: fontes.texto, fontSize: 14.5, lineHeight: 22, color: cores.apagado },
+  secaoEnviados: { paddingTop: 12 },
+  tituloEnviados: { paddingHorizontal: 22, paddingVertical: 14, fontFamily: fontes.titulo, fontSize: 21, color: cores.tapajos },
   item: { paddingHorizontal: 22, paddingVertical: 16, gap: 8 },
   linhaTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   nome: { fontFamily: fontes.titulo, fontSize: 17, color: cores.tapajos },
