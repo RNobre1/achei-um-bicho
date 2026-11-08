@@ -401,6 +401,25 @@ describe('regras da fila de envio de publicações (F9)', () => {
     expect(temItensPendentes([])).toBe(false)
   })
 
+  it('separa publicados de pendentes sem esconder os enviados quando a fila de envio está vazia', () => {
+    const separar = Reflect.get(dominioFila, 'separarItensFila')
+    expect(separar).toBeTypeOf('function')
+    if (typeof separar !== 'function') return
+
+    const pendente = criarItemFila({
+      idCliente: 'uuid-pendente',
+      codigoEdicao: '2345-6789',
+      publicacao: publicacaoExemplo,
+      fotos: [],
+      nomeAnimal: 'Pipoca',
+      agora,
+    })
+    const enviado = podarItemEnviado(marcarCasoEnviado(pendente, 'caso-enviado', agora))
+
+    expect(separar([enviado])).toEqual({ pendentes: [], enviados: [enviado] })
+    expect(separar([pendente, enviado])).toEqual({ pendentes: [pendente], enviados: [enviado] })
+  })
+
   it('formata o texto e o horário que a tela da fila mostra', () => {
     const itemEsperando = criarItemFila({
       idCliente: 'uuid-1',
