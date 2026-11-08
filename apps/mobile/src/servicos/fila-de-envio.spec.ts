@@ -1,10 +1,10 @@
-import { CODIGO_EDICAO, type NovaPublicacao } from '@achei/contratos'
+import { CODIGO_EDICAO, type CasoAberto, type NovaPublicacao } from '@achei/contratos'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Crypto from 'expo-crypto'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Network from 'expo-network'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { criarItemFila, marcarFalhaEnvio } from '../dominio/fila'
+import { criarItemFila, marcarCasoEnviado, marcarFalhaEnvio } from '../dominio/fila'
 import { montarPublicacao } from '../dominio/publicacao'
 import { ErroApi, type ClienteApi } from './api'
 import {
@@ -18,6 +18,7 @@ import {
   salvarFila,
 } from './fila-de-envio'
 import * as meusCasosServico from './meus-casos'
+import * as fotosServico from './fotos'
 
 const appStateMock = vi.hoisted(() => ({
   ouvinte: undefined as ((estado: string) => void) | undefined,
@@ -257,6 +258,38 @@ describe('serviço de fila de envio (F9)', () => {
     expect(apiMock.publicar).toHaveBeenCalled()
     const fila = await listarFila()
     expect(fila[0]?.estado).toBe('enviado')
+  })
+
+  it('não reenvia fotos já presentes no caso depois de uma tentativa anterior', async () => {
+    const agora = new Date('2026-11-12T21:00:00.000Z')
+    const itemComCaso = marcarCasoEnviado(
+      criarItemFila({
+        idCliente: 'com-fotos-incertas',
+        codigoEdicao: '2345-6789',
+        publicacao: montarPublicacao(rascunhoExemplo, agora),
+        fotos: ['file:///foto1.jpg', 'file:///foto2.jpg', 'file:///foto3.jpg'],
+        nomeAnimal: 'Pipoca',
+        agora,
+      }),
+      'caso-com-foto-repetida',
+      agora,
+    )
+    Reflect.set(itemComCaso, 'tentouEnviarFotos', true)
+    await salvarFila([itemComCaso])
+
+    const apiMock = {
+      abrirCaso: vi.fn(async () => ({ fotos: [{ id: 'foto-servidor' }] }) as unknown as CasoAberto),
+      publicar: vi.fn(),
+      enviarFoto: vi.fn(async () => ({ caminho: '/foto.jpg', largura: 1, altura: 1 })),
+    } as unknown as ClienteApi
+
+    await processarFila(apiMock)
+
+    expect(apiMock.abrirCaso).toHaveBeenCalledWith('caso-com-foto-repetida')
+    expect(fotosServico.arquivoDaFoto).not.toHaveBeenCalledWith('file:///foto1.jpg')
+    expect(fotosServico.arquivoDaFoto).toHaveBeenNthCalledWith(1, 'file:///foto2.jpg')
+    expect(fotosServico.arquivoDaFoto).toHaveBeenNthCalledWith(2, 'file:///foto3.jpg')
+    expect(apiMock.enviarFoto).toHaveBeenCalledTimes(2)
   })
 
   it('grava novo item antes de terminar o passe de publicação em andamento', async () => {
