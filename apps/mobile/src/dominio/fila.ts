@@ -170,7 +170,7 @@ export function marcarFotoFalhaPermanente(
 
 /**
  * Ao falhar um envio:
- * - Se permanente (400, 404, 409, 422): vai direto para 'falhou' e guarda a mensagem.
+ * - Se permanente (400, 404, 409, 413, 415, 422): vai direto para 'falhou' e guarda a mensagem.
  * - Se passageiro (status 0, 429, 5xx): conta tentativa, calcula espera exponencial e fica em 'esperando'.
  *   Na 5ª falha, esgota e vai a 'falhou'.
  */

@@ -166,7 +166,7 @@ describe('regras da fila de envio de publicações (F9)', () => {
     expect(item.proximaTentativaEm).toBeUndefined()
   })
 
-  it('ao falhar com erro permanente (400, 404, 409, 422), vai direto a falhou guardando a mensagem', () => {
+  it('ao falhar com erro permanente (400, 404, 409, 413, 415, 422), vai direto a falhou guardando a mensagem', () => {
     const item = criarItemFila({
       idCliente: 'uuid-1',
       codigoEdicao: '2345-6789',
