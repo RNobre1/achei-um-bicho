@@ -237,6 +237,37 @@ describe('serviço de fila de envio (F9)', () => {
     )
   })
 
+  it('recusa num passe de fundo deixa o item em falhou, com a mensagem e as fotos guardadas', async () => {
+    const apiMock = {
+      publicar: vi.fn(async () => {
+        throw new ErroApi(400, 'Telefone com DDD: 10 ou 11 dígitos')
+      }),
+    } as unknown as ClienteApi
+
+    const guardado = criarItemFila({
+      idCliente: 'guardado-offline',
+      codigoEdicao: '2345-6789',
+      publicacao: {
+        tipo: 'perdido',
+        animal: { especie: 'cachorro', porte: 'medio', corDominante: 'caramelo', coleira: 'com', nome: 'Guardado' },
+        local: { latitude: -2.4385, longitude: -54.7085, bairro: 'Aparecida' },
+        autor: { nome: 'Maria', telefone: '991234567' },
+        ocorridoEm: '2026-10-10T14:00:00.000Z',
+        perguntas: [{ enunciado: 'P1', respostaEsperada: 'R1' }],
+      },
+      fotos: ['file:///app/documents/fila-foto-guardada.jpg'],
+      nomeAnimal: 'Guardado',
+    })
+    await salvarFila([guardado])
+
+    await processarFila(apiMock)
+
+    const fila = await listarFila()
+    expect(fila).toHaveLength(1)
+    expect(fila[0]).toMatchObject({ id: guardado.id, estado: 'falhou', ultimoErro: 'Telefone com DDD: 10 ou 11 dígitos' })
+    expect(FileSystem.deleteAsync).not.toHaveBeenCalled()
+  })
+
   it('recupera item preso em enviando ao iniciar processamento', async () => {
     const apiMock = {
       publicar: vi.fn(async (dados: NovaPublicacao) => ({
