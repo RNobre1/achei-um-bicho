@@ -91,6 +91,18 @@ describe('avistamentos de um caso', () => {
       await avisar(id, avistamentoValido(sobrescrever)).expect(400)
       expect(await prisma.avistamento.count()).toBe(0)
     })
+
+    it.each([
+      ['telefone na observação', { observacao: 'Vi na praça, me liga 93 99123-4567' }],
+      ['whatsapp na observação', { observacao: 'Chame no zap' }],
+      ['link na observação', { observacao: 'Mais detalhes em www.exemplo.com' }],
+    ])('recusa %s e explica que o contato é liberado pelo app (RNF4)', async (_motivo, sobrescrever) => {
+      const { id } = await publicar()
+      const res = await avisar(id, avistamentoValido(sobrescrever)).expect(400)
+      const mensagens = Array.isArray(res.body.message) ? res.body.message.join(' ') : String(res.body.message)
+      expect(mensagens).toMatch(/contato/i)
+      expect(await prisma.avistamento.count()).toBe(0)
+    })
   })
 
   describe('GET /casos/:id/avistamentos', () => {
