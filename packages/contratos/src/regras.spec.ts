@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { NovaPublicacao } from './api'
 import {
   CODIGO_EDICAO,
   FOTO,
@@ -134,5 +135,46 @@ describe('regras do código de edição', () => {
     expect(regex.test('0123-4567')).toBe(false)
     expect(regex.test('ABCD-EFG')).toBe(false)
     expect(regex.test('abcd-efgh')).toBe(false)
+  })
+})
+
+describe('RNF2 · tamanho máximo da publicação', () => {
+  it('monta a maior publicação permitida e prova que com uma foto cabe em 1 MB', () => {
+    const maiorPublicacao: NovaPublicacao = {
+      tipo: 'perdido',
+      animal: {
+        especie: 'cachorro',
+        porte: 'grande',
+        corDominante: 'caramelo',
+        coleira: 'com',
+        nome: 'A'.repeat(60),
+        castrado: true,
+      },
+      local: {
+        latitude: -2.44321,
+        longitude: -54.71234,
+        bairro: 'B'.repeat(80),
+        referencia: 'R'.repeat(160),
+      },
+      autor: {
+        nome: 'N'.repeat(80),
+        telefone: '9'.repeat(20),
+      },
+      ocorridoEm: '2026-11-12T12:00:00.000Z',
+      relato: 'X'.repeat(600),
+      perguntas: [
+        { enunciado: 'P1'.padEnd(160, '?'), respostaEsperada: 'R1'.padEnd(160, '.') },
+        { enunciado: 'P2'.padEnd(160, '?'), respostaEsperada: 'R2'.padEnd(160, '.') },
+        { enunciado: 'P3'.padEnd(160, '?'), respostaEsperada: 'R3'.padEnd(160, '.') },
+      ],
+      idCliente: '123e4567-e89b-12d3-a456-426614174000',
+      codigoEdicao: 'ABCD-EFGH',
+    }
+
+    const jsonBytes = Buffer.byteLength(JSON.stringify(maiorPublicacao), 'utf8')
+    const totalBytes = jsonBytes + FOTO.maximoBytes
+    const UM_MEGABYTE = 1_000_000
+
+    expect(totalBytes).toBeLessThanOrEqual(UM_MEGABYTE)
   })
 })
