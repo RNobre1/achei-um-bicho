@@ -11,6 +11,7 @@ describe('configuração lida do ambiente', () => {
       diasAteCobranca: 9,
       diasAteExpirar: 15,
       tarefasChave: undefined,
+      codigoSegredo: expect.any(String),
     })
   })
 
@@ -23,6 +24,7 @@ describe('configuração lida do ambiente', () => {
       DIAS_ATE_COBRANCA: '7',
       DIAS_ATE_EXPIRAR: '21',
       TAREFAS_CHAVE: 'segredo-123',
+      CODIGO_SEGREDO: 'meu-segredo-customizado',
     })
     expect(config).toEqual({
       porta: 4000,
@@ -32,7 +34,16 @@ describe('configuração lida do ambiente', () => {
       diasAteCobranca: 7,
       diasAteExpirar: 21,
       tarefasChave: 'segredo-123',
+      codigoSegredo: 'meu-segredo-customizado',
     })
+  })
+
+  it('exige CODIGO_SEGREDO em produção', () => {
+    expect(() =>
+      lerConfiguracao({
+        NODE_ENV: 'production',
+      }),
+    ).toThrow(/CODIGO_SEGREDO/)
   })
 
   it('recusa raio padrão fora dos limites do produto', () => {
