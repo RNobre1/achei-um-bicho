@@ -4,8 +4,8 @@
  */
 export const cores = {
   tapajos: '#123E4A', // texto e superfície escura
-  perdi: '#2F8587', // estado "sumiu"
-  achei: '#8C7F66', // estado "foi achado" (silte do Amazonas, escurecido para contraste)
+  perdi: '#23797B', // estado "sumiu" (ajustado para contraste WCAG AA >= 4,5:1)
+  achei: '#82755C', // estado "foi achado" (silte do Amazonas, escurecido para contraste WCAG AA >= 4,5:1)
   silte: '#B6AA95',
   alter: '#E2A83B', // único acento: ação principal e reencontro
   chuva: '#EEF2EE', // fundo
