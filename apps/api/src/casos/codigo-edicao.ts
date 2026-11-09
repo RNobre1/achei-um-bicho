@@ -1,5 +1,15 @@
-import { CODIGO_EDICAO, gerarCodigoEdicao as gerarCodigoEdicaoContratos } from '@achei/contratos'
-import { createHash, randomInt, timingSafeEqual } from 'node:crypto'
+import { gerarCodigoEdicao as gerarCodigoEdicaoContratos } from '@achei/contratos'
+import { createHmac, randomInt, timingSafeEqual } from 'node:crypto'
+
+const SEGREDO_PADRAO_DESENVOLVIMENTO = 'segredo-padrao-desenvolvimento'
+
+function obterSegredo(): string {
+  const segredo = process.env.CODIGO_SEGREDO?.trim()
+  if (process.env.NODE_ENV === 'production' && !segredo) {
+    throw new Error('CODIGO_SEGREDO é obrigatório em produção')
+  }
+  return segredo || SEGREDO_PADRAO_DESENVOLVIMENTO
+}
 
 /**
  * Código que permite editar e encerrar um caso publicado sem conta. São 31^8
@@ -11,8 +21,9 @@ export function gerarCodigoEdicao(): string {
 
 /** O banco guarda só isto. O código em claro sai uma vez, na resposta da publicação. */
 export function hashCodigoEdicao(codigo: string): string {
-  const normalizado = codigo.trim().toUpperCase().replace(/-/g, '')
-  return createHash('sha256').update(normalizado).digest('hex')
+  const normalizado = codigo.trim().toUpperCase().replace(/[-\s]/g, '')
+  const segredo = obterSegredo()
+  return createHmac('sha256', segredo).update(normalizado).digest('hex')
 }
 
 /**

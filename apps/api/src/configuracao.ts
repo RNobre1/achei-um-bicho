@@ -12,9 +12,13 @@ export interface Configuracao {
   diasAteExpirar: number
   /** Chave que autoriza a execução da tarefa diária de ciclo de vida. */
   tarefasChave?: string
+  /** Segredo para geração de HMAC dos códigos de edição. */
+  codigoSegredo: string
 }
 
 type Ambiente = Record<string, string | undefined>
+
+const SEGREDO_PADRAO_DESENVOLVIMENTO = 'segredo-padrao-desenvolvimento'
 
 function inteiro(ambiente: Ambiente, nome: string, padrao: number): number {
   const bruto = ambiente[nome]
@@ -53,6 +57,11 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
   const tarefasChaveBruta = ambiente.TAREFAS_CHAVE?.trim()
   const tarefasChave = tarefasChaveBruta ? tarefasChaveBruta : undefined
 
+  const codigoSegredo = ambiente.CODIGO_SEGREDO?.trim()
+  if (ambiente.NODE_ENV === 'production' && !codigoSegredo) {
+    throw new Error('CODIGO_SEGREDO é obrigatório em produção')
+  }
+
   return {
     porta: inteiro(ambiente, 'PORT', 3333),
     origensCors: (ambiente.CORS_ORIGINS ?? 'http://localhost:8081')
@@ -64,5 +73,6 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
     diasAteCobranca,
     diasAteExpirar,
     tarefasChave,
+    codigoSegredo: codigoSegredo || SEGREDO_PADRAO_DESENVOLVIMENTO,
   }
 }
