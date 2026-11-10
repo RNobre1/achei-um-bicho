@@ -15,7 +15,8 @@ export function luminanciaRelativa(hex: string): number {
     canal <= 0.04045 ? canal / 12.92 : Math.pow((canal + 0.055) / 1.055, 2.4),
   )
 
-  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+  const [lr = 0, lg = 0, lb = 0] = linear
+  return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb
 }
 
 /**
