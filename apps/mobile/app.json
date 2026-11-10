@@ -21,7 +21,12 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "name": "Achei um Bicho",
+      "shortName": "Achei Bicho",
+      "themeColor": "#123E4A",
+      "backgroundColor": "#EEF2EE",
+      "display": "standalone"
     },
     "plugins": [
       "expo-router",
