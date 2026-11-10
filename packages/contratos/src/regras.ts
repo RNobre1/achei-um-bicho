@@ -85,6 +85,22 @@ export const TAREFA_DIARIA = {
 } as const
 
 /**
+ * Limites de tamanho para campos de texto em todo o sistema (RNF2 e integridade).
+ */
+export const LIMITES_DE_TEXTO = {
+  nomeAnimal: 60,
+  bairro: 80,
+  referencia: 160,
+  nomePessoa: 80,
+  telefone: 20,
+  enunciado: 160,
+  resposta: 160,
+  relato: 600,
+  observacao: 500,
+  textoDenuncia: 500,
+} as const
+
+/**
  * Telefone, WhatsApp ou link digitado em texto que fica público (relato, observação,
  * enunciado de pergunta) furaria o contato mediado (RNF4). A API recusa e o
  * aplicativo avisa antes de enviar, com o mesmo padrão.
@@ -133,4 +149,21 @@ export function gerarCodigoEdicao(sortear: (maximoExclusivo: number) => number):
     blocos.push(bloco)
   }
   return blocos.join('-')
+}
+
+/**
+ * Avalia se um texto parece conter dados de contato (telefone, whatsapp, links),
+ * excetuando datas (DD-MM-AAAA, DD.MM.AAAA, AAAA-MM-DD), CEPs (NNNNN-NNN)
+ * e microchips de 15 dígitos.
+ */
+export function pareceContato(texto: string): boolean {
+  if (!texto) return false
+
+  const textoLimpo = texto
+    .replace(/\b\d{2}[.-]\d{2}[.-]\d{4}\b/g, '')
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, '')
+    .replace(/\b\d{5}-\d{3}\b/g, '')
+    .replace(/(?<!\d)\d{15}(?!\d)/g, '')
+
+  return PARECE_CONTATO.test(textoLimpo)
 }
