@@ -37,6 +37,7 @@ import {
   ValidateNested,
 } from 'class-validator'
 import { NaoNoFuturo } from '../../comum/nao-no-futuro'
+import { SemContatoPublico } from '../../comum/sem-contato-publico'
 
 // Os valores aceitos vêm do manifesto de packages/contratos. Nada de lista aqui.
 
@@ -62,7 +63,7 @@ export class AutorDto implements AutorNaPublicacao {
 }
 
 export class PerguntaDto implements PerguntaNaPublicacao {
-  @IsString() @IsNotEmpty() @MaxLength(160) enunciado!: string
+  @IsString() @IsNotEmpty() @MaxLength(160) @SemContatoPublico() enunciado!: string
   @IsString() @IsNotEmpty() @MaxLength(160) respostaEsperada!: string
 }
 
@@ -74,7 +75,7 @@ export class PublicarCasoDto implements NovaPublicacao {
   @ValidateNested() @Type(() => AutorDto) autor!: AutorDto
 
   @IsISO8601() @NaoNoFuturo() ocorridoEm!: string
-  @IsOptional() @IsString() @MaxLength(600) relato?: string
+  @IsOptional() @IsString() @MaxLength(600) @SemContatoPublico() relato?: string
 
   /** Exatamente três, a regra de negócio RN3. */
   @IsArray()
