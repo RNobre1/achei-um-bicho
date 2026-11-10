@@ -4,8 +4,10 @@ import {
   CODIGO_EDICAO,
   FOTO,
   gerarCodigoEdicao,
+  LIMITES_DE_TEXTO,
   MENSAGEM_AVISO_CONTATO,
   PAREAMENTO,
+  pareceContato,
   RAIO,
   REIVINDICACAO,
   TAREFA_DIARIA,
@@ -138,8 +140,48 @@ describe('regras do código de edição', () => {
   })
 })
 
+describe('limites de texto em fonte única', () => {
+  it('define limites para todos os campos textuais do sistema', () => {
+    expect(LIMITES_DE_TEXTO).toEqual({
+      nomeAnimal: 60,
+      bairro: 80,
+      referencia: 160,
+      nomePessoa: 80,
+      telefone: 20,
+      enunciado: 160,
+      resposta: 160,
+      relato: 600,
+      observacao: 500,
+      textoDenuncia: 500,
+    })
+  })
+})
+
+describe('pareceContato (RNF4)', () => {
+  it('bloqueia telefones em vários formatos, zap, wa.me e links', () => {
+    expect(pareceContato('Ligue 93 99123-4567')).toBe(true)
+    expect(pareceContato('Meu número é 99123-4567')).toBe(true)
+    expect(pareceContato('Fixo 3522-1234')).toBe(true)
+    expect(pareceContato('+55 93 99123-4567')).toBe(true)
+    expect(pareceContato('Chama no zap')).toBe(true)
+    expect(pareceContato('Mande um whats')).toBe(true)
+    expect(pareceContato('wa.me/5593991234567')).toBe(true)
+    expect(pareceContato('Veja em https://exemplo.com')).toBe(true)
+    expect(pareceContato('Acesse www.exemplo.com')).toBe(true)
+  })
+
+  it('não bloqueia datas com hífen ou ponto, CEP, microchip de 15 dígitos ou texto legítimo', () => {
+    expect(pareceContato('Visto em 12-11-2026 na praça')).toBe(false)
+    expect(pareceContato('Data do sumiço: 2026-11-12')).toBe(false)
+    expect(pareceContato('Aconteceu em 12.11.2026')).toBe(false)
+    expect(pareceContato('Perto do CEP 68005-000')).toBe(false)
+    expect(pareceContato('Microchip 985112345678901')).toBe(false)
+    expect(pareceContato('Cão dócil, porte médio, coleira vermelha')).toBe(false)
+  })
+})
+
 describe('RNF2 · tamanho máximo da publicação', () => {
-  it('monta a maior publicação permitida e prova que com uma foto cabe em 1 MB', () => {
+  it('monta a maior publicação permitida usando LIMITES_DE_TEXTO e prova que com uma foto cabe em 1 MB', () => {
     const maiorPublicacao: NovaPublicacao = {
       tipo: 'perdido',
       animal: {
@@ -147,25 +189,34 @@ describe('RNF2 · tamanho máximo da publicação', () => {
         porte: 'grande',
         corDominante: 'caramelo',
         coleira: 'com',
-        nome: 'A'.repeat(60),
+        nome: 'A'.repeat(LIMITES_DE_TEXTO.nomeAnimal),
         castrado: true,
       },
       local: {
         latitude: -2.44321,
         longitude: -54.71234,
-        bairro: 'B'.repeat(80),
-        referencia: 'R'.repeat(160),
+        bairro: 'B'.repeat(LIMITES_DE_TEXTO.bairro),
+        referencia: 'R'.repeat(LIMITES_DE_TEXTO.referencia),
       },
       autor: {
-        nome: 'N'.repeat(80),
-        telefone: '9'.repeat(20),
+        nome: 'N'.repeat(LIMITES_DE_TEXTO.nomePessoa),
+        telefone: '9'.repeat(LIMITES_DE_TEXTO.telefone),
       },
       ocorridoEm: '2026-11-12T12:00:00.000Z',
-      relato: 'X'.repeat(600),
+      relato: 'X'.repeat(LIMITES_DE_TEXTO.relato),
       perguntas: [
-        { enunciado: 'P1'.padEnd(160, '?'), respostaEsperada: 'R1'.padEnd(160, '.') },
-        { enunciado: 'P2'.padEnd(160, '?'), respostaEsperada: 'R2'.padEnd(160, '.') },
-        { enunciado: 'P3'.padEnd(160, '?'), respostaEsperada: 'R3'.padEnd(160, '.') },
+        {
+          enunciado: 'P1'.padEnd(LIMITES_DE_TEXTO.enunciado, '?'),
+          respostaEsperada: 'R1'.padEnd(LIMITES_DE_TEXTO.resposta, '.'),
+        },
+        {
+          enunciado: 'P2'.padEnd(LIMITES_DE_TEXTO.enunciado, '?'),
+          respostaEsperada: 'R2'.padEnd(LIMITES_DE_TEXTO.resposta, '.'),
+        },
+        {
+          enunciado: 'P3'.padEnd(LIMITES_DE_TEXTO.enunciado, '?'),
+          respostaEsperada: 'R3'.padEnd(LIMITES_DE_TEXTO.resposta, '.'),
+        },
       ],
       idCliente: '123e4567-e89b-12d3-a456-426614174000',
       codigoEdicao: 'ABCD-EFGH',
