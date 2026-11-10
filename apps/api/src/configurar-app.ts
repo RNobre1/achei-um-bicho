@@ -5,6 +5,11 @@ import { type INestApplication, ValidationPipe } from '@nestjs/common'
  * os testes de integração subirem a aplicação exatamente como ela roda.
  */
 export function configurarApp(app: INestApplication): void {
+  const httpAdapter = app.getHttpAdapter()
+  if (httpAdapter && typeof (httpAdapter.getInstance() as any)?.set === 'function') {
+    ;(httpAdapter.getInstance() as any).set('trust proxy', true)
+  }
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

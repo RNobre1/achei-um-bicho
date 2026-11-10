@@ -14,6 +14,10 @@ export interface Configuracao {
   tarefasChave?: string
   /** Segredo para geração de HMAC dos códigos de edição. */
   codigoSegredo: string
+  /** Limite de requisições GET por IP por minuto. */
+  limiteLeituraPorMinuto: number
+  /** Limite de requisições de escrita (POST, PATCH, DELETE) por IP por minuto. */
+  limiteEscritaPorMinuto: number
 }
 
 type Ambiente = Record<string, string | undefined>
@@ -74,5 +78,7 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
     diasAteExpirar,
     tarefasChave,
     codigoSegredo: codigoSegredo || SEGREDO_PADRAO_DESENVOLVIMENTO,
+    limiteLeituraPorMinuto: inteiro(ambiente, 'LIMITE_LEITURA_POR_MINUTO', 120),
+    limiteEscritaPorMinuto: inteiro(ambiente, 'LIMITE_ESCRITA_POR_MINUTO', 20),
   }
 }

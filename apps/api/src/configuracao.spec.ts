@@ -12,6 +12,8 @@ describe('configuração lida do ambiente', () => {
       diasAteExpirar: 15,
       tarefasChave: undefined,
       codigoSegredo: expect.any(String),
+      limiteLeituraPorMinuto: 120,
+      limiteEscritaPorMinuto: 20,
     })
   })
 
@@ -25,6 +27,8 @@ describe('configuração lida do ambiente', () => {
       DIAS_ATE_EXPIRAR: '21',
       TAREFAS_CHAVE: 'segredo-123',
       CODIGO_SEGREDO: 'meu-segredo-customizado',
+      LIMITE_LEITURA_POR_MINUTO: '200',
+      LIMITE_ESCRITA_POR_MINUTO: '40',
     })
     expect(config).toEqual({
       porta: 4000,
@@ -35,6 +39,8 @@ describe('configuração lida do ambiente', () => {
       diasAteExpirar: 21,
       tarefasChave: 'segredo-123',
       codigoSegredo: 'meu-segredo-customizado',
+      limiteLeituraPorMinuto: 200,
+      limiteEscritaPorMinuto: 40,
     })
   })
 

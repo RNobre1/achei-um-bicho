@@ -17,7 +17,11 @@ export default defineConfig({
     environment: 'node',
     globalSetup: ['./test/preparar-banco.ts'],
     fileParallelism: false,
-    env: { DATABASE_URL: URL_BANCO_TESTE },
+    env: {
+      DATABASE_URL: URL_BANCO_TESTE,
+      LIMITE_LEITURA_POR_MINUTO: '100000',
+      LIMITE_ESCRITA_POR_MINUTO: '100000',
+    },
     hookTimeout: 60_000,
   },
 })

@@ -6,6 +6,7 @@ import { FotosModule } from './fotos/fotos.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { ReivindicacoesModule } from './reivindicacoes/reivindicacoes.module'
 import { SaudeModule } from './saude/saude.module'
+import { SegurancaModule } from './seguranca/seguranca.module'
 import { TarefasModule } from './tarefas/tarefas.module'
 
 @Module({
@@ -17,6 +18,7 @@ import { TarefasModule } from './tarefas/tarefas.module'
     AvistamentosModule,
     FotosModule,
     ReivindicacoesModule,
+    SegurancaModule,
     TarefasModule,
   ],
 })
