@@ -1,4 +1,4 @@
-import type { AvistamentoParaAutor, NovoAvistamento, TipoCaso } from '@achei/contratos'
+import { type AvistamentoParaAutor, type NovoAvistamento, PARECE_CONTATO, type TipoCaso } from '@achei/contratos'
 import { formatarDistancia } from './formatar'
 import type { Coordenada } from './posicao'
 
@@ -9,6 +9,16 @@ export interface RascunhoAvistamento {
   quando?: QuandoViu
   bairro: string
   observacao: string
+}
+
+export const MENSAGEM_CONTATO_AVISTAMENTO =
+  'Não inclua telefone, WhatsApp ou link: o contato é liberado pelo aplicativo'
+
+/**
+ * Verifica se a observação do avistamento contém telefone, WhatsApp ou links (RNF4).
+ */
+export function observacaoPareceContato(observacao: string): boolean {
+  return PARECE_CONTATO.test(observacao)
 }
 
 const HORA = 60 * 60 * 1000
@@ -39,6 +49,9 @@ export function pendenciasDoAvistamento(r: RascunhoAvistamento): string[] {
   const falta: string[] = []
   if (!r.ponto) falta.push('Marque onde você viu')
   if (!r.quando) falta.push('Diga quando você viu')
+  if (r.observacao && observacaoPareceContato(r.observacao)) {
+    falta.push(MENSAGEM_CONTATO_AVISTAMENTO)
+  }
   return falta
 }
 

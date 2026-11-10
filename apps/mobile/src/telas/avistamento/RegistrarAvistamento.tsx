@@ -10,6 +10,7 @@ import { MapaArea } from '../../componentes/MapaArea'
 import { Voltar } from '../../componentes/Voltar'
 import {
   montarAvistamento,
+  observacaoPareceContato,
   pendenciasDoAvistamento,
   type QuandoViu,
   type RascunhoAvistamento,
@@ -76,6 +77,8 @@ export function RegistrarAvistamento() {
     }
   }
 
+  const avisoContato = observacaoPareceContato(rascunho.observacao)
+
   return (
     <KeyboardAvoidingView style={estilos.tela} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
@@ -126,6 +129,12 @@ export function RegistrarAvistamento() {
               maxLength={500}
               placeholder="Estava perto da padaria, parecia assustado…"
             />
+            {avisoContato ? (
+              <Aviso
+                titulo="Contato não permitido no texto público"
+                texto="Não inclua telefone, WhatsApp ou links no aviso. O contato com quem publicou é liberado pelo aplicativo com segurança."
+              />
+            ) : null}
 
             {pendencias.length > 0 ? <Aviso titulo="Falta pouco:" texto={pendencias.join('\n')} /> : null}
             {erro ? <Aviso titulo="Não deu para enviar." texto={erro} /> : null}
