@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { descreverOndeFoiVisto, momentoDoAvistamento, montarAvistamento, pendenciasDoAvistamento } from './avistamento'
+import {
+  descreverOndeFoiVisto,
+  momentoDoAvistamento,
+  montarAvistamento,
+  pendenciasDoAvistamento,
+} from './avistamento'
 
 // fuso de Santarém nos testes: 15:00 UTC são 12h locais
 const AGORA = new Date('2026-09-30T15:00:00Z')
@@ -33,6 +38,35 @@ describe('avistamento', () => {
     expect(pendenciasDoAvistamento({ ponto: PONTO, quando: 'agora', observacao: '', bairro: '' })).toEqual([])
   })
 
+  it('avisa e bloqueia envio quando a observação parece conter telefone, WhatsApp ou link (RNF4)', () => {
+    expect(
+      pendenciasDoAvistamento({
+        ponto: PONTO,
+        quando: 'agora',
+        bairro: '',
+        observacao: 'Ligue 93 99123-4567',
+      }),
+    ).toEqual(['Não inclua telefone, WhatsApp ou link: o contato é liberado pelo aplicativo'])
+
+    expect(
+      pendenciasDoAvistamento({
+        ponto: PONTO,
+        quando: 'agora',
+        bairro: '',
+        observacao: 'Chama no zap',
+      }),
+    ).toEqual(['Não inclua telefone, WhatsApp ou link: o contato é liberado pelo aplicativo'])
+
+    expect(
+      pendenciasDoAvistamento({
+        ponto: PONTO,
+        quando: 'agora',
+        bairro: '',
+        observacao: 'Veja em https://exemplo.com',
+      }),
+    ).toEqual(['Não inclua telefone, WhatsApp ou link: o contato é liberado pelo aplicativo'])
+  })
+
   it('monta o corpo da API sem campos vazios', () => {
     expect(montarAvistamento({ ponto: PONTO, quando: 'agora', observacao: '  ', bairro: ' Santa Clara ' }, AGORA)).toEqual({
       latitude: -2.44,
@@ -47,6 +81,12 @@ describe('avistamento', () => {
 
   it('recusa montar sem lugar', () => {
     expect(() => montarAvistamento({ quando: 'agora', observacao: '', bairro: '' }, AGORA)).toThrow('Marque onde você viu')
+  })
+
+  it('recusa montar avistamento com contato na observação (RNF4)', () => {
+    expect(() =>
+      montarAvistamento({ ponto: PONTO, quando: 'agora', observacao: '93991234567', bairro: '' }, AGORA),
+    ).toThrow(/contato/i)
   })
 
   it('descreve para quem publicou onde o bicho foi visto, sem expor o ponto', () => {
