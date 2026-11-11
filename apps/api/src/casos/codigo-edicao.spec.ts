@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { SEGREDO_PADRAO_DESENVOLVIMENTO } from '../configuracao'
 import { conferirCodigoEdicao, gerarCodigoEdicao, hashCodigoEdicao } from './codigo-edicao'
 
 describe('código de edição de quem publica sem conta', () => {
@@ -73,6 +74,13 @@ describe('código de edição de quem publica sem conta', () => {
     process.env.CODIGO_SEGREDO = 'segredo-b'
     const hashB = hashCodigoEdicao('7K9P-2M4X')
     expect(hashB).not.toBe(hashA)
+  })
+
+  it('usa o segredo padrão de desenvolvimento quando não informado em ambiente de desenvolvimento', () => {
+    delete process.env.CODIGO_SEGREDO
+    const hash = hashCodigoEdicao('7K9P-2M4X')
+    const esperado = createHmac('sha256', SEGREDO_PADRAO_DESENVOLVIMENTO).update('7K9P2M4X').digest('hex')
+    expect(hash).toBe(esperado)
   })
 
   it('exige CODIGO_SEGREDO definido em produção', () => {

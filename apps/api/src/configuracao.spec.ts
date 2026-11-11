@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lerConfiguracao } from './configuracao'
+import { lerConfiguracao, SEGREDO_PADRAO_DESENVOLVIMENTO } from './configuracao'
 
 describe('configuração lida do ambiente', () => {
   it('tem padrões que funcionam em desenvolvimento sem nenhum .env', () => {
@@ -11,13 +11,19 @@ describe('configuração lida do ambiente', () => {
       diasAteCobranca: 9,
       diasAteExpirar: 15,
       tarefasChave: undefined,
-      codigoSegredo: expect.any(String),
-      limiteLeituraPorMinuto: 120,
-      limiteEscritaPorMinuto: 20,
+      codigoSegredo: 'segredo-local-desenvolvimento',
+      limiteLeituraPorMinuto: 600,
+      limiteEscritaPorMinuto: 60,
+      limiteFotosPorMinuto: 1200,
+      saltosDeProxy: 1,
     })
+    expect(SEGREDO_PADRAO_DESENVOLVIMENTO).toBe('segredo-local-desenvolvimento')
   })
 
   it('lê porta, origens, raio, prazos e chave de tarefas do ambiente', () => {
+  })
+
+  it('lê porta, origens, limites e saltos de proxy do ambiente', () => {
     const config = lerConfiguracao({
       PORT: '4000',
       CORS_ORIGINS: 'http://localhost:8081, https://achei.exemplo',
@@ -27,8 +33,10 @@ describe('configuração lida do ambiente', () => {
       DIAS_ATE_EXPIRAR: '21',
       TAREFAS_CHAVE: 'segredo-123',
       CODIGO_SEGREDO: 'meu-segredo-customizado',
-      LIMITE_LEITURA_POR_MINUTO: '200',
-      LIMITE_ESCRITA_POR_MINUTO: '40',
+      LIMITE_LEITURA_POR_MINUTO: '800',
+      LIMITE_ESCRITA_POR_MINUTO: '80',
+      LIMITE_FOTOS_POR_MINUTO: '1500',
+      SALTOS_DE_PROXY: '2',
     })
     expect(config).toEqual({
       porta: 4000,
@@ -39,8 +47,10 @@ describe('configuração lida do ambiente', () => {
       diasAteExpirar: 21,
       tarefasChave: 'segredo-123',
       codigoSegredo: 'meu-segredo-customizado',
-      limiteLeituraPorMinuto: 200,
-      limiteEscritaPorMinuto: 40,
+      limiteLeituraPorMinuto: 800,
+      limiteEscritaPorMinuto: 80,
+      limiteFotosPorMinuto: 1500,
+      saltosDeProxy: 2,
     })
   })
 
@@ -68,5 +78,10 @@ describe('configuração lida do ambiente', () => {
   it('recusa prazo de expiração menor ou igual ao de cobrança', () => {
     expect(() => lerConfiguracao({ DIAS_ATE_COBRANCA: '10', DIAS_ATE_EXPIRAR: '10' })).toThrow(/DIAS_ATE_EXPIRAR/)
     expect(() => lerConfiguracao({ DIAS_ATE_COBRANCA: '10', DIAS_ATE_EXPIRAR: '5' })).toThrow(/DIAS_ATE_EXPIRAR/)
+  })
+
+  it('recusa saltos de proxy que não é número inteiro positivo ou zero', () => {
+    expect(() => lerConfiguracao({ SALTOS_DE_PROXY: 'abc' })).toThrow(/SALTOS_DE_PROXY/)
+    expect(() => lerConfiguracao({ SALTOS_DE_PROXY: '-1' })).toThrow(/SALTOS_DE_PROXY/)
   })
 })
