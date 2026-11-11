@@ -3,13 +3,15 @@ import { randomUUID } from 'node:crypto'
 import { PrismaClient } from '@prisma/client'
 
 const BASE_URL = process.env.DATABASE_URL_BASE ?? 'postgresql://bicho:bicho@localhost:5432'
-const NOME_BANCO = 'achei_carga_d'
+const NOME_BANCO = process.env.NOME_BANCO ?? 'achei_carga_d'
 const URL_ADMIN = `${BASE_URL}/achei_um_bicho`
 const URL_BANCO = `${BASE_URL}/${NOME_BANCO}`
 
 // Praça da Matriz em Santarém
 const CENTRO = { latitude: -2.4432, longitude: -54.7123 }
-const TOTAL_CASOS = 200
+const TOTAL_CASOS = Number(process.env.TOTAL_CASOS ?? 200)
+const RAIO_MAXIMO_M = 4500
+const ANGULO_DE_OURO = 2.399963229728653
 
 const ESPECIES = ['cachorro', 'gato'] as const
 const PORTES = ['pequeno', 'medio', 'grande'] as const
@@ -18,15 +20,20 @@ const COLEIRAS = ['com', 'sem', 'nao_observado'] as const
 const NOMES = ['Caramelo', 'Pipoca', 'Thor', 'Mel', 'Bob', 'Luna', 'Simba', 'Bidu', 'Nina', 'Totó']
 const BAIRROS = ['Centro', 'Santa Clara', 'Aldeia', 'Aparecida', 'Prainha', 'Caranazal', 'Santíssimo', 'Salé']
 
-function pontoEmVolta(centro: { latitude: number; longitude: number }, raioMaximoM: number) {
-  // Conversão aproximada para Santarém (~111 km por grau)
-  const angulo = Math.random() * 2 * Math.PI
-  const distancia = Math.sqrt(Math.random()) * raioMaximoM
-  const deltaLat = (distancia * Math.cos(angulo)) / 111_000
-  const deltaLon = (distancia * Math.sin(angulo)) / (111_000 * Math.cos((centro.latitude * Math.PI) / 180))
+/**
+ * Ponto gerado por espiral de Fermat determinística (sem Math.random).
+ * Distribuição uniforme em área ao redor do centro.
+ */
+function pontoDeterminista(indice: number, total: number) {
+  const frac = total > 1 ? indice / (total - 1) : 0
+  const distanciaM = Math.sqrt(frac) * RAIO_MAXIMO_M
+  const angulo = indice * ANGULO_DE_OURO
+  const deltaLat = (distanciaM * Math.cos(angulo)) / 111_000
+  const deltaLon = (distanciaM * Math.sin(angulo)) / (111_000 * Math.cos((CENTRO.latitude * Math.PI) / 180))
   return {
-    latitude: Number((centro.latitude + deltaLat).toFixed(6)),
-    longitude: Number((centro.longitude + deltaLon).toFixed(6)),
+    latitude: Number((CENTRO.latitude + deltaLat).toFixed(6)),
+    longitude: Number((CENTRO.longitude + deltaLon).toFixed(6)),
+    distanciaM,
   }
 }
 
@@ -46,39 +53,47 @@ async function prepararBanco(): Promise<void> {
 async function semearCasos(): Promise<void> {
   const prisma = new PrismaClient({ datasourceUrl: URL_BANCO })
 
-  console.log(`Semeando ${TOTAL_CASOS} casos em ${NOME_BANCO}...`)
+  console.log(`Semeando ${TOTAL_CASOS} casos determinísticos em ${NOME_BANCO}...`)
 
-  for (let i = 0; i < TOTAL_CASOS; i++) {
-    const pt = pontoEmVolta(CENTRO, 4500)
-    const especie = ESPECIES[i % ESPECIES.length]!
-    const porte = PORTES[i % PORTES.length]!
-    const cor = CORES[i % CORES.length]!
-    const coleira = COLEIRAS[i % COLEIRAS.length]!
-    const bairro = BAIRROS[i % BAIRROS.length]!
-    const nome = i % 3 === 0 ? NOMES[i % NOMES.length]! : null
-    const tipo = i % 2 === 0 ? 'perdido' : 'encontrado'
+  let casosNoRaio1600 = 0
+  const TAMANHO_LOTE = 500
 
-    const autorId = randomUUID()
-    const animalId = randomUUID()
-    const localId = randomUUID()
-    const casoId = randomUUID()
+  for (let inicio = 0; inicio < TOTAL_CASOS; inicio += TAMANHO_LOTE) {
+    const fim = Math.min(inicio + TAMANHO_LOTE, TOTAL_CASOS)
+    const pessoas = []
+    const animais = []
+    const locaisSql = []
+    const casos = []
+    const perguntas = []
 
-    await prisma.pessoa.create({
-      data: {
+    for (let i = inicio; i < fim; i++) {
+      const pt = pontoDeterminista(i, TOTAL_CASOS)
+      if (pt.distanciaM <= 1600) casosNoRaio1600++
+
+      const especie = ESPECIES[i % ESPECIES.length]!
+      const porte = PORTES[i % PORTES.length]!
+      const cor = CORES[i % CORES.length]!
+      const coleira = COLEIRAS[i % COLEIRAS.length]!
+      const bairro = BAIRROS[i % BAIRROS.length]!
+      const nome = i % 3 === 0 ? NOMES[i % NOMES.length]! : null
+      const tipo = i % 2 === 0 ? 'perdido' : 'encontrado'
+
+      const autorId = randomUUID()
+      const animalId = randomUUID()
+      const localId = randomUUID()
+      const casoId = randomUUID()
+
+      pessoas.push({
         id: autorId,
         nome: `Autor ${i + 1}`,
         telefone: '93991234567',
-      },
-    })
+      })
 
-    const wkt = `SRID=4326;POINT(${pt.longitude} ${pt.latitude})`
-    await prisma.$executeRaw`
-      INSERT INTO local (id, ponto, bairro, referencia, raio_imprecisao_m)
-      VALUES (${localId}::uuid, ST_GeogFromText(${wkt}), ${bairro}, 'Perto da praça', 300)
-    `
+      locaisSql.push(
+        `('${localId}'::uuid, ST_GeogFromText('SRID=4326;POINT(${pt.longitude} ${pt.latitude})'), '${bairro}', 'Perto da praça', 300)`,
+      )
 
-    await prisma.animal.create({
-      data: {
+      animais.push({
         id: animalId,
         especie,
         porte,
@@ -86,11 +101,9 @@ async function semearCasos(): Promise<void> {
         coleira,
         nome,
         castrado: i % 4 === 0,
-      },
-    })
+      })
 
-    await prisma.caso.create({
-      data: {
+      casos.push({
         id: casoId,
         tipo,
         estado: 'procurando',
@@ -101,19 +114,35 @@ async function semearCasos(): Promise<void> {
         ocorridoEm: new Date(Date.now() - (i + 1) * 3600 * 1000),
         publicadoEm: new Date(Date.now() - i * 1800 * 1000),
         ultimaInteracaoEm: new Date(),
-        perguntas: {
-          create: [
-            { ordem: 1, enunciado: 'Qual a cor da coleira?', respostaEsperada: 'Vermelha' },
-            { ordem: 2, enunciado: 'Tem alguma mancha?', respostaEsperada: 'No rabo' },
-            { ordem: 3, enunciado: 'Atende por qual apelido?', respostaEsperada: 'Bicho' },
-          ],
-        },
-      },
+      })
+
+      perguntas.push(
+        { casoId, ordem: 1, enunciado: 'Qual a cor da coleira?', respostaEsperada: 'Vermelha' },
+        { casoId, ordem: 2, enunciado: 'Tem alguma mancha?', respostaEsperada: 'No rabo' },
+        { casoId, ordem: 3, enunciado: 'Atende por qual apelido?', respostaEsperada: 'Bicho' },
+      )
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.pessoa.createMany({ data: pessoas })
+      await tx.$executeRawUnsafe(`
+        INSERT INTO local (id, ponto, bairro, referencia, raio_imprecisao_m)
+        VALUES ${locaisSql.join(',\n')}
+      `)
+      await tx.animal.createMany({ data: animais })
+      await tx.caso.createMany({ data: casos })
+      await tx.perguntaVerificacao.createMany({ data: perguntas })
     })
+
+    if ((fim % 5000 === 0) || fim === TOTAL_CASOS) {
+      console.log(`... inseridos ${fim}/${TOTAL_CASOS} casos`)
+    }
   }
 
   const total = await prisma.caso.count()
   console.log(`Total de casos no banco ${NOME_BANCO}: ${total}`)
+  console.log(`Casos dentro do raio de 1600 m: ${casosNoRaio1600} de ${TOTAL_CASOS} (${((casosNoRaio1600 / TOTAL_CASOS) * 100).toFixed(2)}%)`)
+
   await prisma.$disconnect()
 }
 
