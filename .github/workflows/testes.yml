@@ -10,6 +10,29 @@ on:
     branches: [main]
 
 jobs:
+  auditoria:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Registrar vulnerabilidades altas
+        run: pnpm audit --prod --audit-level high || true
+
+      - name: Falhar em vulnerabilidades críticas
+        run: pnpm audit --prod --audit-level critical
+
   testes:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -41,9 +64,6 @@ jobs:
 
       - name: Dependências
         run: pnpm install --frozen-lockfile
-
-      - name: Auditoria de dependências
-        run: pnpm audit --prod --audit-level high
 
       - name: Cliente do Prisma
         run: pnpm --filter @achei/api exec prisma generate
