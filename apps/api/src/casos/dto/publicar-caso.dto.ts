@@ -3,6 +3,7 @@ import {
   COLEIRA,
   COR,
   ESPECIE,
+  LIMITES_DE_TEXTO,
   PORTE,
   TELEFONE,
   TIPO_CASO,
@@ -46,25 +47,25 @@ export class AnimalDto implements AnimalNaPublicacao {
   @IsIn([...PORTE.valores]) porte!: Porte
   @IsIn([...COR.valores]) corDominante!: Cor
   @IsIn([...COLEIRA.valores]) coleira!: Coleira
-  @IsOptional() @IsString() @MaxLength(60) nome?: string
+  @IsOptional() @IsString() @MaxLength(LIMITES_DE_TEXTO.nomeAnimal) @SemContatoPublico() nome?: string
   @IsOptional() @IsBoolean() castrado?: boolean
 }
 
 export class LocalDto implements LocalNaPublicacao {
   @IsLatitude() latitude!: number
   @IsLongitude() longitude!: number
-  @IsOptional() @IsString() @MaxLength(80) bairro?: string
-  @IsOptional() @IsString() @MaxLength(160) referencia?: string
+  @IsOptional() @IsString() @MaxLength(LIMITES_DE_TEXTO.bairro) @SemContatoPublico() bairro?: string
+  @IsOptional() @IsString() @MaxLength(LIMITES_DE_TEXTO.referencia) referencia?: string
 }
 
 export class AutorDto implements AutorNaPublicacao {
-  @IsString() @IsNotEmpty() @MaxLength(80) nome!: string
+  @IsString() @IsNotEmpty() @MaxLength(LIMITES_DE_TEXTO.nomePessoa) nome!: string
   @IsOptional() @IsString() @Matches(TELEFONE.expressao, { message: TELEFONE.mensagem }) telefone?: string
 }
 
 export class PerguntaDto implements PerguntaNaPublicacao {
-  @IsString() @IsNotEmpty() @MaxLength(160) @SemContatoPublico() enunciado!: string
-  @IsString() @IsNotEmpty() @MaxLength(160) respostaEsperada!: string
+  @IsString() @IsNotEmpty() @MaxLength(LIMITES_DE_TEXTO.enunciado) @SemContatoPublico() enunciado!: string
+  @IsString() @IsNotEmpty() @MaxLength(LIMITES_DE_TEXTO.resposta) respostaEsperada!: string
 }
 
 export class PublicarCasoDto implements NovaPublicacao {
@@ -75,7 +76,7 @@ export class PublicarCasoDto implements NovaPublicacao {
   @ValidateNested() @Type(() => AutorDto) autor!: AutorDto
 
   @IsISO8601() @NaoNoFuturo() ocorridoEm!: string
-  @IsOptional() @IsString() @MaxLength(600) @SemContatoPublico() relato?: string
+  @IsOptional() @IsString() @MaxLength(LIMITES_DE_TEXTO.relato) @SemContatoPublico() relato?: string
 
   /** Exatamente três, a regra de negócio RN3. */
   @IsArray()

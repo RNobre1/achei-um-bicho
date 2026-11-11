@@ -1,11 +1,11 @@
-import { PARECE_CONTATO } from '@achei/contratos'
+import { pareceContato } from '@achei/contratos'
 import { registerDecorator, type ValidationOptions } from 'class-validator'
 
 export const MENSAGEM_SEM_CONTATO =
-  'Não inclua telefone, WhatsApp ou links no texto público: o contato é liberado pelo aplicativo com segurança.'
+  'Parece um telefone ou link. O contato só é liberado pelo aplicativo, depois da verificação. Datas, escreva com barra (12/11/2026).'
 
 /**
- * Garante que textos públicos (relato, observação, enunciado de pergunta)
+ * Garante que textos públicos (nome, bairro, relato, observação, enunciado de pergunta)
  * não contenham telefone, WhatsApp ou link (RNF4), pois furaria o contato mediado.
  */
 export function SemContatoPublico(opcoes?: ValidationOptions): PropertyDecorator {
@@ -18,7 +18,7 @@ export function SemContatoPublico(opcoes?: ValidationOptions): PropertyDecorator
       validator: {
         validate(valor: unknown): boolean {
           if (typeof valor !== 'string') return true
-          return !PARECE_CONTATO.test(valor)
+          return !pareceContato(valor)
         },
       },
     })

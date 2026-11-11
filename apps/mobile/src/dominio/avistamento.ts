@@ -1,4 +1,9 @@
-import { type AvistamentoParaAutor, type NovoAvistamento, PARECE_CONTATO, type TipoCaso } from '@achei/contratos'
+import {
+  type AvistamentoParaAutor,
+  type NovoAvistamento,
+  pareceContato,
+  type TipoCaso,
+} from '@achei/contratos'
 import { formatarDistancia } from './formatar'
 import type { Coordenada } from './posicao'
 
@@ -18,7 +23,7 @@ export const MENSAGEM_CONTATO_AVISTAMENTO =
  * Verifica se a observação do avistamento contém telefone, WhatsApp ou links (RNF4).
  */
 export function observacaoPareceContato(observacao: string): boolean {
-  return PARECE_CONTATO.test(observacao)
+  return pareceContato(observacao)
 }
 
 const HORA = 60 * 60 * 1000
