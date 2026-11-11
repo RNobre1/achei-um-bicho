@@ -73,8 +73,9 @@ describe('RNF5 · contraste WCAG 2.1 nível AA para pares de texto e fundo', () 
     expect(razaoDeContraste(cores.textoPistas, cores.tapajos)).toBeGreaterThanOrEqual(LIMITE_AA_TEXTO_NORMAL)
 
     const telaPistas = readFileSync(resolve(process.cwd(), 'src/telas/pistas/Pistas.tsx'), 'utf-8')
-    expect(telaPistas).toContain('backgroundColor: cores.tapajos')
-    expect(telaPistas).toContain('color: cores.textoPistas')
+    const estiloRotulo = telaPistas.match(/partidoRotulo:\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(estiloRotulo).toContain('backgroundColor: cores.tapajos')
+    expect(estiloRotulo).toContain('color: cores.textoPistas')
   })
 
   it('comTransparencia deriva cor rgba válida a partir das cores hexadecimais do tema', () => {
