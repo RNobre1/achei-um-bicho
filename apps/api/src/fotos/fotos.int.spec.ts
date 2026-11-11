@@ -13,8 +13,10 @@ import { CENTRO_SANTAREM } from '../../test/pontos'
 describe('fotos do animal', () => {
   let app: INestApplication
   const prisma = new PrismaClient()
+  const limiteFotosOriginal = process.env.LIMITE_FOTOS_POR_MINUTO
 
   beforeAll(async () => {
+    process.env.LIMITE_FOTOS_POR_MINUTO = '10'
     app = await criarAppDeTeste()
   })
 
@@ -25,6 +27,8 @@ describe('fotos do animal', () => {
   afterAll(async () => {
     await app.close()
     await prisma.$disconnect()
+    if (limiteFotosOriginal === undefined) delete process.env.LIMITE_FOTOS_POR_MINUTO
+    else process.env.LIMITE_FOTOS_POR_MINUTO = limiteFotosOriginal
   })
 
   async function publicar(): Promise<{ id: string; codigoEdicao: string }> {
@@ -143,5 +147,17 @@ describe('fotos do animal', () => {
   it('não serve nada fora da pasta de fotos nem foto que não existe', async () => {
     await request(app.getHttpServer()).get('/fotos/..%2F..%2Fpackage.json').expect(404)
     await request(app.getHttpServer()).get(`/fotos/${randomUUID()}.jpg`).expect(404)
+  })
+
+  it('responde 429 à 11ª leitura da foto quando o limite é 10 por minuto', async () => {
+    const { id, codigoEdicao } = await publicar()
+    const { body: foto } = await enviar(id, codigoEdicao).expect(201)
+    const ip = '198.51.100.70'
+
+    for (let i = 0; i < 10; i++) {
+      await request(app.getHttpServer()).get(foto.caminho).set('X-Forwarded-For', ip).expect(200)
+    }
+
+    await request(app.getHttpServer()).get(foto.caminho).set('X-Forwarded-For', ip).expect(429)
   })
 })
