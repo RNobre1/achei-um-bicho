@@ -25,13 +25,28 @@ describe('versão web instalável (PWA)', () => {
     expect(manifest.name).toBe('Achei um Bicho')
     expect(manifest.short_name).toBe('Achei Bicho')
     expect(manifest.display).toBe('standalone')
-    expect(manifest.theme_color).toBe('#123E4A')
-    expect(manifest.background_color).toBe('#EEF2EE')
+    expect(manifest.theme_color).toBe(web.themeColor)
+    expect(manifest.background_color).toBe(web.backgroundColor)
 
     const icones = manifest.icons as Array<{ src: string; sizes: string }>
     expect(icones).toBeDefined()
     expect(icones.some((i) => i.sizes === '192x192')).toBe(true)
     expect(icones.some((i) => i.sizes === '512x512')).toBe(true)
+  })
+
+  it('mantém os metadados da exportação no index.html sem duplicar a cor do tema', () => {
+    const caminhoIndexHtml = resolve(caminhoPublic, 'index.html')
+    const indexHtml = readFileSync(caminhoIndexHtml, 'utf-8')
+    const coresLiterais = indexHtml.match(/#[0-9a-f]{6}/gi) ?? []
+
+    expect(indexHtml).toContain('<link rel="manifest"')
+    expect(indexHtml).toContain('apple-mobile-web-app-capable')
+    expect(indexHtml).toContain('apple-touch-icon')
+    expect(indexHtml).not.toMatch(/<meta\s+name=["']theme-color["']/i)
+    for (const cor of coresLiterais) {
+      expect([web.themeColor.toUpperCase(), web.backgroundColor.toUpperCase()]).toContain(cor.toUpperCase())
+    }
+    expect(existsSync(resolve(__dirname, '../app/+html.tsx'))).toBe(false)
   })
 
   it('possui os arquivos de ícone gerados em public/', () => {
