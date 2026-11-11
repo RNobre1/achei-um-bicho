@@ -10,6 +10,7 @@ export const cores = {
   alter: '#E2A83B', // único acento: ação principal e reencontro
   chuva: '#EEF2EE', // fundo
   traco: '#C7D0CB',
+  aviso: '#E6EAE5', // fundo dos avisos
   apagado: '#5F7076',
   texto: '#16323A',
   textoSecundario: '#33474D',

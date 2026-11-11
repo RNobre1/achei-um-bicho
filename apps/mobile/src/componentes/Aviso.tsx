@@ -14,7 +14,7 @@ const estilos = StyleSheet.create({
   caixa: {
     borderLeftWidth: 3,
     borderLeftColor: cores.alter,
-    backgroundColor: '#E6EAE5',
+    backgroundColor: cores.aviso,
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 4,
