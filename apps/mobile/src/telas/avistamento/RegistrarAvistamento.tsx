@@ -14,6 +14,7 @@ import {
   montarAvistamento,
   observacaoPareceContato,
   pendenciasDoAvistamento,
+  pendenciasVisiveisDoAvistamento,
   type QuandoViu,
   type RascunhoAvistamento,
 } from '../../dominio/avistamento'
@@ -80,6 +81,7 @@ export function RegistrarAvistamento() {
   }
 
   const avisoContato = observacaoPareceContato(rascunho.observacao)
+  const pendenciasParaAviso = pendenciasVisiveisDoAvistamento(pendencias)
 
   return (
     <KeyboardAvoidingView style={estilos.tela} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -143,7 +145,9 @@ export function RegistrarAvistamento() {
               />
             ) : null}
 
-            {pendencias.length > 0 ? <Aviso titulo="Falta pouco:" texto={pendencias.join('\n')} /> : null}
+            {pendenciasParaAviso.length > 0 ? (
+              <Aviso titulo="Falta pouco:" texto={pendenciasParaAviso.join('\n')} />
+            ) : null}
             {erro ? <Aviso titulo="Não deu para enviar." texto={erro} /> : null}
             <Botao rotulo="Enviar aviso" variante="acento" carregando={enviando} aoTocar={() => void enviar()} />
           </>

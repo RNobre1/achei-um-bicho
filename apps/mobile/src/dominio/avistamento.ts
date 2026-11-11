@@ -60,6 +60,10 @@ export function pendenciasDoAvistamento(r: RascunhoAvistamento): string[] {
   return falta
 }
 
+export function pendenciasVisiveisDoAvistamento(pendencias: string[]): string[] {
+  return pendencias.filter((mensagem) => mensagem !== MENSAGEM_CONTATO_AVISTAMENTO)
+}
+
 export function montarAvistamento(r: RascunhoAvistamento, agora: Date = new Date()): NovoAvistamento {
   const pendencias = pendenciasDoAvistamento(r)
   if (pendencias.length > 0) throw new Error(pendencias.join('\n'))
