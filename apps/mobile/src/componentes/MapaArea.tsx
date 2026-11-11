@@ -4,7 +4,7 @@ import { Image, Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEv
 import { formatarDistancia } from '../dominio/formatar'
 import { cabecalhosDosLadrilhos, fonteDoLadrilho, montarMapa } from '../dominio/mapa'
 import type { Coordenada } from '../dominio/posicao'
-import { cores, fontes } from '../tema'
+import { comTransparencia, cores, fontes } from '../tema'
 
 const LADRILHOS = process.env.EXPO_PUBLIC_TILES_URL ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 // a versão vem do app.json, a mesma que o APK mostra nas configurações do Android
@@ -71,7 +71,7 @@ const estilos = StyleSheet.create({
     borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: cores.perdi,
-    backgroundColor: 'rgba(47,133,135,0.16)',
+    backgroundColor: comTransparencia(cores.perdi, 0.16),
   },
   etiqueta: {
     position: 'absolute',

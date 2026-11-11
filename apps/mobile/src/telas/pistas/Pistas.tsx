@@ -135,7 +135,7 @@ const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: cores.chuva },
   partido: { backgroundColor: cores.tapajos, paddingHorizontal: 22, paddingBottom: 0, overflow: 'hidden' },
   partidoB: { position: 'absolute', top: 0, bottom: 0, right: 0, width: '58%', backgroundColor: cores.silte },
-  partidoRotulo: { fontFamily: fontes.dado, fontSize: 11, letterSpacing: 1.6, color: '#C9D6D8' },
+  partidoRotulo: { alignSelf: 'flex-start', backgroundColor: cores.tapajos, paddingHorizontal: 4, paddingVertical: 2, fontFamily: fontes.dado, fontSize: 11, letterSpacing: 1.6, color: '#C9D6D8' },
   partidoTitulo: { alignSelf: 'flex-start', backgroundColor: cores.tapajos, paddingHorizontal: 12, paddingVertical: 8, marginTop: 40, marginLeft: 10 },
   titulo: { fontFamily: fontes.tituloForte, fontSize: 25, color: cores.branco, letterSpacing: -0.7 },
   resumo: { paddingHorizontal: 22, paddingTop: 18, paddingBottom: 4 },

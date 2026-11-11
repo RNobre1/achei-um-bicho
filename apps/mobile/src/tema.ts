@@ -15,6 +15,15 @@ export const cores = {
   branco: '#FFFFFF',
 } as const
 
+/** Converte uma cor hexadecimal em rgba com a opacidade desejada. */
+export function comTransparencia(hex: string, alfa: number): string {
+  const limpo = hex.replace('#', '')
+  const r = parseInt(limpo.slice(0, 2), 16)
+  const g = parseInt(limpo.slice(2, 4), 16)
+  const b = parseInt(limpo.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alfa})`
+}
+
 export const fontes = {
   titulo: 'Commissioner_700Bold',
   tituloForte: 'Commissioner_800ExtraBold',
