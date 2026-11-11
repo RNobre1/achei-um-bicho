@@ -1,9 +1,11 @@
 import { execSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { PrismaClient } from '@prisma/client'
+import { validarNomeBancoCarga } from '../src/carga/validar-nome-banco-carga'
 
 const BASE_URL = process.env.DATABASE_URL_BASE ?? 'postgresql://bicho:bicho@localhost:5432'
 const NOME_BANCO = process.env.NOME_BANCO ?? 'achei_carga_d'
+validarNomeBancoCarga(NOME_BANCO)
 const URL_ADMIN = `${BASE_URL}/achei_um_bicho`
 const URL_BANCO = `${BASE_URL}/${NOME_BANCO}`
 
