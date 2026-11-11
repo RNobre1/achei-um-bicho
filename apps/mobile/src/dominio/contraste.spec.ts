@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { comTransparencia, cores } from '../tema'
 
 /**
@@ -33,26 +35,47 @@ export function razaoDeContraste(cor1: string, cor2: string): number {
 
 describe('RNF5 · contraste WCAG 2.1 nível AA para pares de texto e fundo', () => {
   const LIMITE_AA_TEXTO_NORMAL = 4.5
+  const coresTexto = cores as unknown as Record<string, string>
 
-  const paresUsados: { texto: string; fundo: string; descricao: string }[] = [
-    { texto: cores.texto, fundo: cores.chuva, descricao: 'texto principal sobre fundo chuva' },
-    { texto: cores.texto, fundo: cores.branco, descricao: 'texto principal sobre cartão/campo branco' },
-    { texto: cores.tapajos, fundo: cores.chuva, descricao: 'títulos tapajós sobre fundo chuva' },
-    { texto: cores.tapajos, fundo: cores.branco, descricao: 'títulos/código tapajós sobre fundo branco' },
-    { texto: cores.tapajos, fundo: cores.alter, descricao: 'texto do botão acento (tapajós sobre alter)' },
-    { texto: cores.branco, fundo: cores.tapajos, descricao: 'texto branco sobre botão escuro/filtro ativo' },
-    { texto: cores.apagado, fundo: cores.chuva, descricao: 'texto secundário apagado sobre fundo chuva' },
-    { texto: cores.apagado, fundo: cores.branco, descricao: 'texto secundário apagado sobre fundo branco' },
-    { texto: cores.branco, fundo: cores.perdi, descricao: 'etiqueta branco sobre cor perdi ("sumiu")' },
-    { texto: cores.branco, fundo: cores.achei, descricao: 'etiqueta branco sobre cor achei ("achado")' },
-    { texto: cores.perdi, fundo: cores.chuva, descricao: 'destaque perdi sobre fundo chuva (mural/pistas)' },
-    { texto: cores.perdi, fundo: cores.branco, descricao: 'destaque perdi sobre fundo branco (perguntas)' },
-    { texto: '#C9D6D8', fundo: cores.tapajos, descricao: 'rótulo de pistas sobre fundo próprio tapajós' },
-  ]
+  it('garante contraste AA para todos os pares de texto e fundo usados', () => {
+    for (const nome of ['textoSecundario', 'textoLegenda', 'textoCartao', 'textoPistas']) {
+      expect(coresTexto).toHaveProperty(nome)
+    }
 
-  it.each(paresUsados)('garante contraste AA (>= 4.5:1) para $descricao', ({ texto, fundo }) => {
-    const contraste = razaoDeContraste(texto, fundo)
-    expect(contraste).toBeGreaterThanOrEqual(LIMITE_AA_TEXTO_NORMAL)
+    const paresUsados: { texto: string; fundo: string; descricao: string }[] = [
+      { texto: cores.texto, fundo: cores.chuva, descricao: 'texto principal sobre fundo chuva' },
+      { texto: cores.texto, fundo: cores.branco, descricao: 'texto principal sobre cartão/campo branco' },
+      { texto: cores.tapajos, fundo: cores.chuva, descricao: 'títulos tapajós sobre fundo chuva' },
+      { texto: cores.tapajos, fundo: cores.branco, descricao: 'títulos/código tapajós sobre fundo branco' },
+      { texto: cores.tapajos, fundo: cores.alter, descricao: 'texto do botão acento (tapajós sobre alter)' },
+      { texto: cores.branco, fundo: cores.tapajos, descricao: 'texto branco sobre botão escuro/filtro ativo' },
+      { texto: cores.apagado, fundo: cores.chuva, descricao: 'texto secundário apagado sobre fundo chuva' },
+      { texto: cores.apagado, fundo: cores.branco, descricao: 'texto secundário apagado sobre fundo branco' },
+      { texto: cores.branco, fundo: cores.perdi, descricao: 'etiqueta branco sobre cor perdi ("sumiu")' },
+      { texto: cores.branco, fundo: cores.achei, descricao: 'etiqueta branco sobre cor achei ("achado")' },
+      { texto: cores.perdi, fundo: cores.chuva, descricao: 'destaque perdi sobre fundo chuva (mural/pistas)' },
+      { texto: cores.perdi, fundo: cores.branco, descricao: 'destaque perdi sobre fundo branco (perguntas)' },
+      { texto: coresTexto.textoSecundario, fundo: cores.chuva, descricao: 'texto secundário sobre fundo chuva' },
+      { texto: coresTexto.textoSecundario, fundo: cores.branco, descricao: 'texto secundário sobre fundo branco' },
+      { texto: coresTexto.textoSecundario, fundo: '#E6EAE5', descricao: 'texto secundário no aviso' },
+      { texto: coresTexto.textoLegenda, fundo: cores.chuva, descricao: 'texto de legenda sobre fundo chuva' },
+      { texto: coresTexto.textoCartao, fundo: cores.chuva, descricao: 'descrição do cartão sobre fundo chuva' },
+      { texto: coresTexto.textoPistas, fundo: cores.tapajos, descricao: 'rótulo de pistas sobre fundo próprio tapajós' },
+    ]
+
+    for (const { texto, fundo, descricao } of paresUsados) {
+      expect(razaoDeContraste(texto, fundo), descricao).toBeGreaterThanOrEqual(LIMITE_AA_TEXTO_NORMAL)
+    }
+  })
+
+  it('reprova o rótulo claro sobre silte e aprova o fundo tapajós usado pela tela', () => {
+    expect(coresTexto).toHaveProperty('textoPistas')
+    expect(razaoDeContraste(coresTexto.textoPistas, cores.silte)).toBeLessThan(LIMITE_AA_TEXTO_NORMAL)
+    expect(razaoDeContraste(coresTexto.textoPistas, cores.tapajos)).toBeGreaterThanOrEqual(LIMITE_AA_TEXTO_NORMAL)
+
+    const telaPistas = readFileSync(resolve(process.cwd(), 'src/telas/pistas/Pistas.tsx'), 'utf-8')
+    expect(telaPistas).toContain('backgroundColor: cores.tapajos')
+    expect(telaPistas).toContain('color: cores.textoPistas')
   })
 
   it('comTransparencia deriva cor rgba válida a partir das cores hexadecimais do tema', () => {
