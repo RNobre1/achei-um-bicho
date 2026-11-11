@@ -35,11 +35,10 @@ export function razaoDeContraste(cor1: string, cor2: string): number {
 
 describe('RNF5 · contraste WCAG 2.1 nível AA para pares de texto e fundo', () => {
   const LIMITE_AA_TEXTO_NORMAL = 4.5
-  const coresTexto = cores as unknown as Record<string, string>
 
   it('garante contraste AA para todos os pares de texto e fundo usados', () => {
     for (const nome of ['textoSecundario', 'textoLegenda', 'textoCartao', 'textoPistas']) {
-      expect(coresTexto).toHaveProperty(nome)
+      expect(cores).toHaveProperty(nome)
     }
 
     const paresUsados: { texto: string; fundo: string; descricao: string }[] = [
@@ -55,12 +54,12 @@ describe('RNF5 · contraste WCAG 2.1 nível AA para pares de texto e fundo', () 
       { texto: cores.branco, fundo: cores.achei, descricao: 'etiqueta branco sobre cor achei ("achado")' },
       { texto: cores.perdi, fundo: cores.chuva, descricao: 'destaque perdi sobre fundo chuva (mural/pistas)' },
       { texto: cores.perdi, fundo: cores.branco, descricao: 'destaque perdi sobre fundo branco (perguntas)' },
-      { texto: coresTexto.textoSecundario, fundo: cores.chuva, descricao: 'texto secundário sobre fundo chuva' },
-      { texto: coresTexto.textoSecundario, fundo: cores.branco, descricao: 'texto secundário sobre fundo branco' },
-      { texto: coresTexto.textoSecundario, fundo: '#E6EAE5', descricao: 'texto secundário no aviso' },
-      { texto: coresTexto.textoLegenda, fundo: cores.chuva, descricao: 'texto de legenda sobre fundo chuva' },
-      { texto: coresTexto.textoCartao, fundo: cores.chuva, descricao: 'descrição do cartão sobre fundo chuva' },
-      { texto: coresTexto.textoPistas, fundo: cores.tapajos, descricao: 'rótulo de pistas sobre fundo próprio tapajós' },
+      { texto: cores.textoSecundario, fundo: cores.chuva, descricao: 'texto secundário sobre fundo chuva' },
+      { texto: cores.textoSecundario, fundo: cores.branco, descricao: 'texto secundário sobre fundo branco' },
+      { texto: cores.textoSecundario, fundo: '#E6EAE5', descricao: 'texto secundário no aviso' },
+      { texto: cores.textoLegenda, fundo: cores.chuva, descricao: 'texto de legenda sobre fundo chuva' },
+      { texto: cores.textoCartao, fundo: cores.chuva, descricao: 'descrição do cartão sobre fundo chuva' },
+      { texto: cores.textoPistas, fundo: cores.tapajos, descricao: 'rótulo de pistas sobre fundo próprio tapajós' },
     ]
 
     for (const { texto, fundo, descricao } of paresUsados) {
@@ -69,9 +68,9 @@ describe('RNF5 · contraste WCAG 2.1 nível AA para pares de texto e fundo', () 
   })
 
   it('reprova o rótulo claro sobre silte e aprova o fundo tapajós usado pela tela', () => {
-    expect(coresTexto).toHaveProperty('textoPistas')
-    expect(razaoDeContraste(coresTexto.textoPistas, cores.silte)).toBeLessThan(LIMITE_AA_TEXTO_NORMAL)
-    expect(razaoDeContraste(coresTexto.textoPistas, cores.tapajos)).toBeGreaterThanOrEqual(LIMITE_AA_TEXTO_NORMAL)
+    expect(cores).toHaveProperty('textoPistas')
+    expect(razaoDeContraste(cores.textoPistas, cores.silte)).toBeLessThan(LIMITE_AA_TEXTO_NORMAL)
+    expect(razaoDeContraste(cores.textoPistas, cores.tapajos)).toBeGreaterThanOrEqual(LIMITE_AA_TEXTO_NORMAL)
 
     const telaPistas = readFileSync(resolve(process.cwd(), 'src/telas/pistas/Pistas.tsx'), 'utf-8')
     expect(telaPistas).toContain('backgroundColor: cores.tapajos')
