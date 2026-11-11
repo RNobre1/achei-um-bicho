@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cores } from '../tema'
+import { comTransparencia, cores } from '../tema'
 
 /**
  * Calcula a luminância relativa de uma cor hexadecimal conforme a recomendação WCAG 2.1.
@@ -47,10 +47,15 @@ describe('RNF5 · contraste WCAG 2.1 nível AA para pares de texto e fundo', () 
     { texto: cores.branco, fundo: cores.achei, descricao: 'etiqueta branco sobre cor achei ("achado")' },
     { texto: cores.perdi, fundo: cores.chuva, descricao: 'destaque perdi sobre fundo chuva (mural/pistas)' },
     { texto: cores.perdi, fundo: cores.branco, descricao: 'destaque perdi sobre fundo branco (perguntas)' },
+    { texto: '#C9D6D8', fundo: cores.tapajos, descricao: 'rótulo de pistas sobre fundo próprio tapajós' },
   ]
 
   it.each(paresUsados)('garante contraste AA (>= 4.5:1) para $descricao', ({ texto, fundo }) => {
     const contraste = razaoDeContraste(texto, fundo)
     expect(contraste).toBeGreaterThanOrEqual(LIMITE_AA_TEXTO_NORMAL)
+  })
+
+  it('comTransparencia deriva cor rgba válida a partir das cores hexadecimais do tema', () => {
+    expect(comTransparencia(cores.perdi, 0.16)).toBe('rgba(35, 121, 123, 0.16)')
   })
 })
