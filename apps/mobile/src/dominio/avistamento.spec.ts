@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import {
   descreverOndeFoiVisto,
+  MENSAGEM_CONTATO_AVISTAMENTO,
   momentoDoAvistamento,
   montarAvistamento,
   pendenciasDoAvistamento,
@@ -11,6 +14,15 @@ const AGORA = new Date('2026-09-30T15:00:00Z')
 const PONTO = { latitude: -2.44, longitude: -54.71 }
 
 describe('avistamento', () => {
+  it('usa a mesma mensagem de recusa da API no aviso antes do envio', () => {
+    const mensagemDaApi =
+      'Parece um telefone ou link. O contato só é liberado pelo aplicativo, depois da verificação. Datas, escreva com barra (12/11/2026).'
+    const tela = readFileSync(resolve(process.cwd(), 'src/telas/avistamento/RegistrarAvistamento.tsx'), 'utf-8')
+
+    expect(MENSAGEM_CONTATO_AVISTAMENTO).toBe(mensagemDaApi)
+    expect(tela).toContain('texto={MENSAGEM_CONTATO_AVISTAMENTO}')
+  })
+
   describe('momentoDoAvistamento', () => {
     it('"agora há pouco" é o momento do envio', () => {
       expect(momentoDoAvistamento('agora', AGORA)).toBe(AGORA.toISOString())
@@ -46,7 +58,7 @@ describe('avistamento', () => {
         bairro: '',
         observacao: 'Ligue 93 99123-4567',
       }),
-    ).toEqual(['Não inclua telefone, WhatsApp ou link: o contato é liberado pelo aplicativo'])
+    ).toEqual([MENSAGEM_CONTATO_AVISTAMENTO])
 
     expect(
       pendenciasDoAvistamento({
@@ -55,7 +67,7 @@ describe('avistamento', () => {
         bairro: '',
         observacao: 'Chama no zap',
       }),
-    ).toEqual(['Não inclua telefone, WhatsApp ou link: o contato é liberado pelo aplicativo'])
+    ).toEqual([MENSAGEM_CONTATO_AVISTAMENTO])
 
     expect(
       pendenciasDoAvistamento({
@@ -64,7 +76,7 @@ describe('avistamento', () => {
         bairro: '',
         observacao: 'Veja em https://exemplo.com',
       }),
-    ).toEqual(['Não inclua telefone, WhatsApp ou link: o contato é liberado pelo aplicativo'])
+    ).toEqual([MENSAGEM_CONTATO_AVISTAMENTO])
   })
 
   it('não bloqueia datas com hífen, CEP ou microchip na observação', () => {
