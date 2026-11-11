@@ -82,6 +82,21 @@ describe('cliente da API', () => {
     })
   })
 
+  it('reconhece erro 429 de limite de requisições com mensagem amigável em português', async () => {
+    const buscar = vi.fn().mockResolvedValue(
+      respostaJson(
+        { message: 'Muitas tentativas em pouco tempo. Espere um minuto e tente de novo.', statusCode: 429 },
+        429,
+      ),
+    )
+    const erro = await criarClienteApi('http://api.teste', buscar).abrirCaso('x').catch((e) => e)
+
+    expect(erro).toBeInstanceOf(ErroApi)
+    expect(erro.status).toBe(429)
+    expect(erro.ehMuitasTentativas).toBe(true)
+    expect(erro.message).toBe('Muitas tentativas em pouco tempo. Espere um minuto e tente de novo.')
+  })
+
   it('diz que está sem conexão quando a rede falha, em vez de estourar erro técnico', async () => {
     const buscar = vi.fn().mockRejectedValue(new TypeError('Network request failed'))
     await expect(criarClienteApi('http://api.teste', buscar).abrirCaso('x')).rejects.toMatchObject({
