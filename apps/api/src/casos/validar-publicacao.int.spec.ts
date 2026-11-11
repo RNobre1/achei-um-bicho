@@ -69,17 +69,36 @@ describe('POST /casos recusa publicação inválida', () => {
   })
 
   describe('texto público sem contato (RNF4)', () => {
+    const MENSAGEM_ESPERADA =
+      'Parece um telefone ou link. O contato só é liberado pelo aplicativo, depois da verificação. Datas, escreva com barra (12/11/2026).'
+
     it.each([
       ['telefone no relato', { relato: 'Quem achar liga 93 99123-4567 por favor' }],
       ['whatsapp no relato', { relato: 'Chame no zap para combinar' }],
       ['link no relato', { relato: 'Fotos do animal em https://meucachorro.com' }],
       ['telefone no enunciado da pergunta', { perguntas: [{ enunciado: 'Ligue 93991234567?', respostaEsperada: 'sim' }, pergunta, pergunta] }],
       ['link wa.me no enunciado da pergunta', { perguntas: [{ enunciado: 'Mande msg em wa.me/5593991234567', respostaEsperada: 'ok' }, pergunta, pergunta] }],
-    ])('recusa %s e explica que o contato é liberado pelo app', async (_motivo, alteracao) => {
+      ['telefone no nome do animal', { animal: { ...casoValido().animal, nome: 'Ligue 93 99123-4567' } }],
+      ['zap no bairro', { local: { ...casoValido().local, bairro: 'Perto do zap 99123-4567' } }],
+    ])('recusa %s com a mensagem de recusa explicativa', async (_motivo, alteracao) => {
       const res = await request(app.getHttpServer()).post('/casos').send(casoValido(alteracao)).expect(400)
       const mensagens = Array.isArray(res.body.message) ? res.body.message.join(' ') : String(res.body.message)
-      expect(mensagens).toMatch(/contato/i)
+      expect(mensagens).toContain(MENSAGEM_ESPERADA)
       expect(await prisma.caso.count()).toBe(0)
+    })
+
+    it('aceita datas com hífen, CEP e microchip legítimos em campos públicos', async () => {
+      await request(app.getHttpServer())
+        .post('/casos')
+        .send(
+          casoValido({
+            animal: { ...casoValido().animal, nome: 'Bob 985112345678901' },
+            local: { ...casoValido().local, bairro: 'Centro CEP 68005-000' },
+            relato: 'Visto em 12-11-2026 e 2026-11-12 na praça',
+          }),
+        )
+        .expect(201)
+      expect(await prisma.caso.count()).toBe(1)
     })
   })
 })

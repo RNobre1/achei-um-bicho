@@ -67,6 +67,17 @@ describe('avistamento', () => {
     ).toEqual(['Não inclua telefone, WhatsApp ou link: o contato é liberado pelo aplicativo'])
   })
 
+  it('não bloqueia datas com hífen, CEP ou microchip na observação', () => {
+    expect(
+      pendenciasDoAvistamento({
+        ponto: PONTO,
+        quando: 'agora',
+        bairro: '',
+        observacao: 'Visto em 12-11-2026 perto do CEP 68005-000, microchip 985112345678901',
+      }),
+    ).toEqual([])
+  })
+
   it('monta o corpo da API sem campos vazios', () => {
     expect(montarAvistamento({ ponto: PONTO, quando: 'agora', observacao: '  ', bairro: ' Santa Clara ' }, AGORA)).toEqual({
       latitude: -2.44,
