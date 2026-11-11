@@ -1,5 +1,6 @@
 import {
   type AvistamentoParaAutor,
+  MENSAGEM_SEM_CONTATO,
   type NovoAvistamento,
   pareceContato,
   type TipoCaso,
@@ -16,8 +17,7 @@ export interface RascunhoAvistamento {
   observacao: string
 }
 
-export const MENSAGEM_CONTATO_AVISTAMENTO =
-  'Não inclua telefone, WhatsApp ou link: o contato é liberado pelo aplicativo'
+export const MENSAGEM_CONTATO_AVISTAMENTO = MENSAGEM_SEM_CONTATO
 
 /**
  * Verifica se a observação do avistamento contém telefone, WhatsApp ou links (RNF4).

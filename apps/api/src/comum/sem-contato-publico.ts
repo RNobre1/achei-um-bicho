@@ -1,8 +1,7 @@
-import { pareceContato } from '@achei/contratos'
+import { MENSAGEM_SEM_CONTATO, pareceContato } from '@achei/contratos'
 import { registerDecorator, type ValidationOptions } from 'class-validator'
 
-export const MENSAGEM_SEM_CONTATO =
-  'Parece um telefone ou link. O contato só é liberado pelo aplicativo, depois da verificação. Datas, escreva com barra (12/11/2026).'
+export { MENSAGEM_SEM_CONTATO }
 
 /**
  * Garante que textos públicos (nome, bairro, relato, observação, enunciado de pergunta)

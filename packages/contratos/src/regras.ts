@@ -100,6 +100,10 @@ export const LIMITES_DE_TEXTO = {
   textoDenuncia: 500,
 } as const
 
+/** Mensagem pública de recusa quando um texto tenta divulgar contato direto. */
+export const MENSAGEM_SEM_CONTATO =
+  'Parece um telefone ou link. O contato só é liberado pelo aplicativo, depois da verificação. Datas, escreva com barra (12/11/2026).'
+
 /**
  * Telefone, WhatsApp ou link digitado em texto que fica público (relato, observação,
  * enunciado de pergunta) furaria o contato mediado (RNF4). A API recusa e o

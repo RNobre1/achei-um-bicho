@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Aviso } from '../../componentes/Aviso'
+import { MENSAGEM_CONTATO_AVISTAMENTO } from '../../dominio/avistamento'
 import { Botao } from '../../componentes/Botao'
 import { Campo } from '../../componentes/Campo'
 import { GrupoDeChips } from '../../componentes/GrupoDeChips'
@@ -132,7 +133,7 @@ export function RegistrarAvistamento() {
             {avisoContato ? (
               <Aviso
                 titulo="Contato não permitido no texto público"
-                texto="Não inclua telefone, WhatsApp ou links no aviso. O contato com quem publicou é liberado pelo aplicativo com segurança."
+                texto={MENSAGEM_CONTATO_AVISTAMENTO}
               />
             ) : null}
 
