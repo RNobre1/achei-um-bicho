@@ -90,16 +90,38 @@ describe('configuração lida do ambiente', () => {
   it('documenta os limites de tráfego e os saltos de proxy no .env.example', () => {
     const linhas = readFileSync(resolve(process.cwd(), '.env.example'), 'utf-8').split('\n')
     const variaveis = [
-      'LIMITE_LEITURA_POR_MINUTO=600',
-      'LIMITE_ESCRITA_POR_MINUTO=60',
-      'LIMITE_FOTOS_POR_MINUTO=1200',
-      'SALTOS_DE_PROXY=1',
+      'LIMITE_LEITURA_POR_MINUTO',
+      'LIMITE_ESCRITA_POR_MINUTO',
+      'LIMITE_FOTOS_POR_MINUTO',
+      'SALTOS_DE_PROXY',
     ]
+    const ambiente = Object.fromEntries(
+      linhas
+        .filter((linha) => linha && !linha.startsWith('#') && linha.includes('='))
+        .map((linha) => {
+          const separador = linha.indexOf('=')
+          return [linha.slice(0, separador), linha.slice(separador + 1)]
+        }),
+    )
+    const configuracaoDoExemplo = lerConfiguracao(ambiente)
+    const configuracaoPadrao = lerConfiguracao({})
 
     for (const variavel of variaveis) {
-      const indice = linhas.indexOf(variavel)
+      const indice = linhas.findIndex((linha) => linha.startsWith(`${variavel}=`))
       expect(indice, `${variavel} precisa estar no exemplo`).toBeGreaterThan(0)
       expect(linhas[indice - 1]?.startsWith('#')).toBe(true)
     }
+
+    expect({
+      leitura: configuracaoDoExemplo.limiteLeituraPorMinuto,
+      escrita: configuracaoDoExemplo.limiteEscritaPorMinuto,
+      fotos: configuracaoDoExemplo.limiteFotosPorMinuto,
+      saltos: configuracaoDoExemplo.saltosDeProxy,
+    }).toEqual({
+      leitura: configuracaoPadrao.limiteLeituraPorMinuto,
+      escrita: configuracaoPadrao.limiteEscritaPorMinuto,
+      fotos: configuracaoPadrao.limiteFotosPorMinuto,
+      saltos: configuracaoPadrao.saltosDeProxy,
+    })
   })
 })
