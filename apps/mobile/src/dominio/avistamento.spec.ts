@@ -7,6 +7,7 @@ import {
   momentoDoAvistamento,
   montarAvistamento,
   pendenciasDoAvistamento,
+  pendenciasVisiveisDoAvistamento,
 } from './avistamento'
 
 // fuso de Santarém nos testes: 15:00 UTC são 12h locais
@@ -77,6 +78,22 @@ describe('avistamento', () => {
         observacao: 'Veja em https://exemplo.com',
       }),
     ).toEqual([MENSAGEM_CONTATO_AVISTAMENTO])
+  })
+
+  it('não repete a recusa de contato nas pendências gerais da tela', () => {
+    const incompleto = pendenciasDoAvistamento({ bairro: '', observacao: '93991234567' })
+    const somenteContato = pendenciasDoAvistamento({
+      ponto: PONTO,
+      quando: 'agora',
+      bairro: '',
+      observacao: '93991234567',
+    })
+    const tela = readFileSync(resolve(process.cwd(), 'src/telas/avistamento/RegistrarAvistamento.tsx'), 'utf-8')
+
+    expect(pendenciasVisiveisDoAvistamento(incompleto)).toEqual(['Marque onde você viu', 'Diga quando você viu'])
+    expect(pendenciasVisiveisDoAvistamento(somenteContato)).toEqual([])
+    expect(tela).toContain('pendenciasVisiveisDoAvistamento(pendencias)')
+    expect(tela).toContain('pendenciasParaAviso.join')
   })
 
   it('não bloqueia datas com hífen, CEP ou microchip na observação', () => {
