@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { LIMITES_DE_TEXTO } from '@achei/contratos'
 import { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -121,13 +122,18 @@ export function RegistrarAvistamento() {
             </View>
 
             <GrupoDeChips rotulo="Quando" opcoes={OPCOES_QUANDO} marcado={rascunho.quando} aoEscolher={(quando) => mudar({ quando })} />
-            <Campo rotulo="Bairro (opcional)" valor={rascunho.bairro} aoMudar={(bairro) => mudar({ bairro })} maxLength={80} />
+            <Campo
+              rotulo="Bairro (opcional)"
+              valor={rascunho.bairro}
+              aoMudar={(bairro) => mudar({ bairro })}
+              maxLength={LIMITES_DE_TEXTO.bairro}
+            />
             <Campo
               rotulo="O que você viu (opcional)"
               valor={rascunho.observacao}
               aoMudar={(observacao) => mudar({ observacao })}
               multiline
-              maxLength={500}
+              maxLength={LIMITES_DE_TEXTO.observacao}
               placeholder="Estava perto da padaria, parecia assustado…"
             />
             {avisoContato ? (

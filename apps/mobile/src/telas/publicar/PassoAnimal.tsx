@@ -1,4 +1,4 @@
-import { COLEIRA, COR, ESPECIE, PORTE, opcoes } from '@achei/contratos'
+import { COLEIRA, COR, ESPECIE, LIMITES_DE_TEXTO, PORTE, opcoes } from '@achei/contratos'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { Aviso } from '../../componentes/Aviso'
@@ -57,14 +57,19 @@ export function PassoAnimal({ rascunho, mudar }: Props) {
         }}
       />
       {rascunho.tipo === 'perdido' ? (
-        <Campo rotulo="Nome que ele atende" valor={animal.nome} aoMudar={(nome) => mudarAnimal({ nome })} maxLength={60} />
+        <Campo
+          rotulo="Nome que ele atende"
+          valor={animal.nome}
+          aoMudar={(nome) => mudarAnimal({ nome })}
+          maxLength={LIMITES_DE_TEXTO.nomeAnimal}
+        />
       ) : null}
       <Campo
         rotulo="O que mais ajuda a reconhecer (opcional)"
         valor={rascunho.relato}
         aoMudar={(relato) => mudar((r) => ({ ...r, relato }))}
         multiline
-        maxLength={600}
+        maxLength={LIMITES_DE_TEXTO.relato}
         placeholder={rascunho.tipo === 'perdido' ? 'Como ele sumiu, jeito, medo de moto…' : 'Onde estava, como está, se está machucado…'}
       />
       {rascunho.tipo === 'encontrado' ? (

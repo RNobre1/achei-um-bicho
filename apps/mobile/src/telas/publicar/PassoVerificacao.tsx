@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
+import { LIMITES_DE_TEXTO } from '@achei/contratos'
 import { Aviso } from '../../componentes/Aviso'
 import { Campo } from '../../componentes/Campo'
 import type { RascunhoPublicacao } from '../../dominio/publicacao'
@@ -20,8 +21,18 @@ export function PassoVerificacao({ rascunho, mudar }: Props) {
       {rascunho.perguntas.map((pergunta, i) => (
         <View key={i} style={estilos.pergunta}>
           <Text style={estilos.rotulo}>PERGUNTA {i + 1} DE 3</Text>
-          <Campo rotulo="Pergunta" valor={pergunta.enunciado} aoMudar={(enunciado) => mudarPergunta(i, { enunciado })} maxLength={160} />
-          <Campo rotulo="Resposta" valor={pergunta.resposta} aoMudar={(resposta) => mudarPergunta(i, { resposta })} maxLength={160} />
+          <Campo
+            rotulo="Pergunta"
+            valor={pergunta.enunciado}
+            aoMudar={(enunciado) => mudarPergunta(i, { enunciado })}
+            maxLength={LIMITES_DE_TEXTO.enunciado}
+          />
+          <Campo
+            rotulo="Resposta"
+            valor={pergunta.resposta}
+            aoMudar={(resposta) => mudarPergunta(i, { resposta })}
+            maxLength={LIMITES_DE_TEXTO.resposta}
+          />
         </View>
       ))}
       <View style={estilos.pergunta}>
@@ -29,14 +40,14 @@ export function PassoVerificacao({ rascunho, mudar }: Props) {
           rotulo="Seu nome ou apelido"
           valor={rascunho.autor.nome}
           aoMudar={(nome) => mudar((r) => ({ ...r, autor: { ...r.autor, nome } }))}
-          maxLength={80}
+          maxLength={LIMITES_DE_TEXTO.nomePessoa}
         />
         <Campo
           rotulo="Telefone (opcional)"
           valor={rascunho.autor.telefone}
           aoMudar={(telefone) => mudar((r) => ({ ...r, autor: { ...r.autor, telefone } }))}
           keyboardType="phone-pad"
-          maxLength={20}
+          maxLength={LIMITES_DE_TEXTO.telefone}
           dica="Não aparece no caso. Só é liberado quando você aceitar a resposta de alguém."
         />
       </View>

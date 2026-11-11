@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { LIMITES_DE_TEXTO } from '@achei/contratos'
 import { StyleSheet, Text, View } from 'react-native'
 import { Aviso } from '../../componentes/Aviso'
 import { Botao } from '../../componentes/Botao'
@@ -77,12 +78,18 @@ export function PassoOndeQuando({ rascunho, mudar }: Props) {
           círculo, nunca o endereço.
         </Text>
       </View>
-      <Campo rotulo="Bairro" valor={rascunho.local.bairro} aoMudar={(bairro) => mudarLocal({ bairro })} maxLength={80} placeholder="Aparecida, Santa Clara, Prainha…" />
+      <Campo
+        rotulo="Bairro"
+        valor={rascunho.local.bairro}
+        aoMudar={(bairro) => mudarLocal({ bairro })}
+        maxLength={LIMITES_DE_TEXTO.bairro}
+        placeholder="Aparecida, Santa Clara, Prainha…"
+      />
       <Campo
         rotulo="Ponto de referência (opcional)"
         valor={rascunho.local.referencia}
         aoMudar={(referencia) => mudarLocal({ referencia })}
-        maxLength={160}
+        maxLength={LIMITES_DE_TEXTO.referencia}
         dica="Fica guardado, mas não aparece para ninguém no caso público."
       />
       <GrupoDeChips
