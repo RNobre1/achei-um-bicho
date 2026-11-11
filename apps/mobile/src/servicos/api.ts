@@ -36,6 +36,10 @@ export class ErroApi extends Error {
     super(mensagem)
     this.name = 'ErroApi'
   }
+
+  get ehMuitasTentativas(): boolean {
+    return this.status === 429
+  }
 }
 
 export function statusDoErro(erro: unknown): number {
@@ -83,6 +87,9 @@ async function mensagemDoErro(resposta: Response): Promise<string> {
     if (corpo.message) return corpo.message
   } catch {
     // corpo que não é JSON: fica a mensagem genérica
+  }
+  if (resposta.status === 429) {
+    return 'Muitas tentativas em pouco tempo. Espere um minuto e tente de novo.'
   }
   return `O servidor respondeu com erro ${resposta.status}.`
 }

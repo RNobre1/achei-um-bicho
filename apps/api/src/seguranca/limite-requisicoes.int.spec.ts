@@ -1,10 +1,23 @@
-import type { INestApplication } from '@nestjs/common'
+import { Controller, Get, type INestApplication } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
+
+@Controller()
+class ControladorTesteTarefas {
+  @Get('tarefas/ciclo-de-vida')
+  ciclo() {
+    return { ok: true }
+  }
+
+  @Get('tarefasXYZ')
+  xyz() {
+    return { ok: true }
+  }
+}
 
 describe('limite de requisições por IP (rate limiting)', () => {
   let app: INestApplication
@@ -17,7 +30,7 @@ describe('limite de requisições por IP (rate limiting)', () => {
     process.env.LIMITE_ESCRITA_POR_MINUTO = '3'
     process.env.LIMITE_FOTOS_POR_MINUTO = '10'
     process.env.SALTOS_DE_PROXY = '1'
-    app = await criarAppDeTeste()
+    app = await criarAppDeTeste([ControladorTesteTarefas])
   })
 
   beforeEach(async () => {
@@ -139,6 +152,7 @@ describe('limite de requisições por IP (rate limiting)', () => {
       await request(app.getHttpServer())
         .get('/tarefas/ciclo-de-vida')
         .set('X-Forwarded-For', ip)
+        .expect(200)
     }
 
     // Mas /tarefasXYZ não é isenta: após 5 chamadas, deve tomar 429
@@ -147,6 +161,7 @@ describe('limite de requisições por IP (rate limiting)', () => {
       await request(app.getHttpServer())
         .get('/tarefasXYZ')
         .set('X-Forwarded-For', ipNaoIsento)
+        .expect(200)
     }
     await request(app.getHttpServer())
       .get('/tarefasXYZ')
