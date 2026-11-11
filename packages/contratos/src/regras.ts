@@ -163,7 +163,7 @@ export function pareceContato(texto: string): boolean {
     .replace(/\b\d{2}[.-]\d{2}[.-]\d{4}\b/g, '')
     .replace(/\b\d{4}-\d{2}-\d{2}\b/g, '')
     .replace(/\b\d{5}-\d{3}\b/g, '')
-    .replace(/(?<!\d)\d{15}(?!\d)/g, '')
+    .replace(/(^|\D)\d{15}(?!\d)/g, '$1')
 
   return PARECE_CONTATO.test(textoLimpo)
 }
