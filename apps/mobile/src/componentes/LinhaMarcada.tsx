@@ -19,6 +19,6 @@ const estilos = StyleSheet.create({
   caixa: { width: 16, height: 16, borderWidth: 1.5, borderColor: cores.traco, marginTop: 2, alignItems: 'center', justifyContent: 'center' },
   caixaBate: { borderColor: cores.perdi },
   miolo: { width: 8, height: 8, backgroundColor: cores.perdi },
-  texto: { flex: 1, fontFamily: fontes.texto, fontSize: 14, lineHeight: 20, color: '#33474D' },
+  texto: { flex: 1, fontFamily: fontes.texto, fontSize: 14, lineHeight: 20, color: cores.textoSecundario },
   destaque: { fontFamily: fontes.textoForte, color: cores.texto },
 })

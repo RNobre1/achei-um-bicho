@@ -36,6 +36,6 @@ const estilos = StyleSheet.create({
   topo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   quando: { fontFamily: fontes.dado, fontSize: 11, color: cores.apagado },
   nome: { fontFamily: fontes.titulo, fontSize: 17, color: cores.tapajos, letterSpacing: -0.3 },
-  descricao: { fontFamily: fontes.texto, fontSize: 13, lineHeight: 19, color: '#3A4C52' },
+  descricao: { fontFamily: fontes.texto, fontSize: 13, lineHeight: 19, color: cores.textoCartao },
   onde: { fontFamily: fontes.dado, fontSize: 11, color: cores.apagado },
 })

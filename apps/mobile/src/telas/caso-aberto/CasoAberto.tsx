@@ -192,7 +192,7 @@ const estilos = StyleSheet.create({
     fontFamily: fontes.dado,
     fontSize: 9.5,
     letterSpacing: 1.2,
-    color: '#4A5D63',
+    color: cores.textoLegenda,
     borderWidth: 1,
     borderColor: 'rgba(18,62,74,0.35)',
     paddingHorizontal: 6,
@@ -203,7 +203,7 @@ const estilos = StyleSheet.create({
   linhaTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   quando: { fontFamily: fontes.dado, fontSize: 11, color: cores.apagado },
   titulo: { fontFamily: fontes.tituloForte, fontSize: 25, color: cores.tapajos, letterSpacing: -0.6 },
-  paragrafo: { fontFamily: fontes.texto, fontSize: 14.5, lineHeight: 22, color: '#33474D' },
+  paragrafo: { fontFamily: fontes.texto, fontSize: 14.5, lineHeight: 22, color: cores.textoSecundario },
   pequeno: { fontSize: 13, lineHeight: 20 },
   atributos: { flexDirection: 'row', flexWrap: 'wrap', borderTopWidth: 1, borderLeftWidth: 1, borderColor: cores.traco },
   atributo: {

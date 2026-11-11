@@ -12,6 +12,10 @@ export const cores = {
   traco: '#C7D0CB',
   apagado: '#5F7076',
   texto: '#16323A',
+  textoSecundario: '#33474D',
+  textoLegenda: '#4A5D63',
+  textoCartao: '#3A4C52',
+  textoPistas: '#C9D6D8',
   branco: '#FFFFFF',
 } as const
 

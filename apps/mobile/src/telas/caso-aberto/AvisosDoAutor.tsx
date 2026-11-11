@@ -46,5 +46,5 @@ const estilos = StyleSheet.create({
   aviso: { gap: 3, paddingTop: 10, borderTopWidth: 1, borderTopColor: cores.traco },
   quando: { fontFamily: fontes.textoForte, fontSize: 14, color: cores.texto },
   onde: { fontFamily: fontes.dado, fontSize: 11, color: cores.apagado },
-  texto: { fontFamily: fontes.texto, fontSize: 13.5, lineHeight: 20, color: '#33474D' },
+  texto: { fontFamily: fontes.texto, fontSize: 13.5, lineHeight: 20, color: cores.textoSecundario },
 })

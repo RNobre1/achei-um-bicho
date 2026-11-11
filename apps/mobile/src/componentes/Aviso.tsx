@@ -20,5 +20,5 @@ const estilos = StyleSheet.create({
     gap: 4,
   },
   titulo: { fontFamily: fontes.textoForte, fontSize: 13, color: cores.texto },
-  texto: { fontFamily: fontes.texto, fontSize: 13, lineHeight: 20, color: '#33474D' },
+  texto: { fontFamily: fontes.texto, fontSize: 13, lineHeight: 20, color: cores.textoSecundario },
 })

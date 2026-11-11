@@ -62,7 +62,7 @@ export function CodigoDeEdicao({
 
 const estilos = StyleSheet.create({
   titulo: { fontFamily: fontes.tituloForte, fontSize: 28, color: cores.tapajos, letterSpacing: -0.7 },
-  texto: { fontFamily: fontes.texto, fontSize: 14.5, lineHeight: 22, color: '#33474D' },
+  texto: { fontFamily: fontes.texto, fontSize: 14.5, lineHeight: 22, color: cores.textoSecundario },
   caixa: { borderWidth: 1.6, borderColor: cores.tapajos, backgroundColor: cores.branco, padding: 18, gap: 8, alignItems: 'center' },
   rotulo: { fontFamily: fontes.dado, fontSize: 10, letterSpacing: 1.3, color: cores.apagado },
   codigo: { fontFamily: fontes.dadoMedio, fontSize: 32, letterSpacing: 4, color: cores.tapajos },

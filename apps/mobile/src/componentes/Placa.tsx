@@ -32,7 +32,7 @@ const estilos = StyleSheet.create({
     fontFamily: fontes.dado,
     fontSize: 9,
     letterSpacing: 1,
-    color: '#4A5D63',
+    color: cores.textoLegenda,
     backgroundColor: 'rgba(238,242,238,0.9)',
     paddingHorizontal: 6,
     paddingVertical: 3,
