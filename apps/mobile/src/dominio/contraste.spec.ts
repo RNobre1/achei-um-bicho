@@ -37,7 +37,7 @@ describe('RNF5 · contraste WCAG 2.1 nível AA para pares de texto e fundo', () 
   const LIMITE_AA_TEXTO_NORMAL = 4.5
 
   it('garante contraste AA para todos os pares de texto e fundo usados', () => {
-    for (const nome of ['textoSecundario', 'textoLegenda', 'textoCartao', 'textoPistas']) {
+    for (const nome of ['textoSecundario', 'textoLegenda', 'textoCartao', 'textoPistas', 'aviso']) {
       expect(cores).toHaveProperty(nome)
     }
 
@@ -56,7 +56,7 @@ describe('RNF5 · contraste WCAG 2.1 nível AA para pares de texto e fundo', () 
       { texto: cores.perdi, fundo: cores.branco, descricao: 'destaque perdi sobre fundo branco (perguntas)' },
       { texto: cores.textoSecundario, fundo: cores.chuva, descricao: 'texto secundário sobre fundo chuva' },
       { texto: cores.textoSecundario, fundo: cores.branco, descricao: 'texto secundário sobre fundo branco' },
-      { texto: cores.textoSecundario, fundo: '#E6EAE5', descricao: 'texto secundário no aviso' },
+      { texto: cores.textoSecundario, fundo: cores.aviso, descricao: 'texto secundário no aviso' },
       { texto: cores.textoLegenda, fundo: cores.chuva, descricao: 'texto de legenda sobre fundo chuva' },
       { texto: cores.textoCartao, fundo: cores.chuva, descricao: 'descrição do cartão sobre fundo chuva' },
       { texto: cores.textoPistas, fundo: cores.tapajos, descricao: 'rótulo de pistas sobre fundo próprio tapajós' },
@@ -65,6 +65,9 @@ describe('RNF5 · contraste WCAG 2.1 nível AA para pares de texto e fundo', () 
     for (const { texto, fundo, descricao } of paresUsados) {
       expect(razaoDeContraste(texto, fundo), descricao).toBeGreaterThanOrEqual(LIMITE_AA_TEXTO_NORMAL)
     }
+
+    const aviso = readFileSync(resolve(process.cwd(), 'src/componentes/Aviso.tsx'), 'utf-8')
+    expect(aviso).toContain('backgroundColor: cores.aviso')
   })
 
   it('reprova o rótulo claro sobre silte e aprova o fundo tapajós usado pela tela', () => {
