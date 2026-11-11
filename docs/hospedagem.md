@@ -60,6 +60,11 @@ string usada é a direta (sem `-pooler` no endereço), com `?sslmode=require`. N
 | `DATABASE_URL` | a connection string do Neon |
 | `CORS_ORIGINS` | `https://achei-um-bicho.onrender.com` |
 | `RAIO_PADRAO_METROS` | `1600` |
+| `CODIGO_SEGREDO` | segredo longo e aleatório para HMAC dos códigos de edição (obrigatório em produção) |
+| `LIMITE_LEITURA_POR_MINUTO` | `600` (padrão) |
+| `LIMITE_ESCRITA_POR_MINUTO` | `60` (padrão) |
+| `LIMITE_FOTOS_POR_MINUTO` | `1200` (padrão) |
+| `SALTOS_DE_PROXY` | `1` (padrão; confira se o Render adiciona 1 ou 2 saltos no proxy) |
 
 A porta não precisa ser informada: o Render define `PORT` e a API lê.
 
