@@ -1,0 +1,44 @@
+                                                                             QUERY PLAN                                                                             
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=50658.45..50722.28 rows=2 width=166) (actual time=60.064..60.176 rows=50 loops=1)
+   Buffers: shared hit=15423
+   ->  Result  (cost=50658.45..50722.28 rows=2 width=166) (actual time=59.999..60.082 rows=50 loops=1)
+         Buffers: shared hit=15423
+         ->  Sort  (cost=50658.45..50658.46 rows=2 width=150) (actual time=59.482..59.485 rows=50 loops=1)
+               Sort Key: ((st_distance(l.ponto, '0101000020E61000006C787AA52C5B4BC096B20C71AC8B03C0'::geography, true))::integer)
+               Sort Method: top-N heapsort  Memory: 37kB
+               Buffers: shared hit=15417
+               ->  Nested Loop  (cost=179.06..50658.44 rows=2 width=150) (actual time=47.093..58.380 rows=2531 loops=1)
+                     Buffers: shared hit=15414
+                     ->  Nested Loop  (cost=178.77..50632.71 rows=2 width=145) (actual time=46.680..51.993 rows=2531 loops=1)
+                           Buffers: shared hit=7821
+                           ->  Bitmap Heap Scan on local l  (cost=178.48..50616.09 rows=2 width=57) (actual time=46.534..49.273 rows=2531 loops=1)
+                                 Filter: st_dwithin(ponto, '0101000020E61000006C787AA52C5B4BC096B20C71AC8B03C0'::geography, '1600'::double precision, true)
+                                 Rows Removed by Filter: 1478
+                                 Heap Blocks: exact=84
+                                 Buffers: shared hit=228
+                                 ->  Bitmap Index Scan on idx_local_ponto  (cost=0.00..178.48 rows=4011 width=0) (actual time=1.344..1.344 rows=4009 loops=1)
+                                       Index Cond: (ponto && _st_expand('0101000020E61000006C787AA52C5B4BC096B20C71AC8B03C0'::geography, '1600'::double precision))
+                                       Buffers: shared hit=74
+                           ->  Index Scan using caso_local_id_key on caso c  (cost=0.29..8.31 rows=1 width=120) (actual time=0.001..0.001 rows=1 loops=2531)
+                                 Index Cond: (local_id = l.id)
+                                 Filter: (estado = ANY ('{procurando,abrigado_temporariamente}'::text[]))
+                                 Buffers: shared hit=7593
+                     ->  Index Scan using animal_pkey on animal a  (cost=0.29..0.36 rows=1 width=49) (actual time=0.001..0.001 rows=1 loops=2531)
+                           Index Cond: (id = c.animal_id)
+                           Buffers: shared hit=7593
+         SubPlan 1
+           ->  Limit  (cost=19.39..19.40 rows=1 width=56) (actual time=0.006..0.006 rows=0 loops=50)
+                 Buffers: shared hit=6
+                 ->  Sort  (cost=19.39..19.41 rows=4 width=56) (actual time=0.005..0.005 rows=0 loops=50)
+                       Sort Key: f.enviada_em, f.id
+                       Sort Method: quicksort  Memory: 25kB
+                       Buffers: shared hit=6
+                       ->  Seq Scan on foto f  (cost=0.00..19.38 rows=4 width=56) (actual time=0.003..0.003 rows=0 loops=50)
+                             Filter: (animal_id = a.id)
+ Planning:
+   Buffers: shared hit=542
+ Planning Time: 36.146 ms
+ Execution Time: 61.501 ms
+(40 rows)
+
