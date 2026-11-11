@@ -18,11 +18,15 @@ export interface Configuracao {
   limiteLeituraPorMinuto: number
   /** Limite de requisições de escrita (POST, PATCH, DELETE) por IP por minuto. */
   limiteEscritaPorMinuto: number
+  /** Limite de requisições GET para fotos por IP por minuto. */
+  limiteFotosPorMinuto: number
+  /** Quantidade de saltos de proxy confiáveis (X-Forwarded-For). */
+  saltosDeProxy: number
 }
 
 type Ambiente = Record<string, string | undefined>
 
-const SEGREDO_PADRAO_DESENVOLVIMENTO = 'segredo-padrao-desenvolvimento'
+export const SEGREDO_PADRAO_DESENVOLVIMENTO = 'segredo-local-desenvolvimento'
 
 function inteiro(ambiente: Ambiente, nome: string, padrao: number): number {
   const bruto = ambiente[nome]
@@ -61,6 +65,11 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
   const tarefasChaveBruta = ambiente.TAREFAS_CHAVE?.trim()
   const tarefasChave = tarefasChaveBruta ? tarefasChaveBruta : undefined
 
+  const saltosDeProxy = inteiro(ambiente, 'SALTOS_DE_PROXY', 1)
+  if (saltosDeProxy < 0) {
+    throw new Error(`SALTOS_DE_PROXY precisa ser maior ou igual a zero; veio ${saltosDeProxy}`)
+  }
+
   const codigoSegredo = ambiente.CODIGO_SEGREDO?.trim()
   if (ambiente.NODE_ENV === 'production' && !codigoSegredo) {
     throw new Error('CODIGO_SEGREDO é obrigatório em produção')
@@ -78,7 +87,9 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
     diasAteExpirar,
     tarefasChave,
     codigoSegredo: codigoSegredo || SEGREDO_PADRAO_DESENVOLVIMENTO,
-    limiteLeituraPorMinuto: inteiro(ambiente, 'LIMITE_LEITURA_POR_MINUTO', 120),
-    limiteEscritaPorMinuto: inteiro(ambiente, 'LIMITE_ESCRITA_POR_MINUTO', 20),
+    limiteLeituraPorMinuto: inteiro(ambiente, 'LIMITE_LEITURA_POR_MINUTO', 600),
+    limiteEscritaPorMinuto: inteiro(ambiente, 'LIMITE_ESCRITA_POR_MINUTO', 60),
+    limiteFotosPorMinuto: inteiro(ambiente, 'LIMITE_FOTOS_POR_MINUTO', 1200),
+    saltosDeProxy,
   }
 }
