@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { lerConfiguracao, SEGREDO_PADRAO_DESENVOLVIMENTO } from './configuracao'
 
 describe('configuração lida do ambiente', () => {
@@ -83,5 +85,21 @@ describe('configuração lida do ambiente', () => {
   it('recusa saltos de proxy que não é número inteiro positivo ou zero', () => {
     expect(() => lerConfiguracao({ SALTOS_DE_PROXY: 'abc' })).toThrow(/SALTOS_DE_PROXY/)
     expect(() => lerConfiguracao({ SALTOS_DE_PROXY: '-1' })).toThrow(/SALTOS_DE_PROXY/)
+  })
+
+  it('documenta os limites de tráfego e os saltos de proxy no .env.example', () => {
+    const linhas = readFileSync(resolve(process.cwd(), '.env.example'), 'utf-8').split('\n')
+    const variaveis = [
+      'LIMITE_LEITURA_POR_MINUTO=600',
+      'LIMITE_ESCRITA_POR_MINUTO=60',
+      'LIMITE_FOTOS_POR_MINUTO=1200',
+      'SALTOS_DE_PROXY=1',
+    ]
+
+    for (const variavel of variaveis) {
+      const indice = linhas.indexOf(variavel)
+      expect(indice, `${variavel} precisa estar no exemplo`).toBeGreaterThan(0)
+      expect(linhas[indice - 1]?.startsWith('#')).toBe(true)
+    }
   })
 })
