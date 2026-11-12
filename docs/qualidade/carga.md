@@ -1,124 +1,90 @@
-# Relatório de Carga e Avaliação do Índice Espacial · Mural de Casos (GET /casos)
+# Carga do mural (`GET /casos`)
 
-Medição de desempenho do endpoint do mural georreferenciado (`GET /casos`) sob carga concorrente, avaliando o comportamento do índice espacial GIST (`idx_local_ponto`) sobre a tabela `local(ponto)` no PostgreSQL 16 + PostGIS 3.5.
+Quanto o mural aguenta, medido com k6 contra a API compilada, em duas densidades:
+200 casos, que é mais do que Santarém deve ter aberto ao mesmo tempo, e 20.000, para
+ver onde a consulta começa a doer. Os resumos brutos do k6 estão nesta pasta
+(`resumo-200.json`, `resumo-20k.json`) e o plano da listagem em `explain-mural.txt`.
 
-## Ambiente de Execução
+## Ambiente
 
-- **Hardware/SO:** Apple macOS (Apple Silicon), execução local
-- **Banco de dados:** PostgreSQL 16 com extensão PostGIS 3.5 em contêiner Docker via OrbStack
-- **Banco de carga isolado:** `achei_carga_d` (banco dedicado exclusivamente para testes de carga, recriado deterministicamente a cada teste)
-- **API:** NestJS executando localmente na porta 3334 em modo de desenvolvimento (`nest start`), conectada ao banco `achei_carga_d`
-- **Configuração de taxa:** limites do throttler elevados para a carga (`LIMITE_LEITURA_POR_MINUTO=100000`, `LIMITE_ESCRITA_POR_MINUTO=100000`) para não mascarar a capacidade real do endpoint
-- **Gerador de carga:** Imagem Docker oficial `grafana/k6:latest`
+- Notebook Apple Silicon (macOS). k6, API e banco na mesma máquina.
+- PostgreSQL 16 + PostGIS 3.5 em contêiner (OrbStack), banco `achei_carga_d`, recriado a
+  cada semeadura.
+- API compilada (`node dist/main.js`, `NODE_ENV=production`), porta 3334.
+- Limite de requisições levantado só para a medição (1.000.000 por minuto), para medir a
+  consulta e não o limitador. O limitador tem teste próprio
+  (`apps/api/src/seguranca/limite-requisicoes.int.spec.ts`).
+- Casos semeados numa espiral de Fermat em volta da Praça da Matriz (`-2.4432, -54.7123`),
+  até 4.500 m; a mesma semeadura dá sempre os mesmos pontos.
+- Cenário k6 (`apps/api/carga/mural.js`): sobe a 20 usuários virtuais em 5 s, fica em 50 por
+  20 s e desce em 5 s; cada usuário pede o mural de 1.600 m e espera 50 ms.
 
-## Limites da Medição
+## Resultados
 
-Com honestidade sobre o ambiente e o alcance dos resultados:
-1. **Tudo na mesma máquina:** gerador de carga (k6), API NestJS e banco PostgreSQL/PostGIS executaram no mesmo hardware local, sem latência real de rede.
-2. **API em modo de desenvolvimento:** executada via `nest start` (Node/TypeScript em modo dev), que adiciona overhead de observabilidade e compilação em relação ao modo de produção compilado.
-3. **Limites de requisições desligados:** o limitador de taxa foi elevado durante o teste para que o throttler não bloqueasse as requisições nem deformasse a curva de resposta.
-4. **Ambiente de produção real diferente:** a produção roda no Render gratuito + Neon (AWS US East), sujeita a latência de rede interestadual/internacional, conexões SSL seguras, sleep após 15 minutos de inatividade e limites estritos de CPU/memória compartilhada.
-5. **Fotos não medidas:** o teste mediu apenas a listagem e filtragem do mural (`GET /casos`); as imagens servidas por `/fotos/:id.jpg` não foram incluídas no tráfego gerado.
+| Medida | 200 casos | 20.000 casos |
+|---|---|---|
+| Casos dentro de 1.600 m | 26 | 2.529 |
+| Requisições | 14.859 | 2.018 |
+| Requisições por segundo | 495 | 67 |
+| Latência mediana | 5,5 ms | 384 ms |
+| Latência p95 | **16,3 ms** | **669 ms** |
+| Latência p99 | 21,3 ms | 748 ms |
+| Taxa de erro | 0% | 0% |
+| Meta p95 < 300 ms | cumprida | **não cumprida** |
 
----
+Com 200 casos a meta sobra. Com 20.000 ela não é cumprida: a resposta lista no máximo 50
+casos, mas o mural também informa quantos casos abertos existem até 5 km
+(`contarAbertosNoRaio`), e com essa densidade a contagem percorre os 20.000 pontos a cada
+requisição. É a parte cara da resposta.
 
-## 1. Medição sob Carga Típica: 200 Casos Semeados
+## O defeito que a medição achou
 
-- **Semeadura determinística:** 200 casos distribuídos por espiral de Fermat ao redor da Praça da Matriz em Santarém (`-2.4432, -54.7123`), com raio máximo de 4.500 m.
-- **Casos no raio de 1.600 m:** 26 casos (13,00%).
-- **Cenário k6:** 50 VUs ao longo de 30 segundos (5s aquecimento até 20 VUs, 20s estável em 50 VUs, 5s encerramento).
+A primeira medição com 20.000 casos deu p95 de 20 s. A causa não era a listagem, que
+usa o índice espacial (veja abaixo), e sim a contagem. O planejador estima poucas linhas
+para `ST_DWithin` em `geography` e, com `JOIN` comum entre `local` e `caso`, escolhia um
+laço aninhado com filtro de junção: comparava cada local com cada caso.
 
-### Resultados Obtidos (200 casos)
+| Contagem até 5 km, 20.000 casos | Plano | Tempo no banco |
+|---|---|---|
+| Antes (`JOIN`) | Nested Loop com `Join Filter`, 199.990.000 linhas descartadas | 8,8 s |
+| Depois (`CROSS JOIN LATERAL … OFFSET 0`) | cada local busca o seu caso por `caso_local_id_key` | 0,54 s |
 
-| Métrica | Valor Obtido | Meta do Projeto | Status |
-|---|---|---|---|
-| **Latência p95** | **16,69 ms** | < 300 ms | **Aprovado** |
-| **Latência p99** | **22,80 ms** | < 500 ms | **Aprovado** |
-| **Latência média (avg)** | **6,68 ms** | — | — |
-| **Latência mediana (med)** | **5,06 ms** | — | — |
-| **Latência máxima (max)** | **174,02 ms** | — | — |
-| **Taxa de erro** | **0,00%** (0 falhas em 14.867 requisições) | < 1,00% | **Aprovado** |
-| **Vazão (req/s)** | **495,21 req/s** | — | — |
-| **Total de requisições** | **14.867** | — | — |
-| **Checagens (checks)** | **29.734 / 29.734 (100%)** | 100% | **Aprovado** |
+O teste `apps/api/src/casos/contagem-no-raio.int.spec.ts` reprova qualquer plano da
+contagem com `Join Filter`.
 
-Arquivo de resumo bruto: `docs/qualidade/resumo-200.json`.
+## A listagem usa o índice espacial
 
----
+Com 20.000 casos, `EXPLAIN (ANALYZE, BUFFERS)` da listagem (`explain-mural.txt`) mostra
+`Bitmap Index Scan on idx_local_ponto`: o índice GiST reduz os 20.000 locais a 4.009
+candidatos em 1,3 ms, `ST_DWithin` confirma os 2.531 dentro do raio e a consulta inteira,
+com as junções e a ordenação dos 50 mais próximos, leva cerca de 60 ms.
 
-## 2. Prova do Uso do Índice Espacial GiST: 20.000 Casos Semeados
+## Limites da medição
 
-- **Semeadura determinística:** 20.000 casos distribuídos por espiral de Fermat ao redor da Praça da Matriz.
-- **Casos no raio de 1.600 m:** 2.529 casos (12,65%).
-- **Plano de Execução do PostgreSQL (`EXPLAIN (ANALYZE, BUFFERS)`):**
-  Versionado integralmente em `docs/qualidade/explain-mural.txt`.
+1. Tudo na mesma máquina: não há latência de rede entre aparelho, API e banco.
+2. A produção é diferente: Render gratuito (CPU compartilhada, a API dorme depois de 15 min
+   sem uso e leva até ~50 s para acordar) e Neon na AWS. Estes números medem a consulta,
+   não o serviço hospedado.
+3. Fotos (`GET /fotos/:id.jpg`) não entraram no tráfego.
+4. O limite de requisições estava levantado.
 
-Trecho do plano gerado pelo PostgreSQL 16:
-```text
-->  Bitmap Heap Scan on local l  (cost=178.48..50616.09 rows=2 width=57) (actual time=47.953..50.992 rows=2531 loops=1)
-      Filter: st_dwithin(ponto, '...'::geography, '1600'::double precision, true)
-      Rows Removed by Filter: 1478
-      Heap Blocks: exact=84
-      Buffers: shared hit=230
-      ->  Bitmap Index Scan on idx_local_ponto  (cost=0.00..178.48 rows=4011 width=0) (actual time=1.678..1.679 rows=4009 loops=1)
-            Index Cond: (ponto && _st_expand('...'::geography, '1600'::double precision))
-            Buffers: shared hit=74
+## Como reproduzir
+
+```bash
+# 1. semear (o nome do banco precisa começar com achei_carga)
+TOTAL_CASOS=200 pnpm --filter @achei/api exec tsx carga/semear-carga.ts
+
+# 2. API compilada contra o banco de carga
+pnpm --filter @achei/api build
+cd apps/api && NODE_ENV=production PORT=3334 \
+  DATABASE_URL=postgresql://bicho:<senha>@localhost:5432/achei_carga_d \
+  CODIGO_SEGREDO=segredo-carga LIMITE_LEITURA_POR_MINUTO=1000000 \
+  LIMITE_ESCRITA_POR_MINUTO=1000000 LIMITE_FOTOS_POR_MINUTO=1000000 node dist/main.js
+
+# 3. k6 (na raiz do repositório)
+docker run --rm -i -v "$PWD/docs/qualidade:/out" \
+  -e API_URL=http://host.docker.internal:3334 -e LATITUDE=-2.4432 -e LONGITUDE=-54.7123 -e RAIO=1600 \
+  grafana/k6 run --summary-export=/out/resumo-200.json - < apps/api/carga/mural.js
 ```
 
-### O que foi comprovado pelo EXPLAIN:
-1. O PostgreSQL utiliza ativamente o índice espacial **GiST** `idx_local_ponto` através de `Bitmap Index Scan`.
-2. A pré-filtragem via bounding box (`_st_expand`) reduziu 20.000 registros para 4.009 candidatos em apenas **1,68 ms** (`actual time=1.678..1.679`).
-3. O refinamento geodésico exato com `ST_DWithin` filtrou os candidatos finais para os 2.531 casos reais no raio.
-4. Tempo total de execução da consulta no banco: **63,95 ms** para uma base com 20.000 casos e junção de 3 tabelas (`caso`, `local`, `animal`).
-
----
-
-## 3. Medição sob Carga Extrema: 20.000 Casos Semeados
-
-- **Cenário k6 curto:** 20 VUs simultâneos contínuos durante 10 segundos contra a base de 20.000 casos.
-
-### Resultados Obtidos (20.000 casos)
-
-| Métrica | Valor Obtido |
-|---|---|
-| **Latência p95** | **20,58 s** |
-| **Latência p99** | **20,64 s** |
-| **Latência média (avg)** | **19,49 s** |
-| **Latência mediana (med)** | **19,57 s** |
-| **Taxa de erro** | **0,00%** (20 de 20 requisições retornaram 200 com payload válido) |
-| **Vazão (req/s)** | **0,97 req/s** |
-| **Total de requisições** | **20** |
-
-Arquivo de resumo bruto: `docs/qualidade/resumo-20k.json`.
-
-### Análise da Carga Extrema
-Embora o índice GiST filtre os candidatos em ~1,7 ms e a consulta isolada leve ~64 ms, submeter 20 VUs simultâneos com 20.000 casos causa enfileiramento de CPU no cálculo de distância trigonométrica e ordenação no Node.js/PostgreSQL sob concorrência direta no mesmo núcleo. Todas as requisições completaram com sucesso (0% de erro), mas a latência sob 20 requisições simultâneas acumulou fila.
-
----
-
-## Como Reproduzir as Medições
-
-1. **Semear 200 casos:**
-   ```bash
-   TOTAL_CASOS=200 pnpm --filter @achei/api exec tsx carga/semear-carga.ts
-   ```
-
-2. **Iniciar a API em porta dedicada:**
-   ```bash
-   PORT=3334 DATABASE_URL=postgresql://bicho:bicho@localhost:5432/achei_carga_d \
-   LIMITE_LEITURA_POR_MINUTO=100000 LIMITE_ESCRITA_POR_MINUTO=100000 \
-   CODIGO_SEGREDO=segredo-carga npx nest start
-   ```
-
-3. **Executar o k6:**
-   ```bash
-   docker run --rm -i -v "$PWD/docs/qualidade:/out" \
-     -e API_URL=http://host.docker.internal:3334 -e LATITUDE=-2.4432 -e LONGITUDE=-54.7123 -e RAIO=1600 \
-     grafana/k6 run --summary-export=/out/resumo-200.json - < apps/api/carga/mural.js
-   ```
-
-4. **Semear 20.000 casos e rodar EXPLAIN:**
-   ```bash
-   TOTAL_CASOS=20000 pnpm --filter @achei/api exec tsx carga/semear-carga.ts
-   docker exec -i achei-um-bicho-banco psql -U bicho -d achei_carga_d -c "EXPLAIN (ANALYZE, BUFFERS) ..."
-   ```
+Para 20.000 casos, repita com `TOTAL_CASOS=20000` e `resumo-20k.json`.
