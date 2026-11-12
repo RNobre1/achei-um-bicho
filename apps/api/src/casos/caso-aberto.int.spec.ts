@@ -44,6 +44,41 @@ describe('GET /casos/:id (caso aberto)', () => {
     return body.id
   }
 
+  describe('caso encerrado há mais de 30 dias sai do ar', () => {
+    const DIA = 24 * 60 * 60 * 1000
+
+    async function resolver(id: string, diasAtras: number) {
+      const quando = new Date(Date.now() - diasAtras * DIA)
+      await prisma.caso.update({ where: { id }, data: { estado: 'resolvido' } })
+      await prisma.desfecho.create({ data: { casoId: id, tipo: 'voltou_para_casa', ocorridoEm: quando, registradoEm: quando } })
+    }
+
+    it('resolvido há 29 dias ainda abre com a mesma área', async () => {
+      const id = await publicar()
+      const antes = (await request(app.getHttpServer()).get(`/casos/${id}`).expect(200)).body.area
+      await resolver(id, 29)
+      const depois = (await request(app.getHttpServer()).get(`/casos/${id}`).expect(200)).body.area
+      expect(depois).toEqual(antes)
+    })
+
+    it('resolvido há 31 dias responde 404, antes e depois da anonimização: nunca uma segunda área', async () => {
+      const id = await publicar()
+      await resolver(id, 31)
+      await request(app.getHttpServer()).get(`/casos/${id}`).expect(404)
+
+      // a anonimização troca o ponto pelo centro publicado; servir de novo daria P = 2·C1 − C2
+      await prisma.$executeRaw`UPDATE local SET ponto = ST_SetSRID(ST_MakePoint(-54.71, -2.44), 4326)::geography
+                                WHERE id = (SELECT local_id FROM caso WHERE id = ${id}::uuid)`
+      await request(app.getHttpServer()).get(`/casos/${id}`).expect(404)
+    })
+
+    it('expirado há 31 dias também responde 404', async () => {
+      const id = await publicar()
+      await prisma.caso.update({ where: { id }, data: { estado: 'expirado', ultimaInteracaoEm: new Date(Date.now() - 31 * DIA) } })
+      await request(app.getHttpServer()).get(`/casos/${id}`).expect(404)
+    })
+  })
+
   it('mostra o animal, o relato e a área aproximada de onde foi visto', async () => {
     const id = await publicar()
 
