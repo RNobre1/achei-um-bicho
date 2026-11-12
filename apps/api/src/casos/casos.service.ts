@@ -102,6 +102,9 @@ export class CasosService {
   async abrir(id: string): Promise<CasoAberto> {
     const caso = await this.repositorio.buscarComPonto(id)
     if (!caso) throw new NotFoundException('caso não encontrado')
+    // depois da anonimização o ponto guardado já é o centro publicado; servir de novo
+    // aplicaria um segundo deslocamento, e duas leituras dariam o ponto real
+    if (caso.foraDoAr) throw new NotFoundException('caso encerrado há mais de 30 dias')
     const fotos = await this.repositorio.fotosDoCaso(id)
 
     const { centro, raioM } = areaAproximada(

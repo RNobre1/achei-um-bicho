@@ -1,7 +1,6 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 import {
   ESTADOS_VIGIADOS,
-  TAREFA_DIARIA,
   type CicloDeVidaExecutado,
 } from '@achei/contratos'
 import {
@@ -12,6 +11,7 @@ import {
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common'
+import { encerradoAte, limiteDeAnonimizacao } from '../casos/encerramento'
 import type { Configuracao } from '../configuracao'
 import { CONFIGURACAO } from '../configuracao.module'
 import { Prisma } from '@prisma/client'
@@ -35,21 +35,7 @@ interface CasoParaAnonimizacao {
 
 function filtroSqlDeAnonimizacao(limite: Date): Prisma.Sql {
   return Prisma.sql`
-    (
-      (
-        c.estado = 'resolvido'
-        AND EXISTS (
-          SELECT 1
-            FROM desfecho d
-           WHERE d.caso_id = c.id
-             AND d.registrado_em <= ${limite}
-        )
-      )
-      OR (
-        c.estado = 'expirado'
-        AND c.ultima_interacao_em <= ${limite}
-      )
-    )
+    ${encerradoAte(limite)}
     AND (
       autor.nome <> 'Anônimo'
       OR autor.telefone IS NOT NULL
@@ -103,7 +89,6 @@ export class TarefasService {
 
     const agora = new Date()
     const { diasAteCobranca, diasAteExpirar } = this.configuracao
-    const diasAteAnonimizar = TAREFA_DIARIA.diasAteAnonimizar
 
     // Cada passo roda sozinho e é idempotente (sem transação única para a tarefa)
 
@@ -136,7 +121,7 @@ export class TarefasService {
     const expirados = { count: Number(expiradosCount) }
 
     // 3. Anonimização: filtra no banco os ainda não anonimizados (não em memória)
-    const limiteAnonimizacao = new Date(agora.getTime() - diasAteAnonimizar * 24 * 60 * 60 * 1000)
+    const limiteAnonimizacao = limiteDeAnonimizacao(agora)
 
     const casosParaAnonimizar = await this.prisma.caso.findMany({
       where: {

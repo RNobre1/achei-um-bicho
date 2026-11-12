@@ -15,6 +15,7 @@ import { Prisma } from '@prisma/client'
 import { GeoRepositorio, pontoSql } from '../geo/geo.repositorio'
 import type { Ponto } from '../geo/ponto'
 import { PrismaService } from '../prisma/prisma.service'
+import { encerradoAte, limiteDeAnonimizacao } from './encerramento'
 import type { CasoNoMural } from './dto/consultar-mural.dto'
 import type { EdicaoDoCasoDto } from './dto/edicao-do-caso.dto'
 import type { PublicarCasoDto } from './dto/publicar-caso.dto'
@@ -66,6 +67,8 @@ export interface CasoComPonto {
   raioImprecisaoM: number
   latitude: number
   longitude: number
+  /** Encerrado há mais tempo que o prazo de anonimização: não pode mais ser servido. */
+  foraDoAr: boolean
 }
 
 export interface NovoCaso {
@@ -176,7 +179,8 @@ export class CasosRepositorio {
              c.ocorrido_em AS "ocorridoEm", c.publicado_em AS "publicadoEm",
              a.especie, a.porte, a.cor_dominante AS "corDominante", a.coleira, a.nome, a.castrado,
              l.bairro, l.raio_imprecisao_m AS "raioImprecisaoM",
-             ST_Y(l.ponto::geometry) AS latitude, ST_X(l.ponto::geometry) AS longitude
+             ST_Y(l.ponto::geometry) AS latitude, ST_X(l.ponto::geometry) AS longitude,
+             ${encerradoAte(limiteDeAnonimizacao())} AS "foraDoAr"
         FROM caso c
         JOIN animal a ON a.id = c.animal_id
         JOIN local l ON l.id = c.local_id
