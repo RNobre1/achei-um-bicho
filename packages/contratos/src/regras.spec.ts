@@ -150,6 +150,7 @@ describe('limites de texto em fonte única', () => {
       telefone: 20,
       enunciado: 160,
       resposta: 160,
+      respostaReivindicacao: 500,
       relato: 600,
       observacao: 500,
       textoDenuncia: 500,
