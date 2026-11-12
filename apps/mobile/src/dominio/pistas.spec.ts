@@ -108,4 +108,14 @@ describe('resumos', () => {
     ])
     expect(resumoDoMeuCaso('perdido', 0, 0)).toEqual([])
   })
+
+  it('avisa no resumo quando alguém reivindicou e espera a decisão do autor', () => {
+    expect(resumoDoMeuCaso('encontrado', 0, 0, 1)).toEqual([
+      { destaque: '1 pessoa', resto: ' respondeu às perguntas e espera sua decisão' },
+    ])
+    expect(resumoDoMeuCaso('perdido', 2, 0, 3)).toEqual([
+      { destaque: '3 pessoas', resto: ' responderam às perguntas e esperam sua decisão' },
+      { destaque: '2 pessoas', resto: ' disseram ter visto' },
+    ])
+  })
 })
