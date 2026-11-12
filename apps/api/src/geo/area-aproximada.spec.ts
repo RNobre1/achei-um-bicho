@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { createHash, randomUUID } from 'node:crypto'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CENTRO_SANTAREM } from '../../test/pontos'
 import { areaAproximada } from './area-aproximada'
 
@@ -18,6 +18,29 @@ describe('área aproximada publicada no lugar do ponto exato', () => {
   it('é sempre a mesma para o mesmo caso, para a média de várias consultas não revelar o ponto', () => {
     const id = randomUUID()
     expect(areaAproximada(id, CENTRO_SANTAREM, 300)).toEqual(areaAproximada(id, CENTRO_SANTAREM, 300))
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('depende de um segredo do servidor: com o id e o raio públicos não dá para desfazer o deslocamento', () => {
+    const id = randomUUID()
+    vi.stubEnv('CODIGO_SEGREDO', 'segredo-a')
+    const comSegredoA = areaAproximada(id, CENTRO_SANTAREM, 300)
+    vi.stubEnv('CODIGO_SEGREDO', 'segredo-b')
+    const comSegredoB = areaAproximada(id, CENTRO_SANTAREM, 300)
+    expect(comSegredoA.centro).not.toEqual(comSegredoB.centro)
+
+    // quem lê o código público refaz o sorteio só com o id e subtrai do centro publicado
+    const hash = createHash('sha256').update(id).digest()
+    const angulo = (hash.readUInt32BE(0) / 0x1_0000_0000) * 2 * Math.PI
+    const distancia = 300 * (0.25 + (hash.readUInt32BE(4) / 0x1_0000_0000) * 0.5)
+    const lat = comSegredoA.centro.latitude - (distancia * Math.cos(angulo)) / 110_574
+    const lon =
+      comSegredoA.centro.longitude -
+      (distancia * Math.sin(angulo)) / (111_320 * Math.cos((CENTRO_SANTAREM.latitude * Math.PI) / 180))
+    expect(distanciaM({ latitude: lat, longitude: lon }, CENTRO_SANTAREM)).toBeGreaterThan(10)
   })
 
   it('muda de um caso para outro', () => {
