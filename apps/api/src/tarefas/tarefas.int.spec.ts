@@ -263,6 +263,37 @@ describe('POST /tarefas/ciclo-de-vida', () => {
     expect.soft(textoDoLog).not.toContain(autorB)
   })
 
+  it('anonimiza também quem avisou que viu (ponto e observação) e o texto das denúncias', async () => {
+    const { id } = await publicar()
+    await request(app.getHttpServer())
+      .post(`/casos/${id}/avistamentos`)
+      .send({
+        latitude: -2.4400,
+        longitude: -54.7100,
+        bairro: 'Santa Clara',
+        vistoEm: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        observacao: 'Estava na porta da minha casa',
+      })
+      .expect(201)
+    await request(app.getHttpServer())
+      .post(`/casos/${id}/denuncias`)
+      .send({ motivo: 'outro', texto: 'Texto livre de quem denunciou' })
+      .expect(201)
+    await prisma.caso.update({
+      where: { id },
+      data: { estado: 'expirado', ultimaInteracaoEm: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) },
+    })
+
+    const { body } = await executarTarefas().expect(200)
+    expect(body.anonimizados).toBe(1)
+    expect(await prisma.avistamento.count({ where: { casoId: id } })).toBe(0)
+    const denuncias = await prisma.denuncia.findMany({ where: { casoId: id } })
+    expect(denuncias.map((d) => d.texto)).toEqual([null])
+
+    const segunda = await executarTarefas().expect(200)
+    expect(segunda.body.anonimizados).toBe(0)
+  })
+
   it('uma segunda rodada sequencial não altera dados já anonimizados', async () => {
     const pontoOriginal = { latitude: -2.4385, longitude: -54.7155 }
     const { id } = await publicar({ local: { ...casoValido().local, ...pontoOriginal } })
