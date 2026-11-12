@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto'
+import { createHmac } from 'node:crypto'
+import { lerConfiguracao } from '../configuracao'
 import type { Ponto } from './ponto'
 
 const METROS_POR_GRAU_DE_LATITUDE = 110_574
@@ -14,9 +15,14 @@ export interface AreaAproximada {
   raioM: number
 }
 
-/** Dois números entre 0 e 1 tirados do id do caso, sempre os mesmos para o mesmo caso. */
+/**
+ * Dois números entre 0 e 1 tirados do id do caso, sempre os mesmos para o mesmo caso.
+ * Saem de um HMAC com o segredo do servidor: o id e o raio são públicos e o código
+ * também, então um hash só do id deixaria qualquer um refazer o deslocamento e
+ * subtraí-lo do centro publicado.
+ */
 function sorteioFixo(id: string): [number, number] {
-  const hash = createHash('sha256').update(id).digest()
+  const hash = createHmac('sha256', lerConfiguracao().codigoSegredo).update(`area-aproximada:${id}`).digest()
   return [hash.readUInt32BE(0) / 0x1_0000_0000, hash.readUInt32BE(4) / 0x1_0000_0000]
 }
 
