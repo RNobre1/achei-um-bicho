@@ -161,8 +161,11 @@ export class CasosRepositorio {
   async contarAbertosNoRaio(centro: Ponto, raioM: number, tipo?: TipoCaso): Promise<number> {
     const [linha] = await this.prisma.$queryRaw<{ total: number }[]>`
       SELECT count(*)::int AS total
-        FROM caso c
-        JOIN local l ON l.id = c.local_id
+        FROM local l
+        -- o OFFSET 0 impede o planejador de desfazer a subconsulta: ele estima poucas
+        -- linhas para ST_DWithin e, com JOIN comum, compara cada local com cada caso
+        -- (8,8 s com 20.000 casos); assim, cada local busca o seu caso pelo índice
+        CROSS JOIN LATERAL (SELECT c.estado, c.tipo FROM caso c WHERE c.local_id = l.id OFFSET 0) c
        WHERE ${filtroAbertosNoRaio(centro, raioM, tipo)}`
     return linha?.total ?? 0
   }
