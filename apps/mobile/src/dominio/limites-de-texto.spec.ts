@@ -25,4 +25,17 @@ describe('limites textuais derivados dos contratos', () => {
 
     expect(encontrados).toEqual([])
   })
+
+  it('todo campo de texto das telas tem limite, para a API não recusar depois do que a tela aceitou', () => {
+    const telas = arquivosTypeScript(join(RAIZ, 'apps/mobile/src/telas'))
+    const semLimite = telas.flatMap((arquivo) => {
+      const texto = readFileSync(arquivo, 'utf-8')
+      const campos = texto.match(/<Campo\b[\s\S]*?\/>/g) ?? []
+      return campos
+        .filter((campo) => !campo.includes('maxLength'))
+        .map((campo) => `${arquivo.replace(RAIZ + '/', '')}: ${campo.match(/rotulo="([^"]*)"/)?.[1] ?? '?'}`)
+    })
+
+    expect(semLimite).toEqual([])
+  })
 })
