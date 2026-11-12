@@ -157,10 +157,16 @@ export function gerarCodigoEdicao(sortear: (maximoExclusivo: number) => number):
 export function pareceContato(texto: string): boolean {
   if (!texto) return false
 
+  // só sai o que é data de verdade (dia e mês que existem) ou CEP, e nunca quando o
+  // número continua logo depois: "93-99-1223-3355" é telefone, não data
+  const DIA = '(?:0[1-9]|[12]\\d|3[01])'
+  const MES = '(?:0[1-9]|1[0-2])'
+  const ANO = '(?:19|20)\\d{2}'
+  const SEGUE_NUMERO = '(?![\\s.-]?\\d)'
   const textoLimpo = texto
-    .replace(/\b\d{2}[.-]\d{2}[.-]\d{4}\b/g, '')
-    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, '')
-    .replace(/\b\d{5}-\d{3}\b/g, '')
+    .replace(new RegExp(`\\b${DIA}[.-]${MES}[.-]${ANO}${SEGUE_NUMERO}`, 'g'), '')
+    .replace(new RegExp(`\\b${ANO}-${MES}-${DIA}${SEGUE_NUMERO}`, 'g'), '')
+    .replace(new RegExp(`\\b\\d{5}-\\d{3}${SEGUE_NUMERO}`, 'g'), '')
     .replace(/(^|\D)\d{15}(?!\d)/g, '$1')
 
   return PARECE_CONTATO.test(textoLimpo)
