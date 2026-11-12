@@ -22,9 +22,6 @@ describe('configuração lida do ambiente', () => {
     expect(SEGREDO_PADRAO_DESENVOLVIMENTO).toBe('segredo-local-desenvolvimento')
   })
 
-  it('lê porta, origens, raio, prazos e chave de tarefas do ambiente', () => {
-  })
-
   it('lê porta, origens, limites e saltos de proxy do ambiente', () => {
     const config = lerConfiguracao({
       PORT: '4000',
@@ -61,6 +58,12 @@ describe('configuração lida do ambiente', () => {
       lerConfiguracao({
         NODE_ENV: 'production',
       }),
+    ).toThrow(/CODIGO_SEGREDO/)
+  })
+
+  it('recusa em produção o segredo de desenvolvimento, que é público no repositório', () => {
+    expect(() =>
+      lerConfiguracao({ NODE_ENV: 'production', CODIGO_SEGREDO: SEGREDO_PADRAO_DESENVOLVIMENTO }),
     ).toThrow(/CODIGO_SEGREDO/)
   })
 
