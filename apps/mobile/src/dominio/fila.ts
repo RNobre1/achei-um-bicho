@@ -174,6 +174,9 @@ export function marcarFotoFalhaPermanente(
  * - Se passageiro (status 0, 429, 5xx): conta tentativa, calcula espera exponencial e fica em 'esperando'.
  *   Na 5ª falha, esgota e vai a 'falhou'.
  */
+/** Janela do limite de requisições da API (por minuto). */
+const ESPERA_LIMITE_MS = 60_000
+
 export function marcarFalhaEnvio(
   item: ItemFilaEnvio,
   erro: ErroEnvio,
@@ -189,6 +192,18 @@ export function marcarFalhaEnvio(
       estado: 'falhou',
       ultimoErro: mensagem,
       proximaTentativaEm: undefined,
+      atualizadoEm: agoraIso,
+    }
+  }
+
+  // o servidor está de pé e só pediu calma (limite por IP, que a turma no mesmo Wi-Fi
+  // divide): espera a janela de um minuto do limite, sem gastar tentativa
+  if (status === 429) {
+    return {
+      ...item,
+      estado: 'esperando',
+      ultimoErro: mensagem,
+      proximaTentativaEm: new Date(agora.getTime() + ESPERA_LIMITE_MS).toISOString(),
       atualizadoEm: agoraIso,
     }
   }
