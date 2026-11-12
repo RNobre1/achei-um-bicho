@@ -137,7 +137,7 @@ export function MeusCasos() {
                 </View>
               ) : null}
 
-              {resumoDoMeuCaso(meu.tipo, avisos, pistas).map((linha, i) => (
+              {resumoDoMeuCaso(meu.tipo, avisos, pistas, situacao?.reivindicacoesPendentes ?? 0).map((linha, i) => (
                 <LinhaMarcada key={i} bate {...linha} />
               ))}
 
@@ -154,7 +154,11 @@ export function MeusCasos() {
 
               <View style={estilos.dupla}>
                 <View style={{ flex: 1 }}>
-                  <Botao rotulo="Ver o caso" variante={avisos > 0 ? 'acento' : 'fraco'} aoTocar={() => router.push(`/caso/${meu.id}`)} />
+                  <Botao
+                    rotulo="Ver o caso"
+                    variante={avisos > 0 || (situacao?.reivindicacoesPendentes ?? 0) > 0 ? 'acento' : 'fraco'}
+                    aoTocar={() => router.push(`/caso/${meu.id}`)}
+                  />
                 </View>
                 {pistas > 0 ? (
                   <View style={{ flex: 1 }}>

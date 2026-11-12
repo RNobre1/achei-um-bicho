@@ -77,8 +77,21 @@ const QUEM_PODE_SER: Record<TipoCaso, (n: number) => string> = {
 }
 
 /** As linhas de cada caso em "Meus casos": avisos de quem viu e pistas. */
-export function resumoDoMeuCaso(tipo: TipoCaso, avisos: number, pistas: number): { destaque: string; resto: string }[] {
+export function resumoDoMeuCaso(
+  tipo: TipoCaso,
+  avisos: number,
+  pistas: number,
+  reivindicacoesPendentes = 0,
+): { destaque: string; resto: string }[] {
   const linhas: { destaque: string; resto: string }[] = []
+  // vem primeiro: é a única linha que pede uma decisão de quem publicou
+  if (reivindicacoesPendentes > 0) {
+    linhas.push(
+      reivindicacoesPendentes === 1
+        ? { destaque: '1 pessoa', resto: ' respondeu às perguntas e espera sua decisão' }
+        : { destaque: `${reivindicacoesPendentes} pessoas`, resto: ' responderam às perguntas e esperam sua decisão' },
+    )
+  }
   if (avisos > 0) {
     linhas.push(
       avisos === 1
