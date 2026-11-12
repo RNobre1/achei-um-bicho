@@ -1,3 +1,4 @@
+import { MENSAGEM_SEM_CONTATO } from '@achei/contratos'
 import { randomUUID } from 'node:crypto'
 import type { INestApplication } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
@@ -643,6 +644,23 @@ describe('F8 ciclo de vida', () => {
         .set('x-codigo-edicao', codigoEdicao)
         .send({ relato: 'Favor chamar no zap 93991234567' })
         .expect(400)
+    })
+
+    it('aceita relato com data escrita com hífen e recusa telefone no nome do animal', async () => {
+      const { id, codigoEdicao } = await publicar()
+
+      await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ relato: 'Visto de novo em 12-11-2026 na praça' })
+        .expect(200)
+
+      const res = await request(app.getHttpServer())
+        .patch(`/casos/${id}`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ animal: { nome: 'Thor 99123-4567' } })
+        .expect(400)
+      expect(JSON.stringify(res.body)).toContain(MENSAGEM_SEM_CONTATO)
     })
 
     it('recusa editar caso que não está em ESTADOS_ABERTOS (409)', async () => {

@@ -1,4 +1,4 @@
-import { MENSAGEM_AVISO_CONTATO } from '@achei/contratos'
+import { MENSAGEM_AVISO_CONTATO, MENSAGEM_SEM_CONTATO } from '@achei/contratos'
 import { describe, expect, it } from 'vitest'
 import {
   PASSOS,
@@ -159,6 +159,34 @@ describe('ajustes da publicação: castrado e aviso de contato', () => {
     const rComPergunta = rascunhoCompleto()
     rComPergunta.perguntas[0]!.enunciado = 'Ligar para 93991234567?'
     expect(verificarPareceContato(rComPergunta)).toBe(MENSAGEM_AVISO_CONTATO)
+  })
+
+  describe('texto público sem contato, com a mesma regra da API', () => {
+    it('bloqueia telefone ou link no relato e no nome do animal, no passo do animal', () => {
+      const r = rascunhoCompleto()
+      r.relato = 'Qualquer coisa me chama no zap 93991234567'
+      expect(pendenciasDoPasso(r, 'animal')).toContain(MENSAGEM_SEM_CONTATO)
+
+      const comNome = rascunhoCompleto()
+      comNome.animal.nome = 'Thor 99123-4567'
+      expect(pendenciasDoPasso(comNome, 'animal')).toContain(MENSAGEM_SEM_CONTATO)
+    })
+
+    it('bloqueia telefone no bairro e no enunciado das perguntas', () => {
+      const comBairro = rascunhoCompleto()
+      comBairro.local.bairro = 'Aparecida 93991234567'
+      expect(pendenciasDoPasso(comBairro, 'ondeQuando')).toContain(MENSAGEM_SEM_CONTATO)
+
+      const comPergunta = rascunhoCompleto()
+      comPergunta.perguntas[0]!.enunciado = 'Ligar para 93991234567?'
+      expect(pendenciasDoPasso(comPergunta, 'verificacao')).toContain(MENSAGEM_SEM_CONTATO)
+    })
+
+    it('não bloqueia data com hífen nem CEP no relato', () => {
+      const r = rascunhoCompleto()
+      r.relato = 'Sumiu em 12-11-2026 perto do CEP 68005-000'
+      expect(pendenciasDoPasso(r, 'animal')).not.toContain(MENSAGEM_SEM_CONTATO)
+    })
   })
 
   describe('confirmação em dois toques do aviso de contato', () => {
