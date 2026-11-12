@@ -164,6 +164,9 @@ describe('pareceContato (RNF4)', () => {
     expect(pareceContato('wa.me/5593991234567')).toBe(true)
     expect(pareceContato('Veja em https://exemplo.com')).toBe(true)
     expect(pareceContato('Acesse www.exemplo.com')).toBe(true)
+    // telefone disfarçado de data não escapa: dia e mês precisam existir
+    expect(pareceContato('Liga 93-99-1223-3355')).toBe(true)
+    expect(pareceContato('Liga 9399-12-23 3355')).toBe(true)
   })
 
   it('não bloqueia datas com hífen ou ponto, CEP, microchip de 15 dígitos ou texto legítimo', () => {
