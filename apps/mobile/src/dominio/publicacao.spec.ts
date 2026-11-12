@@ -1,4 +1,4 @@
-import { MENSAGEM_AVISO_CONTATO, MENSAGEM_SEM_CONTATO } from '@achei/contratos'
+import { MENSAGEM_SEM_CONTATO } from '@achei/contratos'
 import { describe, expect, it } from 'vitest'
 import {
   PASSOS,
@@ -9,8 +9,6 @@ import {
   pendenciasDoPasso,
   perguntasSugeridas,
   rascunhoVazio,
-  verificarConfirmacaoContato,
-  verificarPareceContato,
   type RascunhoPublicacao,
 } from './publicacao'
 
@@ -149,18 +147,6 @@ describe('ajustes da publicação: castrado e aviso de contato', () => {
     expect(converterCastradoParaChip(undefined)).toBeUndefined()
   })
 
-  it('detecta telefone, zap ou link no relato ou em enunciado de pergunta usando mensagem única', () => {
-    expect(verificarPareceContato(rascunhoCompleto())).toBeUndefined()
-
-    const rComZap = rascunhoCompleto()
-    rComZap.relato = 'Qualquer coisa me chama no zap 93991234567'
-    expect(verificarPareceContato(rComZap)).toBe(MENSAGEM_AVISO_CONTATO)
-
-    const rComPergunta = rascunhoCompleto()
-    rComPergunta.perguntas[0]!.enunciado = 'Ligar para 93991234567?'
-    expect(verificarPareceContato(rComPergunta)).toBe(MENSAGEM_AVISO_CONTATO)
-  })
-
   describe('texto público sem contato, com a mesma regra da API', () => {
     it('bloqueia telefone ou link no relato e no nome do animal, no passo do animal', () => {
       const r = rascunhoCompleto()
@@ -189,28 +175,4 @@ describe('ajustes da publicação: castrado e aviso de contato', () => {
     })
   })
 
-  describe('confirmação em dois toques do aviso de contato', () => {
-    it('bloqueia no primeiro toque quando parece conter contato e retorna o aviso', () => {
-      const r = rascunhoCompleto()
-      r.relato = 'Meu zap é 93991234567'
-      const resultado = verificarConfirmacaoContato(r, false)
-      expect(resultado.podePublicar).toBe(false)
-      expect(resultado.aviso).toBe(MENSAGEM_AVISO_CONTATO)
-    })
-
-    it('libera no segundo toque após o usuário já ter visto o aviso e confirmado', () => {
-      const r = rascunhoCompleto()
-      r.relato = 'Meu zap é 93991234567'
-      const resultado = verificarConfirmacaoContato(r, true)
-      expect(resultado.podePublicar).toBe(true)
-      expect(resultado.aviso).toBeUndefined()
-    })
-
-    it('libera de primeira quando não parece conter contato', () => {
-      const r = rascunhoCompleto()
-      const resultado = verificarConfirmacaoContato(r, false)
-      expect(resultado.podePublicar).toBe(true)
-      expect(resultado.aviso).toBeUndefined()
-    })
-  })
 })

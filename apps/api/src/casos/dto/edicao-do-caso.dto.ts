@@ -10,6 +10,7 @@ import {
 } from '@achei/contratos'
 import { Type } from 'class-transformer'
 import { IsBoolean, IsIn, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator'
+import { SemContatoPublico } from '../../comum/sem-contato-publico'
 
 export class AnimalEdicaoDto {
   @IsOptional()
@@ -27,6 +28,7 @@ export class AnimalEdicaoDto {
   @IsOptional()
   @IsString()
   @MaxLength(LIMITES_DE_TEXTO.nomeAnimal)
+  @SemContatoPublico()
   nome?: string
 
   @IsOptional()
@@ -38,6 +40,7 @@ export class EdicaoDoCasoDto implements EdicaoDoCaso {
   @IsOptional()
   @IsString()
   @MaxLength(LIMITES_DE_TEXTO.relato)
+  @SemContatoPublico()
   relato?: string
 
   @IsOptional()

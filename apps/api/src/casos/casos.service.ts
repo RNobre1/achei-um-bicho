@@ -2,7 +2,6 @@ import {
   ESTADO_INICIAL,
   ESTADOS_ABERTOS,
   ESTADOS_VIGIADOS,
-  PARECE_CONTATO,
   RAIO,
   transicaoPermitida,
   type EstadoCaso,
@@ -11,7 +10,6 @@ import {
   type TipoDesfecho,
 } from '@achei/contratos'
 import {
-  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -223,9 +221,6 @@ export class CasosService {
     }
     if (!ESTADOS_ABERTOS.includes(caso.estado as EstadoCaso)) {
       throw new ConflictException(`caso em estado "${caso.estado}" não pode ser editado`)
-    }
-    if (dados.relato && PARECE_CONTATO.test(dados.relato)) {
-      throw new BadRequestException('relato não pode conter telefone, WhatsApp ou links (contato mediado)')
     }
 
     const ok = await this.repositorio.editar(id, caso.estado as EstadoCaso, caso.animal.id, dados)

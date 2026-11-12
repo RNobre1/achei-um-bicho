@@ -1,6 +1,6 @@
 import {
-  MENSAGEM_AVISO_CONTATO,
-  PARECE_CONTATO,
+  MENSAGEM_SEM_CONTATO,
+  pareceContato,
   type Coleira,
   type Cor,
   type Especie,
@@ -116,10 +116,12 @@ export function pendenciasDoPasso(r: RascunhoPublicacao, passo: IdPasso): string
       if (!r.animal.porte) falta.push('Escolha o porte')
       if (!r.animal.corDominante) falta.push('Escolha a cor')
       if (!r.animal.coleira) falta.push('Diga se tinha coleira')
+      if (pareceContato(r.animal.nome ?? '') || pareceContato(r.relato)) falta.push(MENSAGEM_SEM_CONTATO)
       break
     case 'ondeQuando':
       if (r.local.latitude === undefined || r.local.longitude === undefined) falta.push('Marque onde aconteceu')
       if (!r.quando) falta.push('Diga quando aconteceu')
+      if (pareceContato(r.local.bairro)) falta.push(MENSAGEM_SEM_CONTATO)
       break
     case 'verificacao':
       r.perguntas.forEach((p, i) => {
@@ -127,6 +129,7 @@ export function pendenciasDoPasso(r: RascunhoPublicacao, passo: IdPasso): string
         if (!p.enunciado.trim()) falta.push(`Escreva a pergunta ${i + 1}`)
         else if (!p.resposta.trim()) falta.push(`Responda a pergunta ${i + 1}`)
       })
+      if (r.perguntas.some((p) => pareceContato(p.enunciado))) falta.push(MENSAGEM_SEM_CONTATO)
       if (!r.autor.nome.trim()) falta.push('Diga seu nome')
       if (r.autor.telefone.trim()) {
         const digitos = TELEFONE.normalizar(r.autor.telefone)
@@ -199,40 +202,4 @@ export function montarPublicacao(r: RascunhoPublicacao, agora: Date = new Date()
     ...(relato && { relato }),
   }
   return corpo
-}
-
-/**
- * Alerta sobre telefone, WhatsApp ou links digitados no relato ou enunciados (RNF4).
- * O contato mediado só é liberado depois que o tutor aceita a verificação.
- */
-export function verificarPareceContato(r: RascunhoPublicacao): string | undefined {
-  if (r.relato && PARECE_CONTATO.test(r.relato)) {
-    return MENSAGEM_AVISO_CONTATO
-  }
-  for (const p of r.perguntas) {
-    if (p.enunciado && PARECE_CONTATO.test(p.enunciado)) {
-      return MENSAGEM_AVISO_CONTATO
-    }
-  }
-  return undefined
-}
-
-/**
- * Confirmação em dois toques do aviso de contato:
- * - No primeiro toque, se houver indício de contato, bloqueia a publicação e retorna o aviso.
- * - No segundo toque (jaConfirmou = true), libera a publicação mesmo com indício.
- * - Sem indício de contato, libera imediatamente.
- */
-export function verificarConfirmacaoContato(
-  rascunho: RascunhoPublicacao,
-  jaConfirmou: boolean,
-): { podePublicar: boolean; aviso?: string } {
-  if (jaConfirmou) {
-    return { podePublicar: true }
-  }
-  const aviso = verificarPareceContato(rascunho)
-  if (aviso) {
-    return { podePublicar: false, aviso }
-  }
-  return { podePublicar: true }
 }

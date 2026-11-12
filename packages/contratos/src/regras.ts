@@ -112,13 +112,6 @@ export const MENSAGEM_SEM_CONTATO =
  */
 export const PARECE_CONTATO = /(\d[\s().-]*){8,}|whats|zap\b|wa\.me|https?:\/\/|www\./i
 
-/**
- * Mensagem única mostrada antes do envio quando o relato ou enunciado contém
- * telefone, WhatsApp ou link (RNF4).
- */
-export const MENSAGEM_AVISO_CONTATO =
-  'O relato ou uma das perguntas parece conter telefone, WhatsApp ou link. Lembre-se que o contato só é liberado após a verificação.'
-
 const ALFABETO_EDICAO = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
 const TAMANHO_BLOCO_EDICAO = 4
 const QUANTIDADE_BLOCOS_EDICAO = 2

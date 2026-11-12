@@ -11,7 +11,6 @@ import {
   PASSOS,
   pendenciasDoPasso,
   rascunhoVazio,
-  verificarConfirmacaoContato,
   type RascunhoPublicacao,
 } from '../../dominio/publicacao'
 import { ErroApi } from '../../servicos/api'
@@ -34,8 +33,6 @@ export function Publicar() {
   const [pendencias, setPendencias] = useState<string[]>([])
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string>()
-  const [avisoContato, setAvisoContato] = useState<string>()
-  const [confirmouContato, setConfirmouContato] = useState(false)
   const [publicado, setPublicado] = useState<{ id: string; codigo: string }>()
   const [guardadoOffline, setGuardadoOffline] = useState<{ id: string; codigo: string }>()
   const [fotosPendentes, setFotosPendentes] = useState<number>(0)
@@ -45,16 +42,12 @@ export function Publicar() {
   const passo = PASSOS[indice]!
   const mudar = (alterar: (r: RascunhoPublicacao) => RascunhoPublicacao) => {
     setPendencias([])
-    setAvisoContato(undefined)
-    setConfirmouContato(false)
     setRascunho((r) => (r ? alterar(r) : r))
   }
 
   function irPara(novo: number) {
     setPendencias([])
     setErro(undefined)
-    setAvisoContato(undefined)
-    setConfirmouContato(false)
     setIndice(novo)
     rolagem.current?.scrollTo({ y: 0, animated: false })
   }
@@ -129,14 +122,6 @@ export function Publicar() {
       return
     }
 
-    // No último passo, verifica se há dados de contato antes de publicar
-    const confirmacao = verificarConfirmacaoContato(rascunho, confirmouContato)
-    if (!confirmacao.podePublicar) {
-      setAvisoContato(confirmacao.aviso)
-      setConfirmouContato(true)
-      return
-    }
-
     void publicar(rascunho)
   }
 
@@ -146,8 +131,6 @@ export function Publicar() {
     setFotosPendentes(0)
     setFotosRecusadas(0)
     setRascunho(undefined)
-    setAvisoContato(undefined)
-    setConfirmouContato(false)
     irPara(0)
   }
 
@@ -214,23 +197,11 @@ export function Publicar() {
             {rascunho && passo.id === 'verificacao' ? <PassoVerificacao rascunho={rascunho} mudar={mudar} /> : null}
 
             {pendencias.length > 0 ? <Aviso titulo="Falta pouco:" texto={pendencias.join('\n')} /> : null}
-            {avisoContato ? (
-              <Aviso
-                titulo="Atenção: contato direto detectado"
-                texto={`${avisoContato}\n\nToque em Publicar novamente para confirmar o envio assim mesmo.`}
-              />
-            ) : null}
             {erro ? <Aviso titulo="Não deu para salvar o caso" texto={erro} /> : null}
 
             {passo.id !== 'tipo' ? (
               <Botao
-                rotulo={
-                  indice === PASSOS.length - 1
-                    ? avisoContato && confirmouContato
-                      ? 'Confirmar e Publicar'
-                      : 'Publicar'
-                    : 'Continuar'
-                }
+                rotulo={indice === PASSOS.length - 1 ? 'Publicar' : 'Continuar'}
                 variante={indice === PASSOS.length - 1 ? 'acento' : 'escuro'}
                 carregando={enviando}
                 aoTocar={continuar}

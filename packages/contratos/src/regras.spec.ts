@@ -5,7 +5,6 @@ import {
   FOTO,
   gerarCodigoEdicao,
   LIMITES_DE_TEXTO,
-  MENSAGEM_AVISO_CONTATO,
   PAREAMENTO,
   pareceContato,
   RAIO,
@@ -118,10 +117,6 @@ describe('regras do código de edição', () => {
     const codigo = gerarCodigoEdicao((max) => 0)
     expect(codigo).toBe("2222-2222")
     expect(CODIGO_EDICAO.padrao.test(codigo)).toBe(true)
-  })
-
-  it("exporta a mensagem única para o aviso de contato", () => {
-    expect(MENSAGEM_AVISO_CONTATO).toMatch(/telefone, WhatsApp ou link/)
   })
 
   it('define o alfabeto sem caracteres ambíguos e tamanho do bloco', () => {
