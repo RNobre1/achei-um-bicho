@@ -15,8 +15,8 @@ zero.
 | Data | Marco | O que a disciplina cobra | Situação |
 |---|---|---|---|
 | 28/08/2026 | Kickoff Técnico | Equipe formada, desafio escolhido, funcionalidades do MVP definidas e pelo menos 5 telas de protótipo de média fidelidade | Entregue: 7 telas e 2 estados |
-| 09/10/2026 | Alpha Release | Primeira versão do sistema rodando, apresentada | A fazer |
-| 21/11/2026 | The Final Pitch | Versão final rodando, código-fonte, documentação e artigo em formato SBC | A fazer |
+| 09/10/2026 | Alpha Release | Primeira versão do sistema rodando, apresentada | Entregue em 16/10 (adiado pela professora): F1 a F5 rodando, APK e versão web no ar |
+| 21/11/2026 | The Final Pitch | Versão final rodando, código-fonte, documentação e artigo em formato SBC | F1 a F9 prontos em 12/11; artigo, slides e vídeo de reserva em preparação |
 
 Entre esses três encontros não há aula. O ritmo interno passa a ser
 responsabilidade da equipe, e é isso que torna o atraso perigoso: ele não aparece
@@ -142,6 +142,10 @@ ninguém rodar nada à mão.
 
 A rodada com protetores fica nesta sprint, e não na última, porque o que ela
 revelar ainda precisa caber em algum lugar do calendário.
+
+> **Como ficou:** F6 a F9 entregues entre 18/10 e 08/11, com revisão independente de
+> cada pacote. A rodada com protetores não aconteceu: o artigo a trata como
+> limitação, e os prazos de 9 e 15 dias seguem como chute inicial.
 
 ### Sprint 5 · Fechamento · 07/11 a 20/11
 

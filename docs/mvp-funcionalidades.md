@@ -164,6 +164,10 @@ Estados: `PROCURANDO` · `ABRIGADO_TEMPORARIAMENTE` · `EM_CONTATO` ·
 Rascunho fica salvo no aparelho, foto é reduzida, o local pode ser informado pelo
 nome do bairro, e o envio acontece sozinho quando a conexão volta.
 
+> **Como ficou (12/11):** o ponto vem do GPS, que funciona sem internet, e o bairro é
+> digitado; não há busca do ponto pelo nome do bairro, que exigiria um serviço de
+> geocodificação, também fora do ar sem conexão (decisão P9).
+
 **Critério de aceite**
 - A tela nunca diz "publicado" enquanto o envio não confirma.
 - A fila mostra o que está esperando e o que já subiu, com horário.

@@ -60,7 +60,10 @@ string usada é a direta (sem `-pooler` no endereço), com `?sslmode=require`. N
 | `DATABASE_URL` | a connection string do Neon |
 | `CORS_ORIGINS` | `https://achei-um-bicho.onrender.com` |
 | `RAIO_PADRAO_METROS` | `1600` |
-| `CODIGO_SEGREDO` | segredo longo e aleatório para HMAC dos códigos de edição (obrigatório em produção) |
+| `CODIGO_SEGREDO` | segredo longo e aleatório (`openssl rand -hex 32`), obrigatório em produção: entra no HMAC dos códigos de edição e de acompanhamento e no deslocamento da área aproximada. Trocar invalida os códigos já entregues e move os círculos publicados |
+| `TAREFAS_CHAVE` | chave que a ação agendada do GitHub manda em `x-chave-tarefas`; o mesmo valor fica no secret `TAREFAS_CHAVE` do repositório |
+| `DIAS_ATE_COBRANCA` | `9` |
+| `DIAS_ATE_EXPIRAR` | `15` |
 | `LIMITE_LEITURA_POR_MINUTO` | `600` (padrão) |
 | `LIMITE_ESCRITA_POR_MINUTO` | `60` (padrão) |
 | `LIMITE_FOTOS_POR_MINUTO` | `1200` (padrão) |

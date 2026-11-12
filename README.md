@@ -17,23 +17,34 @@ sem loja; ver [docs/guia-apk.md](docs/guia-apk.md).
 | Funcionalidade | No servidor | No aplicativo |
 |---|---|---|
 | F1 · Publicar caso de bicho perdido | `POST /casos`, `POST /casos/:id/fotos` | Aba **Publicar**, quatro passos, com até três fotos |
-| F2 · Publicar caso de bicho encontrado, sem conta | `POST /casos`, com código de edição | Código mostrado no fim e guardado no aparelho |
-| F3 · Mural por proximidade, com raio ajustável | `GET /casos` (PostGIS, índice GIST) | Aba **Perto**, filtros e botão Aumentar |
+| F2 · Publicar caso de bicho encontrado, sem conta | `POST /casos`, com código de edição | Código mostrado no fim, guardado no aparelho e com botão de compartilhar |
+| F3 · Mural por proximidade, com raio ajustável | `GET /casos` (PostGIS, índice GiST) | Aba **Perto**, filtros e botão Aumentar |
 | F4 · Caso aberto e registro de avistamento | `GET /casos/:id`, `POST` e `GET /casos/:id/avistamentos` | Tela do caso, "Vi esse bicho na rua" e avisos para quem publicou |
 | F5 · Pareamento determinístico | Gerado ao publicar; `GET /casos/:id/pistas` e `POST .../veredito` | Abas **Pistas** e **Meus casos**: o que bateu, o que não bateu, "Pode ser ele" e "Não é" |
+| F6 · Reivindicação com verificação | `GET /casos/:id/perguntas`, `POST /casos/:id/reivindicacoes`, `GET` e `POST .../veredito` para o autor | "Acho que esse bicho é meu" ou "Acho que achei esse bicho": responde às três perguntas e recebe um código de acompanhamento; o autor compara as respostas e aceita ou recusa |
+| F7 · Contato mediado e denúncia | `GET /reivindicacoes/:id` com o código de acompanhamento; `POST /casos/:id/denuncias` | Nome e telefone só aparecem para os dois lados depois do aceite; denúncia com motivo |
+| F8 · Ciclo de vida do caso | `GET /casos/:id/situacao`, `POST .../confirmacao`, `.../reabertura`, `.../desfecho`, `PATCH /casos/:id`; tarefa diária às 08:00 por ação agendada do GitHub | Em **Meus casos**: editar, encerrar com desfecho, "ainda está procurando?", reabrir quando o contato não deu certo |
+| F9 · Publicar e ler sem conexão | Publicação idempotente pelo `idCliente` | Fila no celular que sobe sozinha quando a internet volta; mural e caso aberto guardados para ler sem rede |
 
-Contato, código de edição, respostas de verificação e o ponto exato nunca saem nas
-respostas públicas; há testes automatizados que conferem isso a cada rodada. A foto
-é reduzida no celular antes de subir, e a API apaga os metadados em que a câmera
-grava a coordenada de onde ela foi tirada.
+Contato, códigos, respostas de verificação e o ponto exato nunca saem nas respostas
+públicas; há testes automatizados que conferem isso a cada rodada. O mapa mostra uma
+área cujo centro é deslocado do ponto real por um cálculo que depende de um segredo
+do servidor. A foto é reduzida no celular antes de subir, e a API apaga os metadados
+em que a câmera grava a coordenada. Texto público com telefone ou link é recusado.
+Casos encerrados há 30 dias perdem os dados pessoais.
 
-A cada push na `main`, o GitHub Actions confere os tipos e roda a suíte inteira
-contra um PostgreSQL com PostGIS de verdade.
+Qualidade conferida por teste: limite de requisições por IP, códigos guardados como
+HMAC, contraste AA de toda a paleta (RNF5) e a maior publicação com foto abaixo de
+1 MB (RNF2). A carga do mural está medida em [docs/qualidade/carga.md](docs/qualidade/carga.md).
+
+A cada push na `main`, o GitHub Actions confere os tipos, roda a suíte inteira contra
+um PostgreSQL com PostGIS de verdade, faz a análise de segurança do CodeQL e a
+auditoria de dependências.
 
 ## Estrutura
 
 ```
-apps/api/            API em NestJS, Prisma e PostgreSQL com PostGIS; fotos em apps/api/fotos/
+apps/api/            API em NestJS, Prisma e PostgreSQL com PostGIS; fotos no próprio banco
 apps/mobile/         aplicativo em React Native com Expo
 packages/contratos/  vocabulário fechado e formato das requisições, usado pelos dois lados
 docs/                visão, MVP, modelo ER, cronograma, UML (casos de uso e classes)
@@ -120,7 +131,8 @@ Os testes acusam qualquer lugar que tenha ficado para trás.
 
 | Documento | Onde |
 |---|---|
-| O que falta até o pitch | [docs/backlog.md](docs/backlog.md) |
+| O que ficou para depois do pitch | [docs/backlog.md](docs/backlog.md) |
+| Carga do mural | [docs/qualidade/carga.md](docs/qualidade/carga.md) |
 | Roteiro e slides do alpha | [docs/alpha/roteiro.md](docs/alpha/roteiro.md) · `Achei_um_Bicho_Alpha.pdf` |
 | Onde o sistema está hospedado | [docs/hospedagem.md](docs/hospedagem.md) |
 | Visão do produto | [docs/documento-de-visao.md](docs/documento-de-visao.md) |

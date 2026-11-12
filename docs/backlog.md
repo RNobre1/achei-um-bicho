@@ -1,79 +1,40 @@
 # Backlog
 
-O que falta até o pitch de 21/11, em ordem de prioridade dentro de cada bloco.
-Item concluído sai daqui e vira linha no README ("O que já funciona").
-Atualizado em 15/10/2026. O alpha foi adiado pela professora para 16/10.
+O que ficou para depois do pitch de 21/11, em ordem de prioridade dentro de cada
+bloco. As funcionalidades F1 a F9 estão prontas e listadas no README ("O que já
+funciona"). Atualizado em 12/11/2026.
 
-## Alpha · 16/10 (adiado de 09/10)
+## Produto
 
-Tudo da Sprint 2 está pronto: F5 (gerador de pareamentos e telas de Pistas e Meus
-casos), deploy público, fotos guardadas no banco, APK do Android, dados de
-demonstração com foto em volta da Unidade Tapajós, roteiro e slides. Em 15/10 o
-aplicativo foi testado num celular de verdade, e o APK 0.1.2 corrigiu o mapa
-bloqueado e a foto que não subia. Falta só:
-
-- [ ] **Ensaiar o roteiro** ([alpha/roteiro.md](alpha/roteiro.md)) com o APK no
-  celular, pelo menos uma vez, na véspera.
-
-## Sprint 3 · Proteger · 10/10 a 23/10
-
-- [ ] **F6 · Reivindicação com verificação.** Quem diz ser o tutor responde às
-  três perguntas; o autor confere e aceita ou recusa. Hoje o botão "Acho que esse
-  bicho é meu" só explica que a etapa vem aí.
-- [ ] **F7 · Contato mediado.** Telefone liberado só depois do aceite, com teste
-  automatizado de que nenhum dado de contato vaza antes (RNF4).
-- [ ] **Limite de requisições na API.** Publicar e avisar não pedem conta; sem
-  limite por origem, um robô enche o mural.
-
-## Sprint 4 · Fechar o ciclo · 24/10 a 06/11
-
-- [ ] **F8 · Editar e encerrar caso com o código de edição**, com desfecho
-  obrigatório (RN9).
-- [ ] **F8 · Cobrança e expiração** de caso parado (9 e 15 dias, RN8). No Render
-  gratuito não há tarefa agendada: disparar por ação agendada do GitHub.
-- [ ] **Recuperar o código de edição** perdido (consequência de publicar sem conta).
-- [ ] **F9 · Publicação sem conexão**, com fila no aparelho. Primeira a sair se
-  apertar.
-- [ ] **RNF3 · Mural abre com o último conteúdo** quando não há conexão.
-- [ ] **Primeira rodada com protetores locais.**
-
-## Qualidade e esteira
-
-- [ ] **Testes E2E com Maestro** nos caminhos críticos: publicar (os dois lados),
-  mural com filtro e raio, caso aberto e avistamento. Precisa de emulador Android
-  ou celular ligado ao computador.
-- [ ] **Linter e formatter** (ESLint e Prettier) como etapa obrigatória da
-  integração contínua, que hoje confere tipos e testes.
-- [ ] **Proteger a branch `main`** no GitHub para exigir a integração contínua
-  verde antes do merge.
-- [ ] **Análise estática de segurança** (CodeQL, grátis para repositório público)
-  e auditoria de dependências.
-- [ ] **Teste de carga** da consulta do mural (k6), com o banco cheio de casos.
-- [ ] **Números de testes dos slides gerados da suíte**, não copiados à mão: o
-  script dos slides lê o relatório JSON do Vitest da última integração contínua.
-- [ ] **RNF2 medido:** publicar um caso com foto consome menos de 1 MB.
-- [ ] **RNF5 conferido:** contraste AA de toda a paleta.
+- [ ] **Primeira rodada com protetores locais.** Não aconteceu até o pitch; os prazos
+  de 9 e 15 dias do ciclo de vida continuam sendo chute inicial até essa conversa.
+- [ ] **Conta opcional, só com e-mail** (decisão P1): quem publica sem conta e perde o
+  código de edição hoje não recupera o caso (P2). A conta seria o caminho de
+  recuperação, sem tirar a publicação sem cadastro.
+- [ ] **Moderação de denúncias.** A denúncia é registrada e o número de reivindicações
+  denunciadas aparece para o autor, mas ninguém revisa as denúncias.
+- [ ] **Telefone verificado** por código enviado por SMS ou WhatsApp. Sem isso, alguém
+  pode reivindicar com o número de outra pessoa e denunciar para inflar a contagem.
+- [ ] **Reivindicação idempotente**, como já é a publicação: reenviar depois de perder a
+  resposta cria uma segunda reivindicação.
+- [ ] Bairro preenchido sozinho a partir do ponto (geocodificação reversa, guardando o
+  resultado no banco).
+- [ ] Ajustar o ponto no mapa arrastando, como no protótipo.
 
 ## Aplicativo
 
-- [ ] **iPhone sem loja, de graça** (decidido em 11/10, para depois do alpha). O
-  instalável de verdade exige a conta paga da Apple (US$ 99/ano), então seguem os
-  dois caminhos gratuitos:
-  - versão web instalável: manifesto, `apple-touch-icon` e
-    `apple-mobile-web-app-capable`, para abrir em tela cheia com ícone próprio ao
-    adicionar à tela de início;
-  - app nativo pelo Expo Go, publicado com EAS Update (`runtimeVersion` fixado na
-    versão do SDK) e aberto por QR code sem o notebook. Precisa de um iPhone da
-    equipe para confirmar que o Expo Go aceita.
-- [ ] Ícone e tela de abertura próprios (hoje são os padrões do Expo).
-- [ ] APK menor: hoje tem cerca de 100 MB por levar o código de todas as
-  arquiteturas; gerar só para `arm64-v8a`, que cobre os celulares atuais.
-- [ ] Bairro preenchido sozinho a partir do ponto (geocodificação reversa,
-  guardando o resultado no banco).
-- [ ] Ajustar o ponto no mapa arrastando, como no protótipo.
-- [ ] Campo "castrado" no formulário (o banco e a API já aceitam).
+- [ ] **iPhone pelo Expo Go com EAS Update**, aberto por QR code sem o notebook. A
+  versão web instalável (manifesto, ícone e tela cheia) já está pronta.
+- [ ] Ícone e tela de abertura próprios.
+- [ ] APK menor: gerar só para `arm64-v8a`.
 
-## Documentação e entrega
+## Qualidade e esteira
 
-- [ ] Artigo SBC: rascunho completo até 15/11.
-- [ ] Vídeo de reserva do sistema funcionando, para o caso de a rede falhar no pitch.
+- [ ] **Linter e formatter** (ESLint e Prettier) como etapa obrigatória da integração
+  contínua.
+- [ ] **Números de testes dos slides lidos do relatório da integração contínua**, não
+  copiados à mão.
+- [ ] **Carga com 20.000 casos dentro da meta**: a contagem de casos até 5 km domina
+  a resposta nessa densidade (p95 de 669 ms; ver `docs/qualidade/carga.md`). Uma saída
+  é contar com teto ou guardar a contagem por região.
+- [ ] Cópia de segurança agendada do banco do Neon.
