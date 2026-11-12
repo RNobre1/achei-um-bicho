@@ -194,6 +194,7 @@ export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo, estadoCaso, 
                       aoMudar={setTelefoneAutor}
                       placeholder="(93) 99123-4567"
                       keyboardType="phone-pad"
+                      maxLength={LIMITES_DE_TEXTO.telefone}
                     />
                     <View style={estilos.duplaBotoes}>
                       <View style={{ flex: 1 }}>

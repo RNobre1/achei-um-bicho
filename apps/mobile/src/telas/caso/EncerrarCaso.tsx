@@ -155,6 +155,7 @@ export function EncerrarCaso() {
                   setRascunho((r) => ({ ...r, dataOutroDia }))
                 }}
                 placeholder="AAAA-MM-DD ou DD/MM/AAAA"
+                maxLength={'DD/MM/AAAA'.length}
                 dica="Informe a data aproximada em que o caso terminou."
               />
             ) : null}

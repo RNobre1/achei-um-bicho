@@ -1,3 +1,4 @@
+import { LIMITES_DE_TEXTO } from '@achei/contratos'
 import type { CasoAberto, PerguntaPublica } from '@achei/contratos'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
@@ -194,6 +195,7 @@ export function Reivindicar() {
                 aoMudar={(texto) => setRespostas((atuais) => ({ ...atuais, [p.id]: texto }))}
                 placeholder="Sua resposta sobre o sinal do animal"
                 multiline
+                maxLength={LIMITES_DE_TEXTO.respostaReivindicacao}
               />
             ))}
           </View>
@@ -205,6 +207,7 @@ export function Reivindicar() {
               valor={nome}
               aoMudar={setNome}
               placeholder="Como a outra pessoa deve te chamar"
+              maxLength={LIMITES_DE_TEXTO.nomePessoa}
             />
             <Campo
               rotulo="Seu telefone com DDD"
@@ -212,6 +215,7 @@ export function Reivindicar() {
               aoMudar={setTelefone}
               placeholder="(93) 99123-4567"
               keyboardType="phone-pad"
+              maxLength={LIMITES_DE_TEXTO.telefone}
               dica="Só será revelado se quem publicou aceitar suas respostas."
             />
             {pedeReferencia(caso.tipo) ? (
@@ -221,6 +225,7 @@ export function Reivindicar() {
                 aoMudar={setReferencia}
                 placeholder="Ex: No quintal da minha casa, na rua tal perto do mercado"
                 multiline
+                maxLength={LIMITES_DE_TEXTO.referencia}
                 dica="Ponto de referência para o tutor saber onde buscar o animal quando aceitar."
               />
             ) : null}
