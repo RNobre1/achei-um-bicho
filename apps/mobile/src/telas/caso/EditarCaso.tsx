@@ -3,6 +3,7 @@ import {
   COR,
   PORTE,
   opcoes,
+  LIMITES_DE_TEXTO,
   type Coleira,
   type Cor,
   type Porte,
@@ -135,7 +136,7 @@ export function EditarCaso() {
               rotulo="Nome do animal"
               valor={nome}
               aoMudar={setNome}
-              maxLength={60}
+              maxLength={LIMITES_DE_TEXTO.nomeAnimal}
               placeholder="Nome que ele atende ou como é chamado"
             />
 
@@ -172,7 +173,7 @@ export function EditarCaso() {
               valor={relato}
               aoMudar={setRelato}
               multiline
-              maxLength={600}
+              maxLength={LIMITES_DE_TEXTO.relato}
               placeholder="Detalhes adicionais que ajudam a identificar o animal ou o contexto"
             />
 

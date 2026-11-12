@@ -1,4 +1,4 @@
-import { MOTIVO_DENUNCIA, type MotivoDenuncia, type NovaDenuncia } from '@achei/contratos'
+import { LIMITES_DE_TEXTO, MOTIVO_DENUNCIA, type MotivoDenuncia, type NovaDenuncia } from '@achei/contratos'
 import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator'
 
 export class NovaDenunciaDto implements NovaDenuncia {
@@ -7,7 +7,7 @@ export class NovaDenunciaDto implements NovaDenuncia {
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(LIMITES_DE_TEXTO.textoDenuncia)
   texto?: string
 
   @IsOptional()

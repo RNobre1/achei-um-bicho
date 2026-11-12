@@ -1,4 +1,10 @@
-import { MOTIVO_DENUNCIA, opcoes, type MotivoDenuncia, type SituacaoDaReivindicacao as Situacao } from '@achei/contratos'
+import {
+  LIMITES_DE_TEXTO,
+  MOTIVO_DENUNCIA,
+  opcoes,
+  type MotivoDenuncia,
+  type SituacaoDaReivindicacao as Situacao,
+} from '@achei/contratos'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -150,7 +156,7 @@ export function SituacaoReivindicacao() {
                 aoMudar={setTextoDenuncia}
                 multiline
                 placeholder="Descreva o que ocorreu (ex: pediu dinheiro, golpe, etc.)"
-                maxLength={500}
+                maxLength={LIMITES_DE_TEXTO.textoDenuncia}
               />
               <View style={estilos.duplaBotoes}>
                 <View style={{ flex: 1 }}>

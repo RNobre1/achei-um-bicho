@@ -1,4 +1,4 @@
-import { TELEFONE, type NovaReivindicacao } from '@achei/contratos'
+import { LIMITES_DE_TEXTO, TELEFONE, type NovaReivindicacao } from '@achei/contratos'
 import { Type } from 'class-transformer'
 import {
   ArrayMinSize,
@@ -18,14 +18,14 @@ export class RespostaItemDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(500)
+  @MaxLength(LIMITES_DE_TEXTO.respostaReivindicacao)
   texto!: string
 }
 
 export class PessoaReivindicacaoDto {
   @IsString()
   @IsNotEmpty()
-  @MaxLength(80)
+  @MaxLength(LIMITES_DE_TEXTO.nomePessoa)
   nome!: string
 
   @IsString()
@@ -34,7 +34,7 @@ export class PessoaReivindicacaoDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(160)
+  @MaxLength(LIMITES_DE_TEXTO.referencia)
   referencia?: string
 }
 

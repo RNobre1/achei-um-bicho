@@ -1,6 +1,7 @@
 import {
   COLEIRA,
   COR,
+  LIMITES_DE_TEXTO,
   PORTE,
   type Coleira,
   type Cor,
@@ -25,7 +26,7 @@ export class AnimalEdicaoDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(60)
+  @MaxLength(LIMITES_DE_TEXTO.nomeAnimal)
   nome?: string
 
   @IsOptional()
@@ -36,7 +37,7 @@ export class AnimalEdicaoDto {
 export class EdicaoDoCasoDto implements EdicaoDoCaso {
   @IsOptional()
   @IsString()
-  @MaxLength(600)
+  @MaxLength(LIMITES_DE_TEXTO.relato)
   relato?: string
 
   @IsOptional()

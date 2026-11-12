@@ -1,4 +1,5 @@
 import {
+  LIMITES_DE_TEXTO,
   MOTIVO_DENUNCIA,
   opcoes,
   type EstadoCaso,
@@ -278,7 +279,7 @@ export function ReivindicacoesDoAutor({ casoId, codigoEdicao, tipo, estadoCaso, 
                   aoMudar={setTextoDenuncia}
                   multiline
                   placeholder="Explique o que aconteceu (ex: pediu dinheiro, ameaçou, etc.)"
-                  maxLength={500}
+                  maxLength={LIMITES_DE_TEXTO.textoDenuncia}
                 />
                 <View style={estilos.duplaBotoes}>
                   <View style={{ flex: 1 }}>
