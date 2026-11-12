@@ -150,7 +150,7 @@ describe('regras da fila de envio de publicações (F9)', () => {
     expect(item.proximaTentativaEm).toBe(new Date(agora.getTime() + 60_000).toISOString())
 
     // 3ª falha: 120s
-    item = marcarFalhaEnvio(item, { status: 429, mensagem: 'Muitas requisições' }, agora)
+    item = marcarFalhaEnvio(item, { status: 502, mensagem: 'Gateway' }, agora)
     expect(item.tentativas).toBe(3)
     expect(item.proximaTentativaEm).toBe(new Date(agora.getTime() + 120_000).toISOString())
 
@@ -164,6 +164,22 @@ describe('regras da fila de envio de publicações (F9)', () => {
     expect(item.tentativas).toBe(5)
     expect(item.estado).toBe('falhou')
     expect(item.proximaTentativaEm).toBeUndefined()
+  })
+
+  it('limite de requisições (429) espera o minuto do limite sem gastar tentativa', () => {
+    let item = criarItemFila({
+      idCliente: 'uuid-1',
+      codigoEdicao: '2345-6789',
+      publicacao: publicacaoExemplo,
+      fotos: [],
+      nomeAnimal: 'Pipoca',
+      agora,
+    })
+    for (let i = 0; i < 8; i++) item = marcarFalhaEnvio(item, { status: 429, mensagem: 'Muitas tentativas' }, agora)
+
+    expect(item.tentativas).toBe(0)
+    expect(item.estado).toBe('esperando')
+    expect(item.proximaTentativaEm).toBe(new Date(agora.getTime() + 60_000).toISOString())
   })
 
   it('ao falhar com erro permanente (400, 404, 409, 413, 415, 422), vai direto a falhou guardando a mensagem', () => {
