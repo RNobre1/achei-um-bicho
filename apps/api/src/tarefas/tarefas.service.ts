@@ -64,6 +64,8 @@ function filtroSqlDeAnonimizacao(limite: Date): Prisma.Sql {
          WHERE t.caso_id = c.id
            AND r.texto <> 'anonimizado'
       )
+      OR EXISTS (SELECT 1 FROM avistamento av WHERE av.caso_id = c.id)
+      OR EXISTS (SELECT 1 FROM denuncia dn WHERE dn.caso_id = c.id AND dn.texto IS NOT NULL)
     )
   `
 }
@@ -123,37 +125,13 @@ export class TarefasService {
     // 3. Anonimização: filtra no banco os ainda não anonimizados (não em memória)
     const limiteAnonimizacao = limiteDeAnonimizacao(agora)
 
-    const casosParaAnonimizar = await this.prisma.caso.findMany({
-      where: {
-        OR: [
-          {
-            estado: 'resolvido',
-            desfecho: {
-              registradoEm: { lte: limiteAnonimizacao },
-            },
-          },
-          {
-            estado: 'expirado',
-            ultimaInteracaoEm: { lte: limiteAnonimizacao },
-          },
-        ],
-        AND: [
-          {
-            OR: [
-              { autor: { nome: { not: 'Anônimo' } } },
-              { autor: { telefone: { not: null } } },
-              { local: { referencia: { not: null } } },
-              { perguntas: { some: { respostaEsperada: { not: 'anonimizado' } } } },
-              { tentativas: { some: { referencia: { not: null } } } },
-              { tentativas: { some: { pessoa: { nome: { not: 'Anônimo' } } } } },
-              { tentativas: { some: { pessoa: { telefone: { not: null } } } } },
-              { tentativas: { some: { respostas: { some: { texto: { not: 'anonimizado' } } } } } },
-            ],
-          },
-        ],
-      },
-      select: { id: true },
-    })
+    const casosParaAnonimizar = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT c.id
+        FROM caso c
+        JOIN pessoa autor ON autor.id = c.autor_id
+        JOIN local l ON l.id = c.local_id
+       WHERE ${filtroSqlDeAnonimizacao(limiteAnonimizacao)}
+    `
 
     let anonimizados = 0
     let falhas = 0
@@ -242,6 +220,22 @@ export class TarefasService {
               data: { texto: 'anonimizado' },
             })
           }
+
+          // 5. Quem avisou que viu: o ponto pode ser a casa dessa pessoa (D13); some o
+          // avistamento com o seu local, e a pessoa fica anônima
+          const avistamentos = await tx.avistamento.findMany({
+            where: { casoId: caso.id },
+            select: { id: true, localId: true, pessoaId: true },
+          })
+          const pessoasQueViram = avistamentos.flatMap((a) => (a.pessoaId ? [a.pessoaId] : []))
+          if (pessoasQueViram.length > 0) {
+            await tx.pessoa.updateMany({ where: { id: { in: pessoasQueViram } }, data: { nome: 'Anônimo', telefone: null } })
+          }
+          await tx.avistamento.deleteMany({ where: { casoId: caso.id } })
+          await tx.local.deleteMany({ where: { id: { in: avistamentos.map((a) => a.localId) } } })
+
+          // 6. Texto livre das denúncias
+          await tx.denuncia.updateMany({ where: { casoId: caso.id }, data: { texto: null } })
 
           return true
         })

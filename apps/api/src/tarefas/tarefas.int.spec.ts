@@ -199,25 +199,36 @@ describe('POST /tarefas/ciclo-de-vida', () => {
     })
 
     const prismaDaApi = app.get(PrismaService)
-    const findManyOriginal = prismaDaApi.caso.findMany.bind(prismaDaApi.caso)
+    // sem bind: dentro da transação o mesmo método roda com o `this` do cliente da
+    // transação, e trocar esse `this` tiraria a consulta da transação (e da trava)
+    const queryRawOriginal = prismaDaApi.$queryRaw
     let candidaturasLidas = 0
     let liberarBarreira!: () => void
     const barreira = new Promise<void>((resolve) => {
       liberarBarreira = resolve
     })
-    vi.spyOn(prismaDaApi.caso, 'findMany').mockImplementation(((argumentos: any) => {
-      const consulta = findManyOriginal(argumentos)
-      if (!argumentos?.where?.AND) return consulta
-      return consulta.then(async (candidatos) => {
+    // segura as duas execuções logo depois de lerem a lista de candidatos
+    vi.spyOn(prismaDaApi, '$queryRaw').mockImplementation(function (
+      this: unknown,
+      partes: TemplateStringsArray,
+      ...valores: unknown[]
+    ) {
+      const consulta = (queryRawOriginal as (...args: unknown[]) => Promise<unknown>).call(this, partes, ...valores)
+      const texto = partes.join(' ')
+      if (!(texto.includes('SELECT c.id\n') && texto.includes('JOIN pessoa autor') && !texto.includes('FOR UPDATE'))) {
+        return consulta
+      }
+      return consulta.then(async (candidatos: unknown) => {
         candidaturasLidas++
         if (candidaturasLidas === 2) liberarBarreira()
         await barreira
         return candidatos
-      }) as any
-    }) as any)
+      })
+    } as never)
 
     const resultados = await Promise.all([executarTarefas().expect(200), executarTarefas().expect(200)])
 
+    expect(candidaturasLidas).toBe(2)
     expect(resultados.map(({ body }) => body.anonimizados).sort()).toEqual([0, 1])
     const [pontoFinal] = await prisma.$queryRaw<{ latitude: number; longitude: number }[]>`
       SELECT ST_Y(ponto::geometry) AS latitude, ST_X(ponto::geometry) AS longitude
