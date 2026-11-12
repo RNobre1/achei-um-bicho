@@ -71,8 +71,8 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
   }
 
   const codigoSegredo = ambiente.CODIGO_SEGREDO?.trim()
-  if (ambiente.NODE_ENV === 'production' && !codigoSegredo) {
-    throw new Error('CODIGO_SEGREDO é obrigatório em produção')
+  if (ambiente.NODE_ENV === 'production' && (!codigoSegredo || codigoSegredo === SEGREDO_PADRAO_DESENVOLVIMENTO)) {
+    throw new Error('CODIGO_SEGREDO é obrigatório em produção e não pode ser o de desenvolvimento, que é público')
   }
 
   return {

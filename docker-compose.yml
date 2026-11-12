@@ -33,6 +33,8 @@ services:
       PORT: "3333"
       CORS_ORIGINS: http://localhost:8081
       RAIO_PADRAO_METROS: "1600"
+      # a imagem roda em modo de produção, que exige um segredo próprio
+      CODIGO_SEGREDO: segredo-do-conteiner-local
     ports:
       - "3333:3333"
     depends_on:
