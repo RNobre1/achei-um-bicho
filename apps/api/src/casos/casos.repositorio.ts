@@ -228,6 +228,7 @@ export class CasosRepositorio {
         tipo: true,
         estado: true,
         codigoEdicao: true,
+        ocorridoEm: true,
         ultimaInteracaoEm: true,
         cobradoEm: true,
         desfecho: {

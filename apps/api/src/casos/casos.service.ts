@@ -10,6 +10,7 @@ import {
   type TipoDesfecho,
 } from '@achei/contratos'
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -17,6 +18,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
+import { diaEmSantarem } from '../comum/dia-em-santarem'
 import type { Configuracao } from '../configuracao'
 import { CONFIGURACAO } from '../configuracao.module'
 import { areaAproximada, MARGEM_DO_DESLOCAMENTO_M } from '../geo/area-aproximada'
@@ -227,6 +229,10 @@ export class CasosService {
     // um desfecho novo tiraria o caso da condição de fora do ar e serviria de novo a
     // área de um ponto já anonimizado (segundo deslocamento)
     if (await this.repositorio.estaForaDoAr(id)) throw new NotFoundException('caso encerrado há mais de 30 dias')
+    // o desfecho sustenta o tempo até o reencontro no artigo; antes do caso, a conta dá negativa
+    if (diaEmSantarem(new Date(dados.ocorridoEm)) < diaEmSantarem(caso.ocorridoEm)) {
+      throw new BadRequestException('o desfecho não pode ser antes do dia em que o caso aconteceu')
+    }
     try {
       return await this.repositorio.encerrarComDesfecho(id, caso.estado as EstadoCaso, dados)
     } catch (e: any) {
