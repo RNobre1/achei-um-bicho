@@ -90,6 +90,22 @@ describe('pistas de pareamento', () => {
       expect(body[0].divergem).toEqual([{ atributo: 'coleira', perdido: 'com', encontrado: 'sem' }])
     })
 
+    it('a distância da pista é entre os centros publicados, para três casos falsos não acharem o ponto real', async () => {
+      const nego = await publicar(casoValido())
+      const achado = await publicar(encontrado(850))
+      const area = async (id: string) => (await request(app.getHttpServer()).get(`/casos/${id}`).expect(200)).body.area
+      const [a, b] = [await area(nego.id), await area(achado.id)]
+      const mLat = 110_574
+      const mLon = 111_320 * Math.cos((a.latitude * Math.PI) / 180)
+      const entreCentros = Math.hypot((a.latitude - b.latitude) * mLat, (a.longitude - b.longitude) * mLon)
+
+      const { body } = await pistas(nego.id, nego.codigoEdicao).expect(200)
+
+      expect(Math.abs(body[0].distanciaM - entreCentros)).toBeLessThanOrEqual(2)
+      const distancia = [...body[0].batem, ...body[0].divergem].find((c: { atributo: string }) => c.atributo === 'distancia')
+      expect(distancia.metros).toBe(body[0].distanciaM)
+    })
+
     it('mostra o mesmo par a quem achou, com o caso perdido do outro lado', async () => {
       const nego = await publicar(casoValido())
       const achado = await publicar(encontrado(850))
