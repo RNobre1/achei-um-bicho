@@ -189,3 +189,32 @@ describe('limite de requisições por IP (rate limiting)', () => {
       .expect(429)
   })
 })
+
+describe('limite de requisições atrás do Cloudflare (CABECALHO_IP_CLIENTE)', () => {
+  let app: INestApplication
+  const ambienteOriginal = { ...process.env }
+
+  beforeAll(async () => {
+    process.env.LIMITE_LEITURA_POR_MINUTO = '5'
+    process.env.CABECALHO_IP_CLIENTE = 'cf-connecting-ip'
+    app = await criarAppDeTeste()
+  })
+
+  afterAll(async () => {
+    await app.close()
+    process.env = ambienteOriginal
+  })
+
+  it('conta pelo IP que o Cloudflare informa, mesmo com a conexão vinda de proxies diferentes', async () => {
+    const consultar = (ipCliente: string, ipProxy: string) =>
+      request(app.getHttpServer())
+        .get('/casos')
+        .query({ latitude: -2.4385, longitude: -54.7085 })
+        .set('cf-connecting-ip', ipCliente)
+        .set('x-forwarded-for', ipProxy)
+
+    for (let i = 0; i < 5; i++) await consultar('200.1.1.1', `172.64.0.${i}`).expect(200)
+    await consultar('200.1.1.1', '172.64.0.99').expect(429)
+    await consultar('200.2.2.2', '172.64.0.99').expect(200)
+  })
+})
