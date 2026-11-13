@@ -10,6 +10,12 @@ const METROS_POR_GRAU_DE_LONGITUDE_NO_EQUADOR = 111_320
 const DESLOCAMENTO_MINIMO = 0.25
 const DESLOCAMENTO_MAXIMO = 0.75
 
+/** Raio da área publicada de um caso. */
+export const RAIO_PADRAO_DA_AREA_M = 300
+
+/** O quanto o centro publicado pode estar longe do ponto real. */
+export const MARGEM_DO_DESLOCAMENTO_M = DESLOCAMENTO_MAXIMO * RAIO_PADRAO_DA_AREA_M
+
 export interface AreaAproximada {
   centro: Ponto
   raioM: number

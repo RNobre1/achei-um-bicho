@@ -19,7 +19,8 @@ import {
 import { Prisma } from '@prisma/client'
 import type { Configuracao } from '../configuracao'
 import { CONFIGURACAO } from '../configuracao.module'
-import { areaAproximada } from '../geo/area-aproximada'
+import { areaAproximada, MARGEM_DO_DESLOCAMENTO_M } from '../geo/area-aproximada'
+import { distanciaEmMetros } from '../geo/distancia'
 import { GeradorDePareamentos } from '../pareamento/gerador-de-pareamentos'
 import { CasosRepositorio } from './casos.repositorio'
 import { conferirCodigoEdicao, gerarCodigoEdicao, hashCodigoEdicao } from './codigo-edicao'
@@ -28,6 +29,9 @@ import type { ConsultarMuralDto, Mural } from './dto/consultar-mural.dto'
 import type { NovoDesfechoDto } from './dto/desfecho.dto'
 import type { EdicaoDoCasoDto } from './dto/edicao-do-caso.dto'
 import type { CasoPublicado, PublicarCasoDto } from './dto/publicar-caso.dto'
+
+/** Quantos casos o mural traz de uma vez; o suficiente para um bairro. */
+const LIMITE_MURAL = 50
 
 @Injectable()
 export class CasosService {
@@ -92,10 +96,24 @@ export class CasosService {
   async mural({ latitude, longitude, raio, tipo }: ConsultarMuralDto): Promise<Mural> {
     const centro = { latitude, longitude }
     const raioM = raio ?? this.configuracao.raioPadraoM
-    const [casos, totalNoRaioMaximo] = await Promise.all([
-      this.repositorio.abertosNoRaio(centro, raioM, tipo),
-      this.repositorio.contarAbertosNoRaio(centro, RAIO.maximoM, tipo),
-    ])
+    // o banco filtra pelo ponto real com a folga do maior deslocamento; entrar no raio,
+    // a distância, a ordem e a contagem saem só do centro publicado. Com o ponto real,
+    // três consultas de centros diferentes dariam a posição de cada caso (trilateração)
+    const candidatos = await this.repositorio.candidatosNoRaio(centro, RAIO.maximoM + MARGEM_DO_DESLOCAMENTO_M, tipo)
+    const publicados = candidatos.map((c) => ({
+      id: c.id,
+      distanciaM: distanciaEmMetros(centro, areaAproximada(c.id, c, c.raioImprecisaoM).centro),
+    }))
+    const totalNoRaioMaximo = publicados.filter((p) => p.distanciaM <= RAIO.maximoM).length
+    const noRaio = publicados
+      .filter((p) => p.distanciaM <= raioM)
+      .sort((a, b) => a.distanciaM - b.distanciaM)
+      .slice(0, LIMITE_MURAL)
+    const detalhes = await this.repositorio.detalhesDoMural(noRaio.map((p) => p.id))
+    const casos = noRaio.flatMap((p) => {
+      const caso = detalhes.get(p.id)
+      return caso ? [{ ...caso, distanciaM: Math.round(p.distanciaM) }] : []
+    })
     return { raioM, casos, totalNoRaioMaximo }
   }
 

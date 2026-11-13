@@ -13,7 +13,7 @@ import { CasosRepositorio } from './casos.repositorio'
  * aninhado que compara cada local com cada caso (Join Filter). Com 20.000 casos isso
  * levou 8,8 s por contagem; o plano não pode ter essa forma.
  */
-describe('contagem de casos no raio do mural', () => {
+describe('candidatos do mural no raio (base da lista e da contagem)', () => {
   let app: INestApplication
   const prisma = new PrismaClient()
 
@@ -42,17 +42,17 @@ describe('contagem de casos no raio do mural', () => {
       ...valores: unknown[]
     ) => {
       consulta = Prisma.sql(partes, ...valores)
-      return Promise.resolve([{ total: 0 }])
+      return Promise.resolve([])
     }) as never)
 
-    await app.get(CasosRepositorio).contarAbertosNoRaio({ latitude: -2.4432, longitude: -54.7123 }, 5000)
+    await app.get(CasosRepositorio).candidatosNoRaio({ latitude: -2.4432, longitude: -54.7123 }, 5000)
     espiao.mockRestore()
 
     expect(consulta).toBeDefined()
     const plano = await prisma.$queryRawUnsafe(`EXPLAIN (FORMAT JSON) ${consulta!.text}`, ...consulta!.values)
     expect(JSON.stringify(plano)).not.toContain('Join Filter')
 
-    const total = await app.get(CasosRepositorio).contarAbertosNoRaio({ latitude: -2.4432, longitude: -54.7123 }, 5000)
-    expect(total).toBe(3)
+    const candidatos = await app.get(CasosRepositorio).candidatosNoRaio({ latitude: -2.4432, longitude: -54.7123 }, 5000)
+    expect(candidatos).toHaveLength(3)
   })
 })

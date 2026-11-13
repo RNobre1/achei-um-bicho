@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { Prisma, type PrismaClient } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import type { Ponto } from './ponto'
+import { RAIO_PADRAO_DA_AREA_M } from './area-aproximada'
 
 /** Qualquer cliente capaz de rodar SQL: o serviço ou uma transação aberta. */
 export type ClienteSql = Pick<PrismaClient, '$queryRaw'>
@@ -45,7 +46,7 @@ export class GeoRepositorio {
     const linhas = await cliente.$queryRaw<{ id: string }[]>`
       INSERT INTO local (ponto, bairro, referencia, raio_imprecisao_m)
       VALUES (${pontoSql(dados.ponto)}, ${dados.bairro ?? null}, ${dados.referencia ?? null},
-              ${dados.raioImprecisaoM ?? 300})
+              ${dados.raioImprecisaoM ?? RAIO_PADRAO_DA_AREA_M})
       RETURNING id`
     return linhas[0]!.id
   }

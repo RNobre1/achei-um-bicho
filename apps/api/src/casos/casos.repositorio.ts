@@ -21,8 +21,13 @@ import type { EdicaoDoCasoDto } from './dto/edicao-do-caso.dto'
 import type { PublicarCasoDto } from './dto/publicar-caso.dto'
 import { dadosDeRenovacao } from './renovacao'
 
-/** Quantos casos o mural traz de uma vez; o suficiente para um bairro. */
-const LIMITE_MURAL = 50
+/** Caso candidato ao mural, com o ponto real, que não sai da API. */
+export interface CandidatoNoMural {
+  id: string
+  latitude: number
+  longitude: number
+  raioImprecisaoM: number
+}
 
 interface LinhaMural {
   id: string
@@ -32,7 +37,6 @@ interface LinhaMural {
   publicadoEm: Date
   ocorridoEm: Date
   bairro: string | null
-  distanciaM: number
   especie: Especie
   porte: Porte
   corDominante: Cor
@@ -139,38 +143,47 @@ export class CasosRepositorio {
     }
   }
 
-  async abertosNoRaio(centro: Ponto, raioM: number, tipo?: TipoCaso): Promise<CasoNoMural[]> {
+  /**
+   * Casos abertos com o ponto real a até `raioM` do centro, sem distância nem ordem: quem
+   * decide se entra, a distância e a ordem é o serviço, pelo centro publicado. O ponto
+   * real não sai daqui.
+   */
+  async candidatosNoRaio(centro: Ponto, raioM: number, tipo?: TipoCaso): Promise<CandidatoNoMural[]> {
+    return this.prisma.$queryRaw<CandidatoNoMural[]>`
+      SELECT c.id, ST_Y(l.ponto::geometry) AS latitude, ST_X(l.ponto::geometry) AS longitude,
+             l.raio_imprecisao_m AS "raioImprecisaoM"
+        FROM local l
+        -- o OFFSET 0 impede o planejador de desfazer a subconsulta: ele estima poucas
+        -- linhas para ST_DWithin e, com JOIN comum, compara cada local com cada caso
+        -- (8,8 s com 20.000 casos); assim, cada local busca o seu caso pelo índice
+        CROSS JOIN LATERAL (SELECT c.id, c.estado, c.tipo FROM caso c WHERE c.local_id = l.id OFFSET 0) c
+       WHERE ${filtroAbertosNoRaio(centro, raioM, tipo)}`
+  }
+
+  /** O que o mural mostra de cada caso, sem a distância. */
+  async detalhesDoMural(ids: string[]): Promise<Map<string, Omit<CasoNoMural, 'distanciaM'>>> {
+    if (ids.length === 0) return new Map()
     const linhas = await this.prisma.$queryRaw<LinhaMural[]>`
       SELECT c.id, c.tipo, c.estado, c.relato,
              c.publicado_em AS "publicadoEm", c.ocorrido_em AS "ocorridoEm",
-             l.bairro, ST_Distance(l.ponto, ${pontoSql(centro)})::int AS "distanciaM",
-             a.especie, a.porte, a.cor_dominante AS "corDominante", a.coleira, a.nome,
+             l.bairro, a.especie, a.porte, a.cor_dominante AS "corDominante", a.coleira, a.nome,
              (SELECT f.caminho FROM foto f WHERE f.animal_id = a.id
                ORDER BY f.enviada_em, f.id LIMIT 1) AS foto
         FROM caso c
         JOIN local l ON l.id = c.local_id
         JOIN animal a ON a.id = c.animal_id
-       WHERE ${filtroAbertosNoRaio(centro, raioM, tipo)}
-       ORDER BY "distanciaM"
-       LIMIT ${LIMITE_MURAL}`
-    return linhas.map(({ especie, porte, corDominante, coleira, nome, publicadoEm, ocorridoEm, ...resto }) => ({
-      ...resto,
-      publicadoEm: publicadoEm.toISOString(),
-      ocorridoEm: ocorridoEm.toISOString(),
-      animal: { especie, porte, corDominante, coleira, nome },
-    }))
-  }
-
-  async contarAbertosNoRaio(centro: Ponto, raioM: number, tipo?: TipoCaso): Promise<number> {
-    const [linha] = await this.prisma.$queryRaw<{ total: number }[]>`
-      SELECT count(*)::int AS total
-        FROM local l
-        -- o OFFSET 0 impede o planejador de desfazer a subconsulta: ele estima poucas
-        -- linhas para ST_DWithin e, com JOIN comum, compara cada local com cada caso
-        -- (8,8 s com 20.000 casos); assim, cada local busca o seu caso pelo índice
-        CROSS JOIN LATERAL (SELECT c.estado, c.tipo FROM caso c WHERE c.local_id = l.id OFFSET 0) c
-       WHERE ${filtroAbertosNoRaio(centro, raioM, tipo)}`
-    return linha?.total ?? 0
+       WHERE c.id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})`
+    return new Map(
+      linhas.map(({ especie, porte, corDominante, coleira, nome, publicadoEm, ocorridoEm, ...resto }) => [
+        resto.id,
+        {
+          ...resto,
+          publicadoEm: publicadoEm.toISOString(),
+          ocorridoEm: ocorridoEm.toISOString(),
+          animal: { especie, porte, corDominante, coleira, nome },
+        },
+      ]),
+    )
   }
 
   async buscarComPonto(id: string): Promise<CasoComPonto | null> {
