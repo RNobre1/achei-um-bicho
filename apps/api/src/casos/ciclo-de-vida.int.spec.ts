@@ -502,6 +502,19 @@ describe('F8 ciclo de vida', () => {
   })
 
   describe('POST /casos/:id/desfecho', () => {
+    it('não traz de volta ao ar um caso expirado há mais de 30 dias', async () => {
+      const { id, codigoEdicao } = await publicar()
+      await prisma.$executeRaw`UPDATE caso SET estado = 'expirado', ultima_interacao_em = now() - interval '31 days' WHERE id = ${id}::uuid`
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/desfecho`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ tipo: 'voltou_para_casa', ocorridoEm: new Date(Date.now() - UMA_HORA).toISOString() })
+        .expect(404)
+      await request(app.getHttpServer()).get(`/casos/${id}`).expect(404)
+      expect((await prisma.caso.findUniqueOrThrow({ where: { id } })).estado).toBe('expirado')
+    })
+
     it('registra o desfecho e muda o estado para resolvido, renovando interação', async () => {
       const { id, codigoEdicao } = await publicar()
       await prisma.$executeRaw`UPDATE caso SET ultima_interacao_em = now() - interval '8 days' WHERE id = ${id}::uuid`
