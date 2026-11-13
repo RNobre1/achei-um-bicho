@@ -198,6 +198,15 @@ export class CasosRepositorio {
     return linhas.map((linha) => linha.caminho)
   }
 
+  /** Encerrado há mais tempo que o prazo de anonimização: o caso não volta a ser servido. */
+  async estaForaDoAr(id: string): Promise<boolean> {
+    const [linha] = await this.prisma.$queryRaw<{ foraDoAr: boolean }[]>`
+      SELECT ${encerradoAte(limiteDeAnonimizacao())} AS "foraDoAr"
+        FROM caso c
+       WHERE c.id = ${id}::uuid`
+    return linha?.foraDoAr ?? false
+  }
+
   async buscarParaSituacao(id: string) {
     return this.prisma.caso.findUnique({
       where: { id },

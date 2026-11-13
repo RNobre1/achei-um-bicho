@@ -206,6 +206,9 @@ export class CasosService {
     if (!transicaoPermitida(caso.estado as EstadoCaso, 'resolvido', caso.tipo as TipoCaso)) {
       throw new ConflictException(`caso em estado "${caso.estado}" não pode transicionar para resolvido`)
     }
+    // um desfecho novo tiraria o caso da condição de fora do ar e serviria de novo a
+    // área de um ponto já anonimizado (segundo deslocamento)
+    if (await this.repositorio.estaForaDoAr(id)) throw new NotFoundException('caso encerrado há mais de 30 dias')
     try {
       return await this.repositorio.encerrarComDesfecho(id, caso.estado as EstadoCaso, dados)
     } catch (e: any) {

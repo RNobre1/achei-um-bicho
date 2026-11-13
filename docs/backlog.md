@@ -17,6 +17,13 @@ funciona"). Atualizado em 12/11/2026.
   pode reivindicar com o número de outra pessoa e denunciar para inflar a contagem.
 - [ ] **Reivindicação idempotente**, como já é a publicação: reenviar depois de perder a
   resposta cria uma segunda reivindicação.
+- [ ] **Reabrir pelo lado do caso próprio.** Quando quem reabre é o autor do caso que
+  entrou como "caso próprio" de uma reivindicação aceita noutro caso, só o seu lado
+  volta ao mural; a reivindicação e o outro caso continuam em contato.
+- [ ] **Caso próprio já cobrado e depois aceito** pode expirar durante o contato,
+  porque o aceite não renova o relógio de quem não agiu.
+- [ ] Reabrir um caso e aceitar outro que aponta para ele ao mesmo tempo pode dar
+  deadlock no banco (hipótese da revisão, sem teste).
 - [ ] Bairro preenchido sozinho a partir do ponto (geocodificação reversa, guardando o
   resultado no banco).
 - [ ] Ajustar o ponto no mapa arrastando, como no protótipo.
