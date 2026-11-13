@@ -9,6 +9,7 @@
   "scripts": {
     "banco": "docker compose up -d banco",
     "build:contratos": "pnpm --filter @achei/contratos build",
-    "test": "pnpm -r --workspace-concurrency=1 test"
+    "test": "pnpm -r --workspace-concurrency=1 test",
+    "e2e": "pnpm --filter @achei/e2e test"
   }
 }

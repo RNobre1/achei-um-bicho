@@ -76,3 +76,62 @@ jobs:
 
       - name: Testes (contratos, API com banco real, aplicativo)
         run: pnpm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      banco:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_USER: bicho
+          POSTGRES_PASSWORD: bicho
+          POSTGRES_DB: achei_um_bicho
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bicho -d achei_um_bicho"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Cliente do Prisma
+        run: pnpm --filter @achei/api exec prisma generate
+
+      - name: Build da API
+        run: |
+          pnpm build:contratos
+          pnpm --filter @achei/api build
+
+      - name: Exportar versão web
+        run: CI=1 EXPO_PUBLIC_API_URL=http://localhost:3333 npx expo export --platform web --output-dir dist-web
+        working-directory: apps/mobile
+
+      - name: Instalar Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      - name: Testes de ponta a ponta (E2E)
+        run: pnpm e2e
+
+      - name: Salvar relatório em caso de falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-playwright
+          path: e2e/playwright-report/
+          retention-days: 7

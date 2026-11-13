@@ -106,11 +106,14 @@ sem pagar: [docs/hospedagem.md](docs/hospedagem.md).
 
 ```bash
 pnpm test
+pnpm e2e
 ```
 
 Roda tudo: regras do vocabulário, unidade e integração da API e regras do
 aplicativo. A integração usa um banco de teste separado dentro do mesmo contêiner,
 recriado a cada rodada, então o banco precisa estar de pé.
+
+O comando `pnpm e2e` executa os testes de ponta a ponta (E2E) com Playwright sobre a versão web do aplicativo, subindo a API e o servidor estático da web automaticamente contra o banco de teste `achei_e2e`.
 
 ## Vocabulário fechado
 
