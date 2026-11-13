@@ -8,6 +8,7 @@ import { criarItemFila, marcarCasoEnviado, marcarFalhaEnvio } from '../dominio/f
 import { montarPublicacao } from '../dominio/publicacao'
 import { ErroApi, type ClienteApi } from './api'
 import {
+  aoMudarFila,
   descartarItem,
   enfileirarPublicacao,
   gerarCodigoEdicaoNoAparelho,
@@ -216,6 +217,36 @@ describe('serviço de fila de envio (F9)', () => {
 
     const fila = await listarFila()
     expect(fila[0]?.estado).toBe('enviado')
+  })
+
+  it('avisa quem observa a fila quando o envio de fundo publica o caso, e para de avisar ao sair', async () => {
+    vi.spyOn(meusCasosServico, 'guardarMeuCaso').mockResolvedValue()
+    const apiMock = {
+      publicar: vi.fn(async (dados: NovaPublicacao) => ({
+        id: 'caso-uuid-1',
+        tipo: dados.tipo,
+        estado: 'procurando' as const,
+        codigoEdicao: dados.codigoEdicao!,
+      })),
+      enviarFoto: vi.fn(async () => ({ caminho: '/foto.jpg', largura: 1080, altura: 720 })),
+    } as unknown as ClienteApi
+    vi.mocked(Network.getNetworkStateAsync).mockResolvedValueOnce({
+      isConnected: false,
+      isInternetReachable: false,
+      type: Network.NetworkStateType.NONE,
+    })
+    await enfileirarPublicacao(rascunhoExemplo, apiMock)
+
+    // a tela da fila está aberta quando a rede volta
+    const vistos: string[] = []
+    const sair = aoMudarFila((itens) => vistos.push(itens[0]?.estado ?? 'vazia'))
+    await processarFila(apiMock)
+    expect(vistos.at(-1)).toBe('enviado')
+
+    sair()
+    const quantos = vistos.length
+    await salvarFila([])
+    expect(vistos).toHaveLength(quantos)
   })
 
   it('foto não sobe e guardarMeuCaso não é chamado se o caso falhar', async () => {
