@@ -15,6 +15,8 @@ import { Prisma } from '@prisma/client'
 import { dadosDeRenovacao } from '../casos/renovacao'
 import { PrismaService } from '../prisma/prisma.service'
 import type { ResultadoDaComparacao } from './comparar'
+import { areaAproximada, MARGEM_DO_DESLOCAMENTO_M } from '../geo/area-aproximada'
+import { distanciaEmMetros } from '../geo/distancia'
 
 /** Um caso como a comparação o enxerga: lado, atributos e quando aconteceu. */
 export interface CasoParaComparar {
@@ -28,6 +30,15 @@ export interface CasoParaComparar {
 
 export interface Candidato extends CasoParaComparar {
   distanciaM: number
+}
+
+interface LinhaCandidato extends CasoParaComparar {
+  latitude: number
+  longitude: number
+  raioImprecisaoM: number
+  latitude0: number
+  longitude0: number
+  raioImprecisaoM0: number
 }
 
 interface LinhaPista {
@@ -68,13 +79,19 @@ export class PareamentoRepositorio {
   }
 
   /**
-   * Casos abertos do lado oposto, da mesma espécie, até o raio dado (RN7). O filtro
-   * de distância é ST_DWithin, que usa o índice GIST do local.
+   * Casos abertos do lado oposto, da mesma espécie, até o raio dado (RN7). O filtro no
+   * banco usa o ponto real com a folga dos dois deslocamentos (ST_DWithin, pelo índice);
+   * a distância que vale, e que aparece na pista, é entre os centros publicados. Com a
+   * distância real, três casos falsos perto de um caso dariam o ponto dele.
    */
   async candidatos(id: string, raioM: number): Promise<Candidato[]> {
-    return this.prisma.$queryRaw<Candidato[]>`
+    const linhas = await this.prisma.$queryRaw<LinhaCandidato[]>`
       SELECT c.id, c.tipo, a.porte, a.cor_dominante AS "corDominante", a.coleira,
-             c.ocorrido_em AS "ocorridoEm", ST_Distance(l.ponto, l0.ponto)::int AS "distanciaM"
+             c.ocorrido_em AS "ocorridoEm",
+             ST_Y(l.ponto::geometry) AS latitude, ST_X(l.ponto::geometry) AS longitude,
+             l.raio_imprecisao_m AS "raioImprecisaoM",
+             ST_Y(l0.ponto::geometry) AS "latitude0", ST_X(l0.ponto::geometry) AS "longitude0",
+             l0.raio_imprecisao_m AS "raioImprecisaoM0"
         FROM caso c0
         JOIN animal a0 ON a0.id = c0.animal_id
         JOIN local l0 ON l0.id = c0.local_id
@@ -83,7 +100,13 @@ export class PareamentoRepositorio {
         JOIN local l ON l.id = c.local_id
        WHERE c0.id = ${id}::uuid
          AND c.estado IN (${Prisma.join([...ESTADOS_ABERTOS])})
-         AND ST_DWithin(l.ponto, l0.ponto, ${raioM}::float8)`
+         AND ST_DWithin(l.ponto, l0.ponto, ${raioM + 2 * MARGEM_DO_DESLOCAMENTO_M}::float8)`
+    return linhas.flatMap(({ latitude, longitude, raioImprecisaoM, latitude0, longitude0, raioImprecisaoM0, ...caso }) => {
+      const centro = areaAproximada(caso.id, { latitude, longitude }, raioImprecisaoM).centro
+      const centro0 = areaAproximada(id, { latitude: latitude0, longitude: longitude0 }, raioImprecisaoM0).centro
+      const distanciaM = Math.round(distanciaEmMetros(centro, centro0))
+      return distanciaM <= raioM ? [{ ...caso, distanciaM }] : []
+    })
   }
 
   /** Par que já existe fica como está: a decisão de uma pessoa sobre ele não se perde. */

@@ -61,8 +61,10 @@ describe('gerador de pareamentos, disparado na publicação', () => {
       veredito: 'pendente',
       diasDiferenca: 1,
     })
-    expect(pares[0]!.distanciaM).toBeGreaterThanOrEqual(845)
-    expect(pares[0]!.distanciaM).toBeLessThanOrEqual(855)
+    // 850 m entre os pontos reais; a distância guardada é entre os centros publicados,
+    // cada um a até 225 m do seu ponto
+    expect(pares[0]!.distanciaM).toBeGreaterThanOrEqual(850 - 450)
+    expect(pares[0]!.distanciaM).toBeLessThanOrEqual(850 + 450)
     expect(pares[0]!.atributosBatem).toEqual([
       { atributo: 'porte', perdido: 'medio', encontrado: 'medio' },
       { atributo: 'cor', perdido: 'caramelo', encontrado: 'caramelo' },

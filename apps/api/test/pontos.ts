@@ -14,3 +14,12 @@ export function aoSul(ponto: Ponto, metros: number): Ponto {
     longitude: ponto.longitude,
   }
 }
+
+/** Distância sobre a esfera (haversine), para conferir distâncias que a API devolve. */
+export function distanciaEntre(a: Ponto, b: Ponto): number {
+  const rad = Math.PI / 180
+  const h =
+    Math.sin(((b.latitude - a.latitude) * rad) / 2) ** 2 +
+    Math.cos(a.latitude * rad) * Math.cos(b.latitude * rad) * Math.sin(((b.longitude - a.longitude) * rad) / 2) ** 2
+  return 2 * 6_371_000 * Math.asin(Math.sqrt(h))
+}

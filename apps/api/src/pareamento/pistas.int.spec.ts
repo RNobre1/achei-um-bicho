@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
-import { aoSul, CENTRO_SANTAREM } from '../../test/pontos'
+import { aoSul, CENTRO_SANTAREM, distanciaEntre } from '../../test/pontos'
 
 const UM_DIA = 24 * 60 * 60 * 1000
 
@@ -95,9 +95,7 @@ describe('pistas de pareamento', () => {
       const achado = await publicar(encontrado(850))
       const area = async (id: string) => (await request(app.getHttpServer()).get(`/casos/${id}`).expect(200)).body.area
       const [a, b] = [await area(nego.id), await area(achado.id)]
-      const mLat = 110_574
-      const mLon = 111_320 * Math.cos((a.latitude * Math.PI) / 180)
-      const entreCentros = Math.hypot((a.latitude - b.latitude) * mLat, (a.longitude - b.longitude) * mLon)
+      const entreCentros = distanciaEntre(a, b)
 
       const { body } = await pistas(nego.id, nego.codigoEdicao).expect(200)
 

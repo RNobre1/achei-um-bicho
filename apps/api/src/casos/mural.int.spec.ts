@@ -5,7 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { criarAppDeTeste } from '../../test/app-de-teste'
 import { casoValido } from '../../test/fabricas'
 import { limparBanco } from '../../test/limpar-banco'
-import { aoSul, CENTRO_SANTAREM } from '../../test/pontos'
+import { aoSul, CENTRO_SANTAREM, distanciaEntre } from '../../test/pontos'
 
 describe('GET /casos (mural por proximidade)', () => {
   let app: INestApplication
@@ -91,9 +91,6 @@ describe('GET /casos (mural por proximidade)', () => {
         longitude: real.longitude - ((dx / d) * metros) / mLon(real.latitude),
       }
     }
-    function distancia(a: { latitude: number; longitude: number }, b: typeof a) {
-      return Math.hypot((a.latitude - b.latitude) * M_LAT, (a.longitude - b.longitude) * mLon(a.latitude))
-    }
 
     async function publicarEmCentro() {
       const id = await publicarA(0)
@@ -105,8 +102,8 @@ describe('GET /casos (mural por proximidade)', () => {
       const { real, publicado } = await publicarEmCentro()
       const consulta = doLadoOposto(real, publicado, 500)
       const { body } = await request(app.getHttpServer()).get('/casos').query(consulta).expect(200)
-      expect(Math.abs(body.casos[0].distanciaM - distancia(consulta, publicado))).toBeLessThanOrEqual(2)
-      expect(Math.abs(body.casos[0].distanciaM - distancia(consulta, real))).toBeGreaterThan(50)
+      expect(Math.abs(body.casos[0].distanciaM - distanciaEntre(consulta, publicado))).toBeLessThanOrEqual(2)
+      expect(Math.abs(body.casos[0].distanciaM - distanciaEntre(consulta, real))).toBeGreaterThan(50)
     })
 
     it('entra no raio e na contagem pelo centro publicado: ponto real dentro e centro fora não aparece', async () => {
