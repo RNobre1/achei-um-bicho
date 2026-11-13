@@ -154,6 +154,20 @@ describe('serviço de fila de envio (F9)', () => {
     expect(fila[0]?.nomeAnimal).toBe('Pipoca')
   })
 
+  it('bicho achado sem nome entra na fila com o nome da espécie, não em branco', async () => {
+    vi.mocked(Network.getNetworkStateAsync).mockResolvedValueOnce({
+      isConnected: false,
+      isInternetReachable: false,
+      type: Network.NetworkStateType.NONE,
+    })
+
+    // o campo de nome começa como texto vazio no rascunho, não como ausente
+    await enfileirarPublicacao({ ...rascunhoExemplo, animal: { ...rascunhoExemplo.animal, nome: '' } })
+
+    const fila = await listarFila()
+    expect(fila[0]?.nomeAnimal).toBe('Cachorro sem nome')
+  })
+
   it('envia caso antes da foto na ordem real das chamadas', async () => {
     const chamadas: string[] = []
     const apiMock = {
