@@ -41,7 +41,12 @@ funciona"). Atualizado em 12/11/2026.
   contínua.
 - [ ] **Números de testes dos slides lidos do relatório da integração contínua**, não
   copiados à mão.
-- [ ] **Carga com 20.000 casos dentro da meta**: a contagem de casos até 5 km domina
-  a resposta nessa densidade (p95 de 669 ms; ver `docs/qualidade/carga.md`). Uma saída
-  é contar com teto ou guardar a contagem por região.
+- [ ] **Carga com 20.000 casos dentro da meta**: com o mural decidindo pelo centro
+  publicado, a API traz e calcula todos os casos até 5 km (p95 de 7,7 s nessa
+  densidade; ver `docs/qualidade/carga.md`). Saída: calcular o deslocamento no banco
+  (`pgcrypto`) ou guardar o centro publicado numa coluna com índice.
+- [ ] **Margem do deslocamento presa ao raio de 300 m**: um `CHECK` em
+  `raio_imprecisao_m` ou um teste que compare a constante com a coluna.
+- [ ] Apagar `locaisNoRaio` em `geo.repositorio.ts`, que só os testes usam e mede pelo
+  ponto real.
 - [ ] Cópia de segurança agendada do banco do Neon.
