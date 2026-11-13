@@ -5,7 +5,7 @@
   "private": true,
   "description": "Testes E2E com Playwright sobre a versão web do Achei um Bicho",
   "scripts": {
-    "test": "node preparar-banco.mjs && playwright test"
+    "e2e": "node preparar-banco.mjs && playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.1",
