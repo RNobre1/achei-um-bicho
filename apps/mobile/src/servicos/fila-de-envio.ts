@@ -72,8 +72,29 @@ async function listarFilaInterno(): Promise<ItemFilaEnvio[]> {
   }
 }
 
+type OuvinteDaFila = (itens: ItemFilaEnvio[]) => void
+const ouvintesDaFila = new Set<OuvinteDaFila>()
+
+/**
+ * Avisa a cada gravação da fila. A tela da fila fica aberta enquanto o envio de fundo
+ * publica; sem o aviso, ela mostraria "esperando conexão" de um caso já publicado.
+ */
+export function aoMudarFila(ouvinte: OuvinteDaFila): () => void {
+  ouvintesDaFila.add(ouvinte)
+  return () => {
+    ouvintesDaFila.delete(ouvinte)
+  }
+}
+
 async function salvarFilaInterno(itens: ItemFilaEnvio[]): Promise<void> {
   await AsyncStorage.setItem(CHAVE_STORAGE, JSON.stringify(itens))
+  for (const ouvinte of ouvintesDaFila) {
+    try {
+      ouvinte(itens)
+    } catch {
+      // uma tela com defeito não pode travar o envio
+    }
+  }
 }
 
 async function alterarFila<T>(

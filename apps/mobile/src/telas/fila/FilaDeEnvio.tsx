@@ -13,7 +13,7 @@ import {
   separarItensFila,
   type ItemFilaEnvio,
 } from '../../dominio/fila'
-import { descartarItem, listarFila, processarFila, reenviarItem } from '../../servicos/fila-de-envio'
+import { aoMudarFila, descartarItem, listarFila, processarFila, reenviarItem } from '../../servicos/fila-de-envio'
 import { cores, fontes } from '../../tema'
 
 export function FilaDeEnvio() {
@@ -33,6 +33,8 @@ export function FilaDeEnvio() {
   useFocusEffect(
     useCallback(() => {
       void carregar()
+      // o envio de fundo continua com a tela aberta, por exemplo quando a rede volta
+      return aoMudarFila(setItens)
     }, [carregar]),
   )
 
