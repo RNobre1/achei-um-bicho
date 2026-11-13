@@ -24,18 +24,28 @@ ver onde a consulta começa a doer. Os resumos brutos do k6 estão nesta pasta
 | Medida | 200 casos | 20.000 casos |
 |---|---|---|
 | Casos dentro de 1.600 m | 26 | 2.529 |
-| Requisições | 14.859 | 2.018 |
-| Requisições por segundo | 495 | 67 |
-| Latência mediana | 5,5 ms | 384 ms |
-| Latência p95 | **16,3 ms** | **669 ms** |
-| Latência p99 | 21,3 ms | 748 ms |
+| Requisições | 13.053 | 348 |
+| Requisições por segundo | 435 | 10 |
+| Latência mediana | 13,7 ms | 3,15 s |
+| Latência p95 | **26,4 ms** | **7,66 s** |
+| Latência p99 | 35,3 ms | 7,84 s |
 | Taxa de erro | 0% | 0% |
 | Meta p95 < 300 ms | cumprida | **não cumprida** |
 
-Com 200 casos a meta sobra. Com 20.000 ela não é cumprida: a resposta lista no máximo 50
-casos, mas o mural também informa quantos casos abertos existem até 5 km
-(`contarAbertosNoRaio`), e com essa densidade a contagem percorre os 20.000 pontos a cada
-requisição. É a parte cara da resposta.
+Com 200 casos a meta sobra. Com 20.000 ela não é cumprida, e o motivo é uma escolha de
+privacidade. O mural só decide pelo centro publicado de cada caso (a área deslocada),
+nunca pelo ponto real; senão a distância devolvida permitiria achar o ponto por
+trilateração. Como o deslocamento sai de um HMAC com o segredo do servidor, ele é
+calculado na API: o banco devolve todos os casos abertos até 5 km (mais a folga do
+deslocamento) e a API calcula o centro de cada um para filtrar, medir, ordenar e contar.
+Com 20.000 casos são 20.000 linhas por requisição. O cálculo das áreas em si leva 55 ms
+para as 20.000; o custo está em trazer e converter as linhas. Na densidade de Santarém
+isso não aparece. A saída, se um dia precisar, é calcular o deslocamento no próprio
+banco (`pgcrypto`, com o segredo como parâmetro) ou guardar o centro publicado numa
+coluna própria, com índice.
+
+Medição anterior, com o mural decidindo pelo ponto real (antes do conserto de
+privacidade): 200 casos com p95 de 16,3 ms; 20.000 casos com p95 de 669 ms.
 
 ## O defeito que a medição achou
 
@@ -44,13 +54,13 @@ usa o índice espacial (veja abaixo), e sim a contagem. O planejador estima pouc
 para `ST_DWithin` em `geography` e, com `JOIN` comum entre `local` e `caso`, escolhia um
 laço aninhado com filtro de junção: comparava cada local com cada caso.
 
-| Contagem até 5 km, 20.000 casos | Plano | Tempo no banco |
+| Consulta até 5 km, 20.000 casos | Plano | Tempo no banco |
 |---|---|---|
 | Antes (`JOIN`) | Nested Loop com `Join Filter`, 199.990.000 linhas descartadas | 8,8 s |
 | Depois (`CROSS JOIN LATERAL … OFFSET 0`) | cada local busca o seu caso por `caso_local_id_key` | 0,54 s |
 
 O teste `apps/api/src/casos/contagem-no-raio.int.spec.ts` reprova qualquer plano da
-contagem com `Join Filter`.
+consulta de candidatos do mural com `Join Filter`.
 
 ## A listagem usa o índice espacial
 
