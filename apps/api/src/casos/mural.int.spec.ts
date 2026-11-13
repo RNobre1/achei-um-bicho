@@ -36,14 +36,15 @@ describe('GET /casos (mural por proximidade)', () => {
 
   it('mostra só o que está no raio padrão de 1,6 km, do mais perto para o mais longe', async () => {
     const perto = await publicarA(500)
-    const medio = await publicarA(1500, 'encontrado', 'Santa Clara')
+    const medio = await publicarA(1300, 'encontrado', 'Santa Clara')
     await publicarA(3000, 'perdido', 'Diamantino')
 
     const { body } = await request(app.getHttpServer()).get('/casos').query(centro).expect(200)
 
     expect(body.raioM).toBe(1600)
     expect(body.casos.map((c: { id: string }) => c.id)).toEqual([perto, medio])
-    expect(body.casos[0].distanciaM).toBeCloseTo(500, -1)
+    // a distância é até o centro publicado, que fica a até 225 m do ponto real
+    expect(Math.abs(body.casos[0].distanciaM - 500)).toBeLessThanOrEqual(225)
     expect(body.casos[1]).toMatchObject({
       tipo: 'encontrado',
       estado: 'abrigado_temporariamente',
@@ -64,7 +65,7 @@ describe('GET /casos (mural por proximidade)', () => {
 
   it('amplia quando o raio aumenta e filtra por lado do caso', async () => {
     await publicarA(500)
-    await publicarA(1500, 'encontrado')
+    await publicarA(1300, 'encontrado')
     await publicarA(3000)
 
     const amplo = await request(app.getHttpServer()).get('/casos').query({ ...centro, raio: 5000 }).expect(200)
@@ -75,6 +76,47 @@ describe('GET /casos (mural por proximidade)', () => {
       .query({ ...centro, raio: 5000, tipo: 'encontrado' })
       .expect(200)
     expect(achados.body.casos.map((c: { tipo: string }) => c.tipo)).toEqual(['encontrado'])
+  })
+
+  describe('usa só o centro publicado, nunca o ponto real', () => {
+    const M_LAT = 110_574
+    const mLon = (lat: number) => 111_320 * Math.cos((lat * Math.PI) / 180)
+    /** Ponto a `metros` do ponto real, do lado oposto ao do centro publicado. */
+    function doLadoOposto(real: { latitude: number; longitude: number }, publicado: typeof real, metros: number) {
+      const dy = (publicado.latitude - real.latitude) * M_LAT
+      const dx = (publicado.longitude - real.longitude) * mLon(real.latitude)
+      const d = Math.hypot(dx, dy)
+      return {
+        latitude: real.latitude - ((dy / d) * metros) / M_LAT,
+        longitude: real.longitude - ((dx / d) * metros) / mLon(real.latitude),
+      }
+    }
+    function distancia(a: { latitude: number; longitude: number }, b: typeof a) {
+      return Math.hypot((a.latitude - b.latitude) * M_LAT, (a.longitude - b.longitude) * mLon(a.latitude))
+    }
+
+    async function publicarEmCentro() {
+      const id = await publicarA(0)
+      const { body } = await request(app.getHttpServer()).get(`/casos/${id}`).expect(200)
+      return { id, real: aoSul(CENTRO_SANTAREM, 0), publicado: { latitude: body.area.latitude, longitude: body.area.longitude } }
+    }
+
+    it('a distância devolvida é até o centro publicado', async () => {
+      const { real, publicado } = await publicarEmCentro()
+      const consulta = doLadoOposto(real, publicado, 500)
+      const { body } = await request(app.getHttpServer()).get('/casos').query(consulta).expect(200)
+      expect(Math.abs(body.casos[0].distanciaM - distancia(consulta, publicado))).toBeLessThanOrEqual(2)
+      expect(Math.abs(body.casos[0].distanciaM - distancia(consulta, real))).toBeGreaterThan(50)
+    })
+
+    it('entra no raio e na contagem pelo centro publicado: ponto real dentro e centro fora não aparece', async () => {
+      const { real, publicado } = await publicarEmCentro()
+      const noRaio = await request(app.getHttpServer()).get('/casos').query(doLadoOposto(real, publicado, 1550)).expect(200)
+      expect(noRaio.body.casos).toEqual([])
+
+      const noMaximo = await request(app.getHttpServer()).get('/casos').query(doLadoOposto(real, publicado, 4950)).expect(200)
+      expect(noMaximo.body.totalNoRaioMaximo).toBe(0)
+    })
   })
 
   it('não mostra caso resolvido nem expirado', async () => {
