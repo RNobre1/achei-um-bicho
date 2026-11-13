@@ -22,6 +22,11 @@ export interface Configuracao {
   limiteFotosPorMinuto: number
   /** Quantidade de saltos de proxy confiáveis (X-Forwarded-For). */
   saltosDeProxy: number
+  /**
+   * Cabeçalho com o IP do cliente posto por um proxy confiável (no Render, o Cloudflare
+   * escreve `cf-connecting-ip`); sem ele, o limite usa o IP da conexão.
+   */
+  cabecalhoIpCliente?: string
 }
 
 type Ambiente = Record<string, string | undefined>
@@ -91,5 +96,6 @@ export function lerConfiguracao(ambiente: Ambiente = process.env): Configuracao 
     limiteEscritaPorMinuto: inteiro(ambiente, 'LIMITE_ESCRITA_POR_MINUTO', 60),
     limiteFotosPorMinuto: inteiro(ambiente, 'LIMITE_FOTOS_POR_MINUTO', 1200),
     saltosDeProxy,
+    cabecalhoIpCliente: ambiente.CABECALHO_IP_CLIENTE?.trim().toLowerCase() || undefined,
   }
 }

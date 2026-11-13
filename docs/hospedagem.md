@@ -67,7 +67,8 @@ string usada é a direta (sem `-pooler` no endereço), com `?sslmode=require`. N
 | `LIMITE_LEITURA_POR_MINUTO` | `600` (padrão) |
 | `LIMITE_ESCRITA_POR_MINUTO` | `60` (padrão) |
 | `LIMITE_FOTOS_POR_MINUTO` | `1200` (padrão) |
-| `SALTOS_DE_PROXY` | `1` (padrão; confira se o Render adiciona 1 ou 2 saltos no proxy) |
+| `SALTOS_DE_PROXY` | `1` (padrão) |
+| `CABECALHO_IP_CLIENTE` | `cf-connecting-ip`: o Render fica atrás do Cloudflare, e o IP da conexão muda a cada requisição; sem isso, o limite de requisições não separa os clientes (conferido em 13/11) |
 
 A porta não precisa ser informada: o Render define `PORT` e a API lê.
 
