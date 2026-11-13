@@ -538,6 +538,36 @@ describe('F8 ciclo de vida', () => {
       expect(Date.now() - caso.ultimaInteracaoEm.getTime()).toBeLessThan(60_000)
     })
 
+    it('recusa desfecho num dia anterior ao do caso, pelo calendário de Santarém (400)', async () => {
+      // Santarém fica em UTC-3 o ano todo: 00:00 local é 03:00 UTC
+      const agora = new Date()
+      const hojeLocal = new Date(agora.getTime() - 3 * UMA_HORA)
+      const inicioDoDia = Date.UTC(hojeLocal.getUTCFullYear(), hojeLocal.getUTCMonth(), hojeLocal.getUTCDate(), 3)
+      const { id, codigoEdicao } = await publicar({ ocorridoEm: agora.toISOString() })
+
+      const { body } = await request(app.getHttpServer())
+        .post(`/casos/${id}/desfecho`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ tipo: 'voltou_para_casa', ocorridoEm: new Date(inicioDoDia - 60_000).toISOString() })
+        .expect(400)
+      expect(body.message).toMatch(/antes do dia/)
+      expect((await prisma.caso.findUniqueOrThrow({ where: { id } })).estado).toBe('procurando')
+    })
+
+    it('aceita desfecho no mesmo dia do caso, mesmo num horário anterior ao informado', async () => {
+      // o aplicativo manda meio-dia do dia escolhido; o caso pode ter sido à tarde
+      const agora = new Date()
+      const hojeLocal = new Date(agora.getTime() - 3 * UMA_HORA)
+      const inicioDoDia = Date.UTC(hojeLocal.getUTCFullYear(), hojeLocal.getUTCMonth(), hojeLocal.getUTCDate(), 3)
+      const { id, codigoEdicao } = await publicar({ ocorridoEm: agora.toISOString() })
+
+      await request(app.getHttpServer())
+        .post(`/casos/${id}/desfecho`)
+        .set('x-codigo-edicao', codigoEdicao)
+        .send({ tipo: 'voltou_para_casa', ocorridoEm: new Date(inicioDoDia).toISOString() })
+        .expect(201)
+    })
+
     it('permite informar desfecho de caso expirado', async () => {
       const { id, codigoEdicao } = await publicar()
       await prisma.caso.update({ where: { id }, data: { estado: 'expirado' } })

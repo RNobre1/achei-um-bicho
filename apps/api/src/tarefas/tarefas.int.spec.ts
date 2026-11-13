@@ -86,7 +86,11 @@ describe('POST /tarefas/ciclo-de-vida', () => {
 
   it('anonimiza autor, reivindicante, referências, ponto aproximado e perguntas/respostas de casos encerrados há mais de 30 dias', async () => {
     const pontoOriginal = { latitude: -2.4385, longitude: -54.7155 }
-    const { id, codigoEdicao } = await publicar({ local: { ...casoValido().local, ...pontoOriginal } })
+    // o desfecho fica 35 dias atrás, e não pode ser antes do dia do caso
+    const { id, codigoEdicao } = await publicar({
+      local: { ...casoValido().local, ...pontoOriginal },
+      ocorridoEm: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
+    })
 
     // Adiciona uma reivindicação com resposta de verificação
     const reivindicante = await prisma.pessoa.create({
@@ -335,7 +339,7 @@ describe('POST /tarefas/ciclo-de-vida', () => {
   })
 
   it('não anonimiza caso resolvido há 29 dias', async () => {
-    const { id, codigoEdicao } = await publicar()
+    const { id, codigoEdicao } = await publicar({ ocorridoEm: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString() })
     await request(app.getHttpServer())
       .post(`/casos/${id}/desfecho`)
       .set('x-codigo-edicao', codigoEdicao)
