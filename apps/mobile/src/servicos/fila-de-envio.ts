@@ -169,7 +169,8 @@ export async function enfileirarPublicacao(
   const idCliente = gerarIdCliente()
   const codigoEdicao = gerarCodigoEdicaoNoAparelho()
   const publicacao = montarPublicacao(rascunho)
-  const nome = nomeDoAnimal({ especie: rascunho.animal.especie!, nome: rascunho.animal.nome ?? null })
+  // da publicação montada, não do rascunho: no rascunho o nome em branco é '', não ausente
+  const nome = nomeDoAnimal({ especie: publicacao.animal.especie, nome: publicacao.animal.nome ?? null })
 
   const novoItem = criarItemFila({
     idCliente,
