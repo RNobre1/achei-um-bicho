@@ -134,6 +134,8 @@ Os testes acusam qualquer lugar que tenha ficado para trás.
 
 | Documento | Onde |
 |---|---|
+| Artigo final (formato SBC) | `Achei_um_Bicho_Artigo_SBC.pdf` · fonte em [docs/artigo/](docs/artigo/) |
+| Roteiro, slides e vídeo do pitch final | [docs/pitch/roteiro.md](docs/pitch/roteiro.md) · `Achei_um_Bicho_Pitch_Final.pdf` · [docs/pitch/demonstracao.mp4](docs/pitch/demonstracao.mp4) |
 | O que ficou para depois do pitch | [docs/backlog.md](docs/backlog.md) |
 | Carga do mural | [docs/qualidade/carga.md](docs/qualidade/carga.md) |
 | Roteiro e slides do alpha | [docs/alpha/roteiro.md](docs/alpha/roteiro.md) · `Achei_um_Bicho_Alpha.pdf` |

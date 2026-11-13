@@ -16,7 +16,7 @@ zero.
 |---|---|---|---|
 | 28/08/2026 | Kickoff Técnico | Equipe formada, desafio escolhido, funcionalidades do MVP definidas e pelo menos 5 telas de protótipo de média fidelidade | Entregue: 7 telas e 2 estados |
 | 09/10/2026 | Alpha Release | Primeira versão do sistema rodando, apresentada | Entregue em 16/10 (adiado pela professora): F1 a F5 rodando, APK e versão web no ar |
-| 21/11/2026 | The Final Pitch | Versão final rodando, código-fonte, documentação e artigo em formato SBC | F1 a F9 prontos em 12/11; artigo, slides e vídeo de reserva em preparação |
+| 21/11/2026 | The Final Pitch | Versão final rodando, código-fonte, documentação e artigo em formato SBC | Pronto em 12/11: F1 a F9, APK 0.2.0, artigo, slides e vídeo de reserva; faltam os dois ensaios cronometrados |
 
 Entre esses três encontros não há aula. O ritmo interno passa a ser
 responsabilidade da equipe, e é isso que torna o atraso perigoso: ele não aparece
