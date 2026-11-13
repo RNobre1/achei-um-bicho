@@ -104,7 +104,9 @@ describe('gerador de pareamentos, disparado na publicação', () => {
 
   it('não junta casos a mais de 5 km um do outro', async () => {
     await publicar(perdido())
-    await publicar(encontrado(5200))
+    // 5 km entre os centros publicados; cada centro fica a até 225 m do ponto real,
+    // então 5.600 m entre os pontos reais nunca chega a 5 km
+    await publicar(encontrado(5600))
     expect(await prisma.pareamento.count()).toBe(0)
   })
 
