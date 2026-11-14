@@ -345,9 +345,10 @@ fonte não vinha numa lista. E a biblioteca de rede da versão do Expo usada
 recusava o formato antigo de envio de arquivo, de modo que a foto nunca chegava ao
 servidor. Cada defeito ganhou um teste de regressão antes do conserto, e a lição
 virou regra do projeto: antes de apresentar, todos os fluxos passam pelo APK
-instalado. A passada final achou mais um. Com a fila aberta, o caso subia assim
-que a rede voltava, mas a tela continuava dizendo que esperava conexão. Esse se
-reproduziu no navegador e ganhou um teste de ponta a ponta.
+instalado. Na passada final, com a fila aberta, o caso subia assim que a rede
+voltava, mas a tela continuava dizendo que esperava conexão. O teste de ponta a
+ponta só abria a fila depois de a rede voltar; refeito com o gesto da
+apresentação, ele reproduziu o defeito no navegador.
 
 As funcionalidades da segunda metade (verificação, contato, ciclo de vida e
 publicação sem conexão) foram feitas em frentes paralelas, e cada uma passou por uma
